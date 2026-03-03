@@ -1,0 +1,17 @@
+services:
+  backend:
+    environment:
+      DOTNET_USE_POLLING_FILE_WATCHER: "1"
+    volumes:
+      - ./backend:/src
+      - /src/bin
+      - /src/obj
+
+  frontend:
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next

@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hjertefriskuser
+      POSTGRES_PASSWORD: hjertepass3421
+      POSTGRES_DB: hjertefriskdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      # Container-to-container: host is the service name "db"
+      ConnectionStrings__Default: Host=db;Port=5432;Database=hjertefriskdb;Username=hjertefriskuser;Password=hjertepass3421
+    ports:
+      - "5000:8080"
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      # Browser-to-container: frontend in the browser must call localhost
+      NEXT_PUBLIC_API_URL: http://localhost:5000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
