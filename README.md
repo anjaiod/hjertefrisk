@@ -20,6 +20,90 @@ A full-stack web application for Hjertefrisk algorithm. The algorithm is a tool 
 - [Links](#-links)
 
 
+# 🚀 Prosjektoppsett
+
+## Kjøre prosjektet med Docker
+
+### Bygge og starte prosjektet
+
+Docker Desktop appen må være åpne før du kjører alle kommandoer der man bruker docker.
+
+Kjør følgende kommando i **rotmappen**:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+Prosjektet er ferdig bygget når du ser noe tilsvarende dette i terminalen:
+
+```text
+backend-1  | info: Microsoft.Hosting.Lifetime[0]
+backend-1  |       Hosting environment: Development
+backend-1  | info: Microsoft.Hosting.Lifetime[0]
+backend-1  |       Content root path: /src
+```
+
+---
+
+## Tilgang til applikasjonen
+
+Når containerne kjører kan du åpne:
+
+### Frontend (Next.js)
+- http://localhost:3000/
+
+### Backend (Swagger)
+- http://localhost:5000/swagger/index.html  
+
+Swagger viser alle tilgjengelige API-kall.  
+*(Per nå er det kun kobling mot databasen.)*
+
+---
+
+## Stoppe Docker
+
+For å stoppe containerne:
+
+```bash
+docker compose down
+```
+
+---
+
+## Hot Reload
+
+Hot reload fungerer foreløpig **ikke** for frontend i Docker. Du må derfor stoppe docker og deretter starte containerne på nytt for å se endringer.
+
+For å se endringer må du:
+
+1. Stoppe containerne:
+   ```bash
+   docker compose down
+   ```
+
+2. Bygge og starte på nytt:
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+   ```
+
+---
+
+# 💻 Kjøre prosjektet lokalt i frontend (Database + API kjøres i docker)
+
+I **rotmappen**:
+```bash
+docker compose up --build db backend
+```
+
+
+Eksempel for **Next.js (frontend)**:
+
+```bash
+npm install
+npm run build
+npm run dev
+```
+
 ## 🔧 Prerequisites
 
 Before you begin, ensure you have the following installed on your system:
