@@ -5,7 +5,7 @@ import { useState } from "react";
 type Todo = { id: number; text: string; completed: boolean };
 
 export function TodoList({
-  title = "Oppgaver",
+  title,
   todos: initialTodos = [],
 }: {
   title?: string;
@@ -27,7 +27,7 @@ export function TodoList({
     totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
-    <div className="w-full max-w-md rounded-lg border border-brand-mist bg-white p-6 shadow-sm">
+    <div className="w-full max-w-md  bg-white rounded-xl border border-brand-mist/30 shadow-sm p-8">
       <h2 className="mb-6 text-lg font-semibold text-brand-navy">{title}</h2>
 
       {/* Progress Bar */}
