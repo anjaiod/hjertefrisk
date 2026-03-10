@@ -24,20 +24,17 @@ export default function SubstanceUseQuestionnaire({
   };
 
   const showOverdoseWarning =
-    data.usedOpioidsGHBRecently === "ja" || data.usesInjection === "ja";
+    data.usedOpioidsGHB === "ja" ||
+    data.usedOpioidsGHBRecently === "ja" ||
+    data.usesInjection === "ja";
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-brand-navy">
-        Injisering av rusmidler
-      </h2>
-
+    <div className="bg-white p-6">
       <ConditionalQuestion
         question="Bruker pasienten rusmidler?"
         name="uses-substances"
         value={data.usesSubstances}
         onChange={(value) => updateData("usesSubstances", value)}
-        required
       >
         <div className="space-y-4">
           <ConditionalQuestion
@@ -45,7 +42,6 @@ export default function SubstanceUseQuestionnaire({
             name="used-opioids-ghb"
             value={data.usedOpioidsGHB}
             onChange={(value) => updateData("usedOpioidsGHB", value)}
-            required
           />
 
           <ConditionalQuestion
@@ -53,7 +49,6 @@ export default function SubstanceUseQuestionnaire({
             name="used-opioids-ghb-recently"
             value={data.usedOpioidsGHBRecently}
             onChange={(value) => updateData("usedOpioidsGHBRecently", value)}
-            required
           />
 
           <ConditionalQuestion
@@ -61,7 +56,6 @@ export default function SubstanceUseQuestionnaire({
             name="uses-injection"
             value={data.usesInjection}
             onChange={(value) => updateData("usesInjection", value)}
-            required
           />
 
           {showOverdoseWarning && (
@@ -81,7 +75,6 @@ export default function SubstanceUseQuestionnaire({
             name="motivated-to-quit"
             value={data.motivatedToQuit}
             onChange={(value) => updateData("motivatedToQuit", value)}
-            required
           />
         </div>
       </ConditionalQuestion>

@@ -27,9 +27,7 @@ export default function DietQuestionnaire({
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-brand-navy">Kosthold</h2>
-
+    <div className="bg-white p-6">
       <QuestionRadio
         question="Hvor mange måltider spiser pasienten vanligvis per dag?"
         name="meals-per-day"
@@ -40,7 +38,6 @@ export default function DietQuestionnaire({
         ]}
         value={data.mealsPerDay}
         onChange={(value) => updateData("mealsPerDay", value)}
-        required
       />
 
       <QuestionRadio
@@ -53,7 +50,6 @@ export default function DietQuestionnaire({
         ]}
         value={data.skipMeals}
         onChange={(value) => updateData("skipMeals", value)}
-        required
       />
 
       <QuestionRadio
@@ -67,7 +63,6 @@ export default function DietQuestionnaire({
         ]}
         value={data.appetite}
         onChange={(value) => updateData("appetite", value)}
-        required
       />
 
       <ConditionalQuestion
@@ -75,7 +70,6 @@ export default function DietQuestionnaire({
         name="motivated-improve"
         value={data.motivatedToImprove}
         onChange={(value) => updateData("motivatedToImprove", value)}
-        required
       />
 
       <QuestionRadio
@@ -88,7 +82,6 @@ export default function DietQuestionnaire({
         ]}
         value={data.weightStable}
         onChange={(value) => updateData("weightStable", value)}
-        required
       />
 
       {data.weightStable === "nei" && (

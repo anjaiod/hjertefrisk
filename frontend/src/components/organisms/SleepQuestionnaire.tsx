@@ -29,15 +29,12 @@ export default function SleepQuestionnaire({
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-brand-navy">Søvn</h2>
-
+    <div className="bg-white p-6">
       <ConditionalQuestion
         question="Er det vanskelig for pasienten å sovne om kvelden?"
         name="difficulty-falling-asleep"
         value={data.difficultyFallingAsleep}
         onChange={(value) => updateData("difficultyFallingAsleep", value)}
-        required
       />
 
       <ConditionalQuestion
@@ -45,7 +42,6 @@ export default function SleepQuestionnaire({
         name="wakes-during-night"
         value={data.wakesDuringNight}
         onChange={(value) => updateData("wakesDuringNight", value)}
-        required
       />
 
       <ConditionalQuestion
@@ -53,7 +49,6 @@ export default function SleepQuestionnaire({
         name="wakes-too-early"
         value={data.wakesTooEarly}
         onChange={(value) => updateData("wakesTooEarly", value)}
-        required
       />
 
       <ConditionalQuestion
@@ -61,7 +56,6 @@ export default function SleepQuestionnaire({
         name="poor-sleep-quality"
         value={data.poorSleepQuality}
         onChange={(value) => updateData("poorSleepQuality", value)}
-        required
       />
 
       <ConditionalQuestion
@@ -69,7 +63,6 @@ export default function SleepQuestionnaire({
         name="sleep-day-awake-night"
         value={data.sleepDayAwakeNight}
         onChange={(value) => updateData("sleepDayAwakeNight", value)}
-        required
       >
         <ConditionalQuestion
           question="Jobber pasienten nattskift?"
@@ -88,7 +81,6 @@ export default function SleepQuestionnaire({
         ]}
         value={data.problemFrequency}
         onChange={(value) => updateData("problemFrequency", value)}
-        required
       />
 
       {data.problemFrequency === "3-or-more" && (
@@ -104,7 +96,6 @@ export default function SleepQuestionnaire({
         name="takes-medication"
         value={data.takesMedication}
         onChange={(value) => updateData("takesMedication", value)}
-        required
       />
 
       <ConditionalQuestion
@@ -112,7 +103,6 @@ export default function SleepQuestionnaire({
         name="wants-guidance"
         value={data.wantsGuidance}
         onChange={(value) => updateData("wantsGuidance", value)}
-        required
       />
     </div>
   );

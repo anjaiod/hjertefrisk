@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import QuestionRadio from "../molecules/QuestionRadio";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
 import QuestionTextArea from "../molecules/QuestionTextArea";
@@ -25,19 +24,16 @@ export default function SmokingQuestionnaire({
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-brand-navy">Røyking</h2>
-
+    <div className="bg-white p-6">
       <QuestionRadio
         question="Røyker pasienten fast?"
-        name="smoker"
+        name="smoking-smoker"
         options={[
           { value: "ja", label: "Ja" },
           { value: "nei", label: "Nei" },
         ]}
         value={data.smoker}
         onChange={(value) => updateData("smoker", value)}
-        required
       />
 
       {data.smoker === "ja" && (
@@ -52,7 +48,7 @@ export default function SmokingQuestionnaire({
 
           <ConditionalQuestion
             question="Er pasienten motivert til å slutte med røyking dersom du får hjelp til dette?"
-            name="motivated"
+            name="smoking-motivated"
             value={data.motivated}
             onChange={(value) => updateData("motivated", value)}
           />

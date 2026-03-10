@@ -17,26 +17,18 @@ interface PhysicalActivityData {
 
 interface PhysicalActivityQuestionnaireProps {
   data: PhysicalActivityData;
-  onChange: (data: PhysicalActivityData) => void;
+  onChange: (field: keyof PhysicalActivityData, value: unknown) => void;
 }
 
 export default function PhysicalActivityQuestionnaire({
   data,
   onChange,
 }: PhysicalActivityQuestionnaireProps) {
-  const updateData = (field: keyof PhysicalActivityData, value: unknown) => {
-    onChange({ ...data, [field]: value });
-  };
-
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-brand-navy">
-        Fysisk aktivitet
-      </h2>
-
+    <div className="bg-white p-6">
       <QuestionRadio
         question="Hvor ofte trener pasienten?"
-        name="frequency"
+        name="physical-activity-frequency"
         options={[
           {
             value: "nesten-aldri",
@@ -47,26 +39,24 @@ export default function PhysicalActivityQuestionnaire({
           { value: "nesten-hver-dag", label: "Nesten hver dag" },
         ]}
         value={data.frequency}
-        onChange={(value) => updateData("frequency", value)}
-        required
+        onChange={(value) => onChange("frequency", value)}
       />
 
       <QuestionRadio
         question="Hvor lenge trener pasienten hver gang?"
-        name="duration"
+        name="physical-activity-duration"
         options={[
           { value: "15min", label: "Rundt 15 minutter" },
           { value: "30min", label: "Rundt 30 minutter" },
           { value: "30min-plus", label: "30 minutter eller mer" },
         ]}
         value={data.duration}
-        onChange={(value) => updateData("duration", value)}
-        required
+        onChange={(value) => onChange("duration", value)}
       />
 
       <QuestionRadio
         question="Hvor hardt trener pasienten?"
-        name="intensity"
+        name="physical-activity-intensity"
         options={[
           {
             value: "rolig",
@@ -77,22 +67,20 @@ export default function PhysicalActivityQuestionnaire({
           { value: "hardt", label: "Pasienten tar det helt ut" },
         ]}
         value={data.intensity}
-        onChange={(value) => updateData("intensity", value)}
-        required
+        onChange={(value) => onChange("intensity", value)}
       />
 
       <ConditionalQuestion
         question="Har pasienten noen fysiske begrensninger som påvirker pasientens muligheter til trening?"
-        name="physical-limitations"
+        name="physical-activity-limitations"
         value={data.physicalLimitations}
-        onChange={(value) => updateData("physicalLimitations", value)}
-        required
+        onChange={(value) => onChange("physicalLimitations", value)}
       >
         <QuestionTextArea
           question="Skriv om begrensninger"
           name="physical-limitations-details"
           value={data.physicalLimitationsDetails}
-          onChange={(value) => updateData("physicalLimitationsDetails", value)}
+          onChange={(value) => onChange("physicalLimitationsDetails", value)}
           placeholder="Beskriv dine fysiske begrensninger..."
           rows={3}
         />
@@ -100,28 +88,32 @@ export default function PhysicalActivityQuestionnaire({
 
       <ConditionalQuestion
         question="Har pasienten noen andre barrierer (angst, smerter, sosiale utfordringer) som påvirker trening?"
-        name="other-barriers"
+        name="physical-activity-barriers"
         value={data.otherBarriers}
-        onChange={(value) => updateData("otherBarriers", value)}
-        required
+        onChange={(value) => onChange("otherBarriers", value)}
       >
         <QuestionTextArea
           question="Skriv litt om dette"
           name="other-barriers-details"
           value={data.otherBarriersDetails}
-          onChange={(value) => updateData("otherBarriersDetails", value)}
+          onChange={(value) => onChange("otherBarriersDetails", value)}
           placeholder="Beskriv barrierer..."
           rows={3}
         />
       </ConditionalQuestion>
 
-      <ConditionalQuestion
-        question="Er pasienten motivert til å bli mer fysisk aktiv i sin hverdag dersom pasienten får hjelp til dette?"
-        name="motivated"
-        value={data.motivated}
-        onChange={(value) => updateData("motivated", value)}
-        required
-      />
+      <div className="mt-8 pt-6 border-t border-gray-200">
+        <QuestionRadio
+          question="Er pasienten motivert til å bli mer fysisk aktiv i sin hverdag dersom pasienten får hjelp til dette?"
+          name="physical-activity-motivated"
+          options={[
+            { value: "ja", label: "Ja" },
+            { value: "nei", label: "Nei" },
+          ]}
+          value={data.motivated}
+          onChange={(value) => onChange("motivated", value)}
+        />
+      </div>
     </div>
   );
 }

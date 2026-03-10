@@ -35,9 +35,7 @@ export default function WeightQuestionnaire({
   const bmi = calculateBMI();
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-brand-navy">Overvekt</h2>
-
+    <div className="bg-white p-6">
       <QuestionNumber
         question="Hvor høy er pasienten?"
         name="height"
@@ -45,7 +43,6 @@ export default function WeightQuestionnaire({
         onChange={(value) => updateData("height", value)}
         placeholder="170"
         unit="cm"
-        required
       />
 
       <QuestionNumber
@@ -55,7 +52,6 @@ export default function WeightQuestionnaire({
         onChange={(value) => updateData("weight", value)}
         placeholder="70"
         unit="kg"
-        required
       />
 
       {bmi && (

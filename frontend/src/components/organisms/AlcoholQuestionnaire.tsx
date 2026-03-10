@@ -29,14 +29,10 @@ export default function AlcoholQuestionnaire({
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-brand-navy">
-        Alkoholbruk (AUDIT)
-      </h2>
-
+    <div className="bg-white p-6">
       <QuestionRadio
         question="1. Hvor ofte drikker pasienten alkohol?"
-        name="frequency"
+        name="alcohol-frequency"
         options={[
           { value: "0", label: "Aldri" },
           { value: "1", label: "Månedlig eller sjeldnere" },
@@ -46,7 +42,6 @@ export default function AlcoholQuestionnaire({
         ]}
         value={data.frequency}
         onChange={(value) => updateData("frequency", value)}
-        required
       />
 
       <QuestionRadio
@@ -61,7 +56,6 @@ export default function AlcoholQuestionnaire({
         ]}
         value={data.unitsPerDay}
         onChange={(value) => updateData("unitsPerDay", value)}
-        required
       />
 
       <QuestionRadio
@@ -76,7 +70,6 @@ export default function AlcoholQuestionnaire({
         ]}
         value={data.bingeDrinking}
         onChange={(value) => updateData("bingeDrinking", value)}
-        required
       />
 
       <QuestionRadio
@@ -91,7 +84,6 @@ export default function AlcoholQuestionnaire({
         ]}
         value={data.unableToStop}
         onChange={(value) => updateData("unableToStop", value)}
-        required
       />
 
       <QuestionRadio
@@ -106,7 +98,6 @@ export default function AlcoholQuestionnaire({
         ]}
         value={data.failedExpectations}
         onChange={(value) => updateData("failedExpectations", value)}
-        required
       />
 
       <QuestionRadio
@@ -121,7 +112,6 @@ export default function AlcoholQuestionnaire({
         ]}
         value={data.morningDrinking}
         onChange={(value) => updateData("morningDrinking", value)}
-        required
       />
 
       <QuestionRadio
@@ -136,7 +126,6 @@ export default function AlcoholQuestionnaire({
         ]}
         value={data.guilt}
         onChange={(value) => updateData("guilt", value)}
-        required
       />
 
       <QuestionRadio
@@ -151,7 +140,6 @@ export default function AlcoholQuestionnaire({
         ]}
         value={data.memoryLoss}
         onChange={(value) => updateData("memoryLoss", value)}
-        required
       />
 
       <QuestionRadio
@@ -164,7 +152,6 @@ export default function AlcoholQuestionnaire({
         ]}
         value={data.injuryDueToAlcohol}
         onChange={(value) => updateData("injuryDueToAlcohol", value)}
-        required
       />
 
       <QuestionRadio
@@ -177,7 +164,6 @@ export default function AlcoholQuestionnaire({
         ]}
         value={data.concernFromOthers}
         onChange={(value) => updateData("concernFromOthers", value)}
-        required
       />
     </div>
   );

@@ -120,8 +120,8 @@ export function SidebarNav({
     },
     {
       label: "Blodprøver",
-      href: "/blodproever",
-      active: activePath === "/blodproever",
+      href: "/dashboard/blodprover",
+      active: activePath === "/dashboard/blodprover",
       icon: (
         <svg
           fill="none"
@@ -139,8 +139,8 @@ export function SidebarNav({
     },
     {
       label: "Målinger",
-      href: "/maalinger",
-      active: activePath === "/maalinger",
+      href: "/dashboard/malinger",
+      active: activePath === "/dashboard/malinger",
       icon: (
         <svg
           fill="none"
@@ -158,8 +158,8 @@ export function SidebarNav({
     },
     {
       label: "Legemidler",
-      href: "/legemidler",
-      active: activePath === "/legemidler",
+      href: "/dashboard/legemidler",
+      active: activePath === "/dashboard/legemidler",
       icon: (
         <svg
           fill="none"
