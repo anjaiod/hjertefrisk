@@ -6,7 +6,7 @@ interface QuestionWizardProps {
   children: ReactNode;
   currentStep: number;
   totalSteps: number;
-  onNext: () => void;
+  onSkip: () => void;
   onPrevious: () => void;
   onSubmit: () => void;
 }
@@ -15,7 +15,7 @@ export default function QuestionWizard({
   children,
   currentStep,
   totalSteps,
-  onNext,
+  onSkip,
   onPrevious,
   onSubmit,
 }: QuestionWizardProps) {
@@ -67,10 +67,10 @@ export default function QuestionWizard({
           ) : (
             <button
               type="button"
-              onClick={onNext}
-              className="px-6 py-2 bg-brand-navy text-white rounded-md hover:opacity-90"
+              onClick={onSkip}
+              className="px-6 py-2 border border-brand-navy text-brand-navy rounded-md hover:bg-brand-mist"
             >
-              Neste
+              Hopp over
             </button>
           )}
         </div>

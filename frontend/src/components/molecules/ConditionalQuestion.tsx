@@ -7,7 +7,9 @@ interface ConditionalQuestionProps {
   name: string;
   value: "ja" | "nei" | "";
   onChange: (value: "ja" | "nei") => void;
+  onAnswer?: () => void;
   children?: ReactNode;
+  hasFollowUpQuestions?: boolean; // Hvis true, auto-advance kun på "nei"
   required?: boolean;
 }
 
@@ -16,9 +18,23 @@ export default function ConditionalQuestion({
   name,
   value,
   onChange,
+  onAnswer,
   children,
+  hasFollowUpQuestions = false,
   required = false,
 }: ConditionalQuestionProps) {
+  const handleChange = (newValue: "ja" | "nei") => {
+    onChange(newValue);
+    // Only auto-advance if:
+    // - Answer is "nei", OR
+    // - Answer is "ja" but there are no children to show AND no follow-up questions
+    const shouldAutoAdvance =
+      newValue === "nei" || (!children && !hasFollowUpQuestions);
+    if (onAnswer && shouldAutoAdvance) {
+      setTimeout(() => onAnswer(), 500);
+    }
+  };
+
   return (
     <div className="mb-6">
       <QuestionLabel text={question} required={required} />
@@ -29,7 +45,7 @@ export default function ConditionalQuestion({
           value="ja"
           label="Ja"
           checked={value === "ja"}
-          onChange={(val) => onChange(val as "ja" | "nei")}
+          onChange={(val) => handleChange(val as "ja" | "nei")}
         />
         <RadioButton
           id={`${name}-nei`}
@@ -37,7 +53,7 @@ export default function ConditionalQuestion({
           value="nei"
           label="Nei"
           checked={value === "nei"}
-          onChange={(val) => onChange(val as "ja" | "nei")}
+          onChange={(val) => handleChange(val as "ja" | "nei")}
         />
       </div>
       {value === "ja" && children && (

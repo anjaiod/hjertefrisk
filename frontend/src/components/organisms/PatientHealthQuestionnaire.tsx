@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import QuestionWizard from "../molecules/QuestionWizard";
 import QuestionRadio from "../molecules/QuestionRadio";
 import QuestionNumber from "../molecules/QuestionNumber";
@@ -9,7 +9,7 @@ import ConditionalQuestion from "../molecules/ConditionalQuestion";
 
 interface PatientHealthData {
   // Røyking
-  smoker: string;
+  smoker: "ja" | "nei" | "";
   smokingAmount: string;
   smokingMotivated: "ja" | "nei" | "";
 
@@ -120,21 +120,41 @@ export default function PatientHealthQuestionnaire() {
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleNext = () => {
+    setCurrentStep((prev) => {
+      // questions array will be rebuilt after this, so we check dynamically
+      // This ensures we don't skip when new questions are added
+      return prev + 1;
+    });
+  };
+
+  const handleSkip = () => {
+    setCurrentStep((prev) => prev + 1);
+  };
+
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleSubmit = () => {
+    console.log("Patient health data:", data);
+    // Handle form submission
+    alert("Skjema sendt inn!");
+  };
+
   const questions = [
     // Røyking
-    <QuestionRadio
+    <ConditionalQuestion
       key="smoker"
       question="Røyker du fast?"
       name="patient-smoker"
-      options={[
-        { value: "ja", label: "Ja" },
-        { value: "nei", label: "Nei" },
-      ]}
       value={data.smoker}
       onChange={(value) => updateData("smoker", value)}
+      onAnswer={handleNext}
     />,
 
-    // Conditional: hvis røyker
     ...(data.smoker === "ja"
       ? [
           <QuestionTextArea
@@ -143,6 +163,7 @@ export default function PatientHealthQuestionnaire() {
             name="patient-smoking-amount"
             value={data.smokingAmount}
             onChange={(value) => updateData("smokingAmount", value)}
+            onAnswer={handleNext}
             placeholder="F.eks. 10 sigaretter per dag"
             rows={2}
           />,
@@ -152,6 +173,7 @@ export default function PatientHealthQuestionnaire() {
             name="patient-smoking-motivated"
             value={data.smokingMotivated}
             onChange={(value) => updateData("smokingMotivated", value)}
+            onAnswer={handleNext}
           />,
         ]
       : []),
@@ -172,6 +194,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.exerciseFrequency}
       onChange={(value) => updateData("exerciseFrequency", value)}
+      onAnswer={handleNext}
     />,
 
     <QuestionRadio
@@ -185,6 +208,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.exerciseDuration}
       onChange={(value) => updateData("exerciseDuration", value)}
+      onAnswer={handleNext}
     />,
 
     <QuestionRadio
@@ -201,6 +225,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.exerciseIntensity}
       onChange={(value) => updateData("exerciseIntensity", value)}
+      onAnswer={handleNext}
     />,
 
     <ConditionalQuestion
@@ -209,12 +234,14 @@ export default function PatientHealthQuestionnaire() {
       name="patient-physical-limitations"
       value={data.physicalLimitations}
       onChange={(value) => updateData("physicalLimitations", value)}
+      onAnswer={handleNext}
     >
       <QuestionTextArea
         question="Skriv om begrensninger"
         name="patient-physical-limitations-details"
         value={data.physicalLimitationsDetails}
         onChange={(value) => updateData("physicalLimitationsDetails", value)}
+        onAnswer={handleNext}
         placeholder="Beskriv dine fysiske begrensninger..."
         rows={3}
       />
@@ -226,12 +253,14 @@ export default function PatientHealthQuestionnaire() {
       name="patient-exercise-barriers"
       value={data.exerciseBarriers}
       onChange={(value) => updateData("exerciseBarriers", value)}
+      onAnswer={handleNext}
     >
       <QuestionTextArea
         question="Skriv litt om dette"
         name="patient-exercise-barriers-details"
         value={data.exerciseBarriersDetails}
         onChange={(value) => updateData("exerciseBarriersDetails", value)}
+        onAnswer={handleNext}
         placeholder="Beskriv barrierer..."
         rows={3}
       />
@@ -247,6 +276,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.exerciseMotivated}
       onChange={(value) => updateData("exerciseMotivated", value)}
+      onAnswer={handleNext}
     />,
 
     // Kosthold
@@ -262,6 +292,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.mealsPerDay}
       onChange={(value) => updateData("mealsPerDay", value)}
+      onAnswer={handleNext}
     />,
 
     <QuestionRadio
@@ -276,6 +307,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.skipMeals}
       onChange={(value) => updateData("skipMeals", value)}
+      onAnswer={handleNext}
     />,
 
     <QuestionRadio
@@ -290,6 +322,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.appetite}
       onChange={(value) => updateData("appetite", value)}
+      onAnswer={handleNext}
     />,
 
     <ConditionalQuestion
@@ -298,6 +331,7 @@ export default function PatientHealthQuestionnaire() {
       name="patient-diet-motivated"
       value={data.dietMotivated}
       onChange={(value) => updateData("dietMotivated", value)}
+      onAnswer={handleNext}
     />,
 
     <QuestionRadio
@@ -311,6 +345,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.weightStable}
       onChange={(value) => updateData("weightStable", value)}
+      onAnswer={handleNext}
     />,
 
     ...(data.weightStable.startsWith("nei")
@@ -321,6 +356,7 @@ export default function PatientHealthQuestionnaire() {
             name="patient-weight-change"
             value={data.weightChange}
             onChange={(value) => updateData("weightChange", value)}
+            onAnswer={handleNext}
             placeholder="F.eks. økt 5 kg siste 6 måneder"
             rows={2}
           />,
@@ -334,6 +370,7 @@ export default function PatientHealthQuestionnaire() {
       name="patient-height"
       value={data.height}
       onChange={(value) => updateData("height", value)}
+      onAnswer={handleNext}
       placeholder="170"
       unit="cm"
     />,
@@ -344,6 +381,7 @@ export default function PatientHealthQuestionnaire() {
       name="patient-weight"
       value={data.weight}
       onChange={(value) => updateData("weight", value)}
+      onAnswer={handleNext}
       placeholder="70"
       unit="kg"
     />,
@@ -354,6 +392,7 @@ export default function PatientHealthQuestionnaire() {
       name="patient-waist"
       value={data.waistCircumference}
       onChange={(value) => updateData("waistCircumference", value)}
+      onAnswer={handleNext}
       placeholder="80"
       unit="cm"
     />,
@@ -365,6 +404,7 @@ export default function PatientHealthQuestionnaire() {
       name="patient-difficulty-falling-asleep"
       value={data.difficultyFallingAsleep}
       onChange={(value) => updateData("difficultyFallingAsleep", value)}
+      onAnswer={handleNext}
     />,
 
     <ConditionalQuestion
@@ -373,6 +413,7 @@ export default function PatientHealthQuestionnaire() {
       name="patient-wakes-during-night"
       value={data.wakesDuringNight}
       onChange={(value) => updateData("wakesDuringNight", value)}
+      onAnswer={handleNext}
     />,
 
     <ConditionalQuestion
@@ -381,6 +422,7 @@ export default function PatientHealthQuestionnaire() {
       name="patient-wakes-too-early"
       value={data.wakesTooEarly}
       onChange={(value) => updateData("wakesTooEarly", value)}
+      onAnswer={handleNext}
     />,
 
     <ConditionalQuestion
@@ -389,6 +431,7 @@ export default function PatientHealthQuestionnaire() {
       name="patient-poor-sleep-quality"
       value={data.poorSleepQuality}
       onChange={(value) => updateData("poorSleepQuality", value)}
+      onAnswer={handleNext}
     />,
 
     <ConditionalQuestion
@@ -397,12 +440,14 @@ export default function PatientHealthQuestionnaire() {
       name="patient-sleep-day-awake-night"
       value={data.sleepDayAwakeNight}
       onChange={(value) => updateData("sleepDayAwakeNight", value)}
+      onAnswer={handleNext}
     >
       <ConditionalQuestion
         question="Jobber du nattskift?"
         name="patient-night-shift"
         value={data.nightShiftWork}
         onChange={(value) => updateData("nightShiftWork", value)}
+        onAnswer={handleNext}
       />
     </ConditionalQuestion>,
 
@@ -419,6 +464,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.sleepProblemFrequency}
       onChange={(value) => updateData("sleepProblemFrequency", value)}
+      onAnswer={handleNext}
     />,
 
     <ConditionalQuestion
@@ -427,6 +473,7 @@ export default function PatientHealthQuestionnaire() {
       name="patient-sleep-medication"
       value={data.sleepMedication}
       onChange={(value) => updateData("sleepMedication", value)}
+      onAnswer={handleNext}
     />,
 
     <ConditionalQuestion
@@ -435,6 +482,7 @@ export default function PatientHealthQuestionnaire() {
       name="patient-sleep-guidance"
       value={data.sleepGuidance}
       onChange={(value) => updateData("sleepGuidance", value)}
+      onAnswer={handleNext}
     />,
 
     // Alkohol (AUDIT)
@@ -451,6 +499,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.alcoholFrequency}
       onChange={(value) => updateData("alcoholFrequency", value)}
+      onAnswer={handleNext}
     />,
 
     <QuestionRadio
@@ -466,6 +515,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.alcoholUnitsPerDay}
       onChange={(value) => updateData("alcoholUnitsPerDay", value)}
+      onAnswer={handleNext}
     />,
 
     <QuestionRadio
@@ -481,6 +531,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.alcoholBingeDrinking}
       onChange={(value) => updateData("alcoholBingeDrinking", value)}
+      onAnswer={handleNext}
     />,
 
     <QuestionRadio
@@ -496,6 +547,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.alcoholUnableToStop}
       onChange={(value) => updateData("alcoholUnableToStop", value)}
+      onAnswer={handleNext}
     />,
 
     <QuestionRadio
@@ -511,6 +563,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.alcoholFailedExpectations}
       onChange={(value) => updateData("alcoholFailedExpectations", value)}
+      onAnswer={handleNext}
     />,
 
     <QuestionRadio
@@ -526,6 +579,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.alcoholMorningDrinking}
       onChange={(value) => updateData("alcoholMorningDrinking", value)}
+      onAnswer={handleNext}
     />,
 
     <QuestionRadio
@@ -541,6 +595,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.alcoholGuilt}
       onChange={(value) => updateData("alcoholGuilt", value)}
+      onAnswer={handleNext}
     />,
 
     <QuestionRadio
@@ -556,6 +611,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.alcoholMemoryLoss}
       onChange={(value) => updateData("alcoholMemoryLoss", value)}
+      onAnswer={handleNext}
     />,
 
     <QuestionRadio
@@ -569,6 +625,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.alcoholInjury}
       onChange={(value) => updateData("alcoholInjury", value)}
+      onAnswer={handleNext}
     />,
 
     <QuestionRadio
@@ -582,6 +639,7 @@ export default function PatientHealthQuestionnaire() {
       ]}
       value={data.alcoholConcern}
       onChange={(value) => updateData("alcoholConcern", value)}
+      onAnswer={handleNext}
     />,
 
     // Rusmidler
@@ -591,6 +649,7 @@ export default function PatientHealthQuestionnaire() {
       name="patient-uses-substances"
       value={data.usesSubstances}
       onChange={(value) => updateData("usesSubstances", value)}
+      onAnswer={handleNext}
     />,
 
     ...(data.usesSubstances === "ja"
@@ -601,6 +660,7 @@ export default function PatientHealthQuestionnaire() {
             name="patient-used-opioids-ghb"
             value={data.usedOpioidsGHB}
             onChange={(value) => updateData("usedOpioidsGHB", value)}
+            onAnswer={handleNext}
           />,
 
           <ConditionalQuestion
@@ -609,6 +669,7 @@ export default function PatientHealthQuestionnaire() {
             name="patient-used-opioids-recently"
             value={data.usedOpioidsGHBRecently}
             onChange={(value) => updateData("usedOpioidsGHBRecently", value)}
+            onAnswer={handleNext}
           />,
 
           <ConditionalQuestion
@@ -617,6 +678,7 @@ export default function PatientHealthQuestionnaire() {
             name="patient-uses-injection"
             value={data.usesInjection}
             onChange={(value) => updateData("usesInjection", value)}
+            onAnswer={handleNext}
           />,
 
           <ConditionalQuestion
@@ -625,28 +687,20 @@ export default function PatientHealthQuestionnaire() {
             name="patient-substance-motivated"
             value={data.substanceMotivated}
             onChange={(value) => updateData("substanceMotivated", value)}
+            onAnswer={handleNext}
           />,
         ]
       : []),
   ];
 
-  const handleNext = () => {
-    if (currentStep < questions.length - 1) {
-      setCurrentStep(currentStep + 1);
+  // Ensure currentStep stays within bounds when questions array changes
+  // This is necessary when user goes back and changes an answer that removes follow-up questions
+  useEffect(() => {
+    if (currentStep >= questions.length && questions.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrentStep(questions.length - 1);
     }
-  };
-
-  const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const handleSubmit = () => {
-    console.log("Patient health data:", data);
-    // Handle form submission
-    alert("Skjema sendt inn!");
-  };
+  }, [questions.length, currentStep]);
 
   return (
     <div className="flex">
@@ -659,7 +713,7 @@ export default function PatientHealthQuestionnaire() {
           <QuestionWizard
             currentStep={currentStep}
             totalSteps={questions.length}
-            onNext={handleNext}
+            onSkip={handleSkip}
             onPrevious={handlePrevious}
             onSubmit={handleSubmit}
           >

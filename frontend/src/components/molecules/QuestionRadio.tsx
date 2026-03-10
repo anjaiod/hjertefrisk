@@ -12,6 +12,9 @@ interface QuestionRadioProps {
   options: Option[];
   value: string;
   onChange: (value: string) => void;
+  onAnswer?: () => void;
+  hasFollowUpQuestions?: boolean; // Hvis true, auto-advance kun hvis ikke trigger follow-ups
+  followUpTriggerValues?: string[]; // Verdier som trigger follow-up spørsmål
   required?: boolean;
 }
 
@@ -21,8 +24,21 @@ export default function QuestionRadio({
   options,
   value,
   onChange,
+  onAnswer,
+  hasFollowUpQuestions = false,
+  followUpTriggerValues = [],
   required = false,
 }: QuestionRadioProps) {
+  const handleChange = (newValue: string) => {
+    onChange(newValue);
+    // Don't auto-advance if this value triggers follow-up questions
+    const triggersFollowUp =
+      hasFollowUpQuestions && followUpTriggerValues.includes(newValue);
+    if (onAnswer && !triggersFollowUp) {
+      setTimeout(() => onAnswer(), 300);
+    }
+  };
+
   return (
     <div className="mb-6">
       <QuestionLabel text={question} required={required} />
@@ -35,7 +51,7 @@ export default function QuestionRadio({
             value={option.value}
             label={option.label}
             checked={value === option.value}
-            onChange={onChange}
+            onChange={handleChange}
           />
         ))}
       </div>
