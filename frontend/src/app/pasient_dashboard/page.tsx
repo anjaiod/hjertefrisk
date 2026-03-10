@@ -1,0 +1,61 @@
+import { PatientProfile } from "../../components/molecules/PatientProfile";
+import { SidebarNav } from "../../components/organisms/SidebarNav";
+// import { CalendarCard } from "../../components/molecules/CalendarCard";
+//import { ActivityList } from "../../components/molecules/ActivityList";
+//import { QuestionnaireList } from "../../components/molecules/QuestionnaireList";
+import { FeatureCard } from "../../components/atoms/FeatureCard";
+
+
+export default function PatientDashboardPage() {
+    // aktiviteter
+    const activities = [
+        {
+
+        },
+    ];
+
+  return (
+    <div className="flex">
+      <SidebarNav activePath="/pasient_dashboard" />
+
+      <main className="flex-1 bg-slate-50 p-8">
+        <div className="max-w-7xl mx-auto flex flex-col gap-8">
+
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8">
+            <PatientProfile />
+          </div>
+
+          {/* Skal lage kalender boks og aktivitet liste 
+          <div className="grid grid-cols-2 gap-6">
+            <CalendarCard />
+            <ActivityList activities={activities} />
+          </div>*/}
+
+          <div className="grid grid-cols-2 gap-6">
+
+            {/* Skal lage liste over spørreskjema 
+            <QuestionnaireList />*/}
+
+            <div className="flex flex-col gap-6">
+              <FeatureCard
+                icon="❗️"
+                title="Din risikoside"
+                description="Trykk her for å gå til din risikoside"
+                iconBgColor="bg-green-100"
+              />
+
+              <FeatureCard
+                icon="💪"
+                title="Tiltak"
+                description="Trykk her for å gå til tiltak"
+                iconBgColor="bg-teal-100"
+              />
+            </div>
+
+          </div>
+
+        </div>
+      </main>
+    </div>
+  );
+}
