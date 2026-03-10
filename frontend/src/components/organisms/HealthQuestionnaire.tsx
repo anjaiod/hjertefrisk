@@ -270,7 +270,7 @@ export default function HealthQuestionnaire() {
             />
           </CollapsibleSection>
 
-          <CollapsibleSection title="Alkoholbruk (AUDIT)">
+          <CollapsibleSection title="Alkoholbruk">
             <AlcoholQuestionnaire
               data={data.alcohol}
               onChange={handleAlcoholChange}
