@@ -7,7 +7,7 @@ public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) {}
 
-    public DbSet<Language> Languages => Set<Language>();
+    public DbSet<Language> Language => Set<Language>();
     public DbSet<Patient> Patients => Set<Patient>();
     public DbSet<Personnel> Personnel => Set<Personnel>();
     public DbSet<Query> Queries => Set<Query>();

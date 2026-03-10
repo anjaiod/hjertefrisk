@@ -1,4 +1,7 @@
 using backend.src.Infrastructure.Data;
+using backend.src.Application.Languages.Interfaces;
+using backend.src.Application.Languages.Services;
+using backend.src.Infrastructure.Languages;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,6 +14,10 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+
+// Application services / repositories
+builder.Services.AddScoped<ILanguageRepository, LanguageRepository>();
+builder.Services.AddScoped<ILanguageService, LanguageService>();
 
 // Optional but recommended for API documentation
 builder.Services.AddEndpointsApiExplorer();
