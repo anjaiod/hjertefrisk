@@ -1,6 +1,12 @@
 "use client";
 
 import { ReactNode } from "react";
+import CategorizedProgressBar from "./CategorizedProgressBar";
+
+interface Category {
+  name: string;
+  count: number;
+}
 
 interface QuestionWizardProps {
   children: ReactNode;
@@ -9,6 +15,8 @@ interface QuestionWizardProps {
   onSkip: () => void;
   onPrevious: () => void;
   onSubmit: () => void;
+  categories?: Category[];
+  questionCategories?: number[];
 }
 
 export default function QuestionWizard({
@@ -18,30 +26,14 @@ export default function QuestionWizard({
   onSkip,
   onPrevious,
   onSubmit,
+  categories,
+  questionCategories,
 }: QuestionWizardProps) {
   const isLastStep = currentStep === totalSteps - 1;
   const isFirstStep = currentStep === 0;
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Progress Bar */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-600">
-            Spørsmål {currentStep + 1} av {totalSteps}
-          </span>
-          <span className="text-sm text-gray-500">
-            {Math.round(((currentStep + 1) / totalSteps) * 100)}%
-          </span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-brand-navy h-2 rounded-full transition-all duration-300"
-            style={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }}
-          />
-        </div>
-      </div>
-
       {/* Question Content */}
       <div className="bg-white p-8 rounded-lg shadow-md min-h-[400px] flex flex-col">
         <div className="flex-1">{children}</div>
@@ -75,6 +67,17 @@ export default function QuestionWizard({
           )}
         </div>
       </div>
+
+      {/* Categorized Progress Bar - Bottom */}
+      {categories && questionCategories && (
+        <div className="mt-6">
+          <CategorizedProgressBar
+            categories={categories}
+            currentStep={currentStep}
+            questionCategories={questionCategories}
+          />
+        </div>
+      )}
     </div>
   );
 }
