@@ -1,5 +1,7 @@
 "use client";
 
+import { SearchBar } from "../atoms/SearchBar";
+
 export function PatientHeader() {
   return (
     <div className="flex items-center justify-between h-16 px-6 bg-white border-b border-slate-200">
@@ -7,11 +9,7 @@ export function PatientHeader() {
       {/* space for more functionality or logo if wanted: */}
       <div></div>
       <div className="flex items-center gap-5">
-        <input
-          type="text"
-          placeholder="Søk..."
-          className="w-64 border border-slate-300 rounded-lg px-4 py-1.5 text-sm"
-        />
+        <SearchBar className="w-64" />
 
         <button
           onClick={() => (window.location.href = "../../pasient_dashboard")}
