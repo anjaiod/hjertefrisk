@@ -1,21 +1,21 @@
 type NavItem = {
   label: string;
-  href: string;
+  href?: string;
+  //onClick?: () => void;
   active?: boolean;
   icon: React.ReactNode;
 };
 
 function Item({ item }: { item: NavItem }) {
+  const classes = [
+    "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold transition-all",
+    item.active
+      ? "bg-brand-sky/20 text-brand-navy"
+      : "text-slate-700 hover:bg-brand-mist/40 hover:text-brand-navy hover:shadow-sm",
+  ].join(" ");
+
   return (
-    <a
-      href={item.href}
-      className={[
-        "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold transition-all",
-        item.active
-          ? "bg-brand-sky/20 text-brand-navy"
-          : "text-slate-700 hover:bg-brand-mist/40 hover:text-brand-navy hover:shadow-sm",
-      ].join(" ")}
-    >
+    <a href={item.href} className={classes}>
       <span className="w-5 h-5">{item.icon}</span>
       <span>{item.label}</span>
     </a>
@@ -33,8 +33,7 @@ export function PatientSidebarNav({
     {
       // should become a pop-up?
       label: "Varslinger",
-      href: "/pasient_dashboard/patientNotifications",
-      active: activePath === "/pasient_dashboard/patientNotifications",
+      //onClick: () => setNotificationsOpen(true),
       icon: (
         <svg
           fill="none"
@@ -52,8 +51,7 @@ export function PatientSidebarNav({
     },
     {
       label: "Innboks",
-      href: "/pasient_dashboard/patientInbox",
-      active: activePath === "/pasient_dashboard/patientInbox",
+      //onClick: () => setInboxOpen(true),
       icon: (
         <svg
           fill="none"
@@ -90,8 +88,8 @@ export function PatientSidebarNav({
     },
     {
       label: "Vitalia",
-      href: "/pasient_dashboard/patientVitalia",
-      active: activePath === "/pasient_dashboard/patientVitalia",
+      href: "/pasient_dashboard/patientVitals",
+      active: activePath === "/pasient_dashboard/patientVitals",
       icon: (
         <svg
           fill="none"
@@ -141,7 +139,7 @@ export function PatientSidebarNav({
   return (
     <aside className="sticky top-0 hidden h-screen w-56 flex-col border-r border-brand-sky/30 bg-gradient-to-b from-white to-brand-mist/10 p-6 md:flex">
       <div className="px-4">
-        <p className="text-sm text-slate-600">{"Innlogget som"}</p>
+        <p className="text-sm text-slate-600">Innlogget som</p>
         <p className="text-2xl font-bold text-brand-navy">{patientName}</p>
       </div>
 
@@ -149,7 +147,7 @@ export function PatientSidebarNav({
 
       <nav className="flex flex-col space-y-2">
         {items.map((item) => (
-          <Item key={item.href} item={item} />
+          <Item key={item.label} item={item} />
         ))}
       </nav>
     </aside>
