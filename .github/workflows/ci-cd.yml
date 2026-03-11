@@ -60,11 +60,11 @@ jobs:
           ConnectionStrings__Default: Host=localhost;Port=5432;Database=hjertefriskdb;Username=hjertefriskuser;Password=hjertepass3421
         run: |
           set -euo pipefail
-          dotnet run --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build &
+          dotnet run --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build -- --urls http://0.0.0.0:8080 &
           APP_PID=$!
           ready=0
           for i in $(seq 1 30); do
-            if curl -sS http://localhost:8080/ >/dev/null 2>&1; then
+            if curl -sS http://localhost:8080/health/db >/dev/null 2>&1; then
               ready=1
               break
             fi
