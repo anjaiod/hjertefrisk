@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-:root {
+@theme {
   /* Navy */
   --color-brand-navy: #002f86;
   --color-brand-navy-light: #4d6ead;
