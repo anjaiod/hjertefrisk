@@ -219,9 +219,18 @@ public class AppDbContext : DbContext
 
         // Severity
         modelBuilder.Entity<Severity>()
+            .HasCheckConstraint("CK_Severity_QuestionOrMeasurement", "(\"QuestionId\" IS NOT NULL AND \"MeasurementId\" IS NULL) OR (\"QuestionId\" IS NULL AND \"MeasurementId\" IS NOT NULL)");
+
+        modelBuilder.Entity<Severity>()
             .HasOne(x => x.Question)
             .WithMany(q => q.Severities)
             .HasForeignKey(x => x.QuestionId);
+
+        modelBuilder.Entity<Severity>()
+            .HasOne(x => x.Measurement)
+            .WithMany(m => m.Severities)
+            .HasForeignKey(x => x.MeasurementId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Severity>()
             .HasOne(x => x.RequiredOptionNavigation)

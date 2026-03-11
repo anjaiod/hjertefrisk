@@ -8,6 +8,7 @@ public class Measurement
 
     public ICollection<MeasurementText> Texts { get; set; } = new List<MeasurementText>();
     public ICollection<MeasurementResult> Results { get; set; } = new List<MeasurementResult>();
+    public ICollection<Severity> Severities { get; set; } = new List<Severity>();
 }
 
 public class MeasurementText
