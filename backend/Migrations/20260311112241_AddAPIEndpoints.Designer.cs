@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.src.Infrastructure.Data;
@@ -11,9 +12,11 @@ using backend.src.Infrastructure.Data;
 namespace api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260311112241_AddAPIEndpoints")]
+    partial class AddAPIEndpoints
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -431,42 +434,6 @@ namespace api.Migrations
                     b.ToTable("Responses");
                 });
 
-            modelBuilder.Entity("backend.src.Domain.Models.Severity", b =>
-                {
-                    b.Property<int>("SeverityId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("SeverityId"));
-
-                    b.Property<string>("Operator")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("QuestionId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("RequiredOption")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("RequiredText")
-                        .HasColumnType("text");
-
-                    b.Property<decimal?>("RequiredValue")
-                        .HasColumnType("numeric");
-
-                    b.Property<int>("Score")
-                        .HasColumnType("integer");
-
-                    b.HasKey("SeverityId");
-
-                    b.HasIndex("QuestionId");
-
-                    b.HasIndex("RequiredOption");
-
-                    b.ToTable("Severities");
-                });
-
             modelBuilder.Entity("backend.src.Domain.Models.ToDo", b =>
                 {
                     b.Property<int>("ToDoId")
@@ -738,24 +705,6 @@ namespace api.Migrations
                     b.Navigation("SelectedOption");
                 });
 
-            modelBuilder.Entity("backend.src.Domain.Models.Severity", b =>
-                {
-                    b.HasOne("backend.src.Domain.Models.Question", "Question")
-                        .WithMany("Severities")
-                        .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.src.Domain.Models.QuestionOption", "RequiredOptionNavigation")
-                        .WithMany()
-                        .HasForeignKey("RequiredOption")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Question");
-
-                    b.Navigation("RequiredOptionNavigation");
-                });
-
             modelBuilder.Entity("backend.src.Domain.Models.ToDo", b =>
                 {
                     b.HasOne("backend.src.Domain.Models.Patient", "Patient")
@@ -840,8 +789,6 @@ namespace api.Migrations
                     b.Navigation("QueryQuestions");
 
                     b.Navigation("Responses");
-
-                    b.Navigation("Severities");
 
                     b.Navigation("Texts");
                 });

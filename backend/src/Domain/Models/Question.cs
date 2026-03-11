@@ -17,5 +17,6 @@ public class Question
     public ICollection<QuestionDependency> ChildDependencies { get; set; } = new List<QuestionDependency>();
 
     public ICollection<Measure> Measures { get; set; } = new List<Measure>();
+    public ICollection<Severity> Severities { get; set; } = new List<Severity>();
     public ICollection<QueryQuestion> QueryQuestions { get; set; } = new List<QueryQuestion>();
 }

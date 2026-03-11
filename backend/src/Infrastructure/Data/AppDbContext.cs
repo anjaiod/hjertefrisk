@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<PatientAccess> PatientAccesses => Set<PatientAccess>();
     public DbSet<ToDo> ToDos => Set<ToDo>();
     public DbSet<Measure> Measures => Set<Measure>();
+    public DbSet<Severity> Severities => Set<Severity>();
     public DbSet<MeasureText> MeasureTexts => Set<MeasureText>();
     public DbSet<Measurement> Measurements => Set<Measurement>();
     public DbSet<MeasurementText> MeasurementTexts => Set<MeasurementText>();
@@ -211,6 +212,18 @@ public class AppDbContext : DbContext
             .HasForeignKey(x => x.QuestionId);
 
         modelBuilder.Entity<Measure>()
+            .HasOne(x => x.RequiredOptionNavigation)
+            .WithMany()
+            .HasForeignKey(x => x.RequiredOption)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Severity
+        modelBuilder.Entity<Severity>()
+            .HasOne(x => x.Question)
+            .WithMany(q => q.Severities)
+            .HasForeignKey(x => x.QuestionId);
+
+        modelBuilder.Entity<Severity>()
             .HasOne(x => x.RequiredOptionNavigation)
             .WithMany()
             .HasForeignKey(x => x.RequiredOption)
