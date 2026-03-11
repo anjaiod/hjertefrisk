@@ -1,5 +1,5 @@
 import { PatientProfile } from "../../components/molecules/PatientProfile";
-import { SidebarNav } from "../../components/organisms/SidebarNav";
+import { PatientSidebarNav } from "../../components/organisms/PatientSidebarNav";
 import { CalendarCard } from "../../components/molecules/CalendarCard";
 import { ActivityList } from "../../components/molecules/ActivityList";
 import { QuestionnaireList } from "../../components/molecules/QuestionnaireList";
@@ -19,7 +19,7 @@ export default function PatientDashboardPage() {
 
   return (
     <div className="flex">
-      <SidebarNav activePath="/pasient_dashboard" />
+      <PatientSidebarNav activePath="/pasient_dashboard" />
 
       <main className="flex-1 bg-slate-50 p-8">
         <div className="max-w-7xl mx-auto flex flex-col gap-8">
