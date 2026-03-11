@@ -5,6 +5,19 @@ using backend.src.Application.Languages.Services;
 using backend.src.Application.Queries.Interfaces;
 using backend.src.Application.Queries.Services;
 
+using backend.src.Application.Questions.Interfaces;
+using backend.src.Application.Questions.Services;
+using backend.src.Application.QuestionOptions.Interfaces;
+using backend.src.Application.QuestionOptions.Services;
+using backend.src.Application.Measures.Interfaces;
+using backend.src.Application.Measures.Services;
+using backend.src.Application.Severities.Interfaces;
+using backend.src.Application.Severities.Services;
+using backend.src.Application.Measurements.Interfaces;
+using backend.src.Application.Measurements.Services;
+using backend.src.Application.Patients.Interfaces;
+using backend.src.Application.Patients.Services;
+
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +35,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<ILanguageService, LanguageService>();
 
 builder.Services.AddScoped<IQueryService, QueryService>();
+
+builder.Services.AddScoped<IQuestionService, QuestionService>();
+builder.Services.AddScoped<IQuestionOptionService, QuestionOptionService>();
+builder.Services.AddScoped<IMeasureService, MeasureService>();
+builder.Services.AddScoped<ISeverityService, SeverityService>();
+builder.Services.AddScoped<IMeasurementService, MeasurementService>();
+builder.Services.AddScoped<IPatientService, PatientService>();
 
 // Optional but recommended for API documentation
 builder.Services.AddEndpointsApiExplorer();
