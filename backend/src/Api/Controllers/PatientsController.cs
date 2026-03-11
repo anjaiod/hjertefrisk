@@ -28,4 +28,11 @@ public class PatientsController : ControllerBase
         var created = await _service.CreateAsync(dto);
         return Created(string.Empty, created);
     }
+
+    [HttpGet("{id:int}/score")]
+    public async Task<IActionResult> GetTotalScore(int id)
+    {
+        var totalScore = await _service.GetTotalScoreAsync(id);
+        return Ok(new { patientId = id, totalScore });
+    }
 }

@@ -48,4 +48,130 @@ public class PatientService : IPatientService
             CreatedAt = entity.CreatedAt
         };
     }
+
+    public async Task<int> GetTotalScoreAsync(int patientId)
+    {
+        var responses = await _db.Responses
+            .AsNoTracking()
+            .Where(r => r.PatientId == patientId)
+            .ToListAsync();
+
+        var questionIds = responses.Select(r => r.QuestionId).Distinct().ToList();
+        var questionSeverities = await _db.Severities
+            .AsNoTracking()
+            .Where(s => s.QuestionId != null && questionIds.Contains(s.QuestionId.Value))
+            .ToListAsync();
+
+        var latestMeasurementResults = await _db.MeasurementResults
+            .AsNoTracking()
+            .Where(r => r.PatientId == patientId)
+            .GroupBy(r => r.MeasurementId)
+            .Select(g => g.OrderByDescending(x => x.RegisteredAt).First())
+            .ToListAsync();
+
+        var measurementIds = latestMeasurementResults.Select(r => r.MeasurementId).Distinct().ToList();
+        var measurementSeverities = await _db.Severities
+            .AsNoTracking()
+            .Where(s => s.MeasurementId != null && measurementIds.Contains(s.MeasurementId.Value))
+            .ToListAsync();
+
+        var totalScore = 0;
+
+        foreach (var severity in questionSeverities)
+        {
+            var response = responses.FirstOrDefault(r => r.QuestionId == severity.QuestionId);
+            if (response == null) continue;
+
+            if (IsSeverityMatch(severity, response.SelectedOptionId, response.TextValue, response.NumberValue))
+            {
+                totalScore += severity.Score;
+            }
+        }
+
+        foreach (var severity in measurementSeverities)
+        {
+            var measurementResult = latestMeasurementResults
+                .FirstOrDefault(r => r.MeasurementId == severity.MeasurementId);
+            if (measurementResult == null) continue;
+
+            if (IsSeverityMatch(severity, null, null, measurementResult.Result))
+            {
+                totalScore += severity.Score;
+            }
+        }
+
+        return totalScore;
+    }
+
+    private static bool IsSeverityMatch(Severity severity, int? optionId, string? textValue, decimal? numberValue)
+    {
+        var hasAnyCondition = severity.RequiredOption != null
+            || !string.IsNullOrWhiteSpace(severity.RequiredText)
+            || severity.RequiredValue != null;
+
+        if (!hasAnyCondition)
+        {
+            return false;
+        }
+
+        if (severity.RequiredOption != null && optionId != null)
+        {
+            if (optionId.Value == severity.RequiredOption.Value)
+            {
+                return true;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(severity.RequiredText) && !string.IsNullOrWhiteSpace(textValue))
+        {
+            var requiredText = severity.RequiredText.Trim();
+            var candidateText = textValue.Trim();
+
+            if (severity.Operator.Equals("contains", StringComparison.OrdinalIgnoreCase))
+            {
+                if (candidateText.Contains(requiredText, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            else if (severity.Operator == "==")
+            {
+                if (string.Equals(candidateText, requiredText, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            else if (severity.Operator == "!=")
+            {
+                if (!string.Equals(candidateText, requiredText, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+        }
+
+        if (severity.RequiredValue != null && numberValue != null)
+        {
+            var left = numberValue.Value;
+            var right = severity.RequiredValue.Value;
+
+            switch (severity.Operator)
+            {
+                case "==":
+                    return left == right;
+                case "!=":
+                    return left != right;
+                case ">":
+                    return left > right;
+                case ">=":
+                    return left >= right;
+                case "<":
+                    return left < right;
+                case "<=":
+                    return left <= right;
+            }
+        }
+
+        return false;
+    }
 }

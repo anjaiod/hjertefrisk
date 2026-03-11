@@ -6,4 +6,5 @@ public interface IPatientService
 {
     Task<IEnumerable<PatientDto>> GetAllAsync();
     Task<PatientDto> CreateAsync(CreatePatientDto dto);
+    Task<int> GetTotalScoreAsync(int patientId);
 }
