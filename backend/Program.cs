@@ -1,7 +1,6 @@
 using backend.src.Infrastructure.Data;
 using backend.src.Application.Languages.Interfaces;
 using backend.src.Application.Languages.Services;
-using backend.src.Infrastructure.Languages;
 
 using backend.src.Application.Queries.Interfaces;
 using backend.src.Application.Queries.Services;
@@ -20,7 +19,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // Application services / repositories
-builder.Services.AddScoped<ILanguageRepository, LanguageRepository>();
 builder.Services.AddScoped<ILanguageService, LanguageService>();
 
 builder.Services.AddScoped<IQueryService, QueryService>();
