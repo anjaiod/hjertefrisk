@@ -97,11 +97,11 @@ jobs:
           NEXT_TELEMETRY_DISABLED: 1
         run: |
           set -euo pipefail
-          npm run start -- --hostname 0.0.0.0 --port 3000 &
+          npm run start -- --hostname 0.0.0.0 --port 3100 &
           APP_PID=$!
           ready=0
           for i in $(seq 1 30); do
-            if curl -sS http://localhost:3000/ >/dev/null 2>&1; then
+            if curl -sS http://localhost:3100/ >/dev/null 2>&1; then
               ready=1
               break
             fi
