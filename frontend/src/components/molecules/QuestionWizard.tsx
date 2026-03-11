@@ -35,7 +35,7 @@ export default function QuestionWizard({
   return (
     <div className="max-w-2xl mx-auto">
       {/* Question Content */}
-      <div className="bg-white p-8 rounded-lg shadow-md min-h-[400px] flex flex-col">
+      <div className="bg-white p-8 rounded-lg shadow-md min-h-100 flex flex-col">
         <div className="flex-1">{children}</div>
 
         {/* Navigation Buttons */}
