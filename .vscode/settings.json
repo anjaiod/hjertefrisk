@@ -1,3 +1,4 @@
 {
-    "dotnet.defaultSolution": "api.sln"
+  "dotnet.defaultSolution": "api.sln",
+  "css.validate": false
 }
