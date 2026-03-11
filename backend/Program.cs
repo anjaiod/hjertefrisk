@@ -2,6 +2,10 @@ using backend.src.Infrastructure.Data;
 using backend.src.Application.Languages.Interfaces;
 using backend.src.Application.Languages.Services;
 using backend.src.Infrastructure.Languages;
+
+using backend.src.Application.Queries.Interfaces;
+using backend.src.Application.Queries.Services;
+
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +22,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Application services / repositories
 builder.Services.AddScoped<ILanguageRepository, LanguageRepository>();
 builder.Services.AddScoped<ILanguageService, LanguageService>();
+
+builder.Services.AddScoped<IQueryService, QueryService>();
 
 // Optional but recommended for API documentation
 builder.Services.AddEndpointsApiExplorer();
