@@ -20,7 +20,7 @@ export default function PatientDashboardPage() {
 
   return (
     <div className="flex">
-      <PatientSidebarNav activePath="/pasient_dashboard" />
+      <PatientSidebarNav activePath="/patient_dashboard" />
 
       <div className="flex flex-col flex-1">
         <PatientHeader />
