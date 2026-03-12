@@ -1,9 +1,8 @@
 {
-  "dotnet.defaultSolution": "api.sln",
-  "css.validate": false
-}
     "dotnet.defaultSolution": "api.sln",
     "conventionalCommits.scopes": [
+        "backend",
+        "frontend",
         "cicd"
     ]
 }
