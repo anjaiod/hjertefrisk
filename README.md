@@ -113,7 +113,7 @@ npm run dev
 ```
 
 # Før Git commits:
-## Endringer gjort i Frontend
+## Dersom du har gjort endringer gjort i Frontend
 
 ### ESLint (Finner feil i koden din)
 ```bash
@@ -131,9 +131,11 @@ npx prettier . --check
 npx prettier . --write
 ```
 
-### Endringer gjort i Backend
+### Dersom du har gjort endringer gjort i Backend
 ```bash
 cd backend
+
+# Formaterer koden i backend
 dotnet format
 ```
 
