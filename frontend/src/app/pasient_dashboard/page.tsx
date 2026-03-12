@@ -7,12 +7,15 @@ import { FeatureCard } from "../../components/atoms/FeatureCard";
 import { PatientHeader } from "../../components/organisms/PatientHeader";
 
 export default function PatientDashboardPage() {
-  // aktiviteter
+  // placeholder activities
+  const activityDate = new Date();
+  activityDate.setDate(activityDate.getDate() + 3);
+
   const activities = [
     {
       id: 1,
       title: "Gå på kostholdskurs",
-      date: "I dag 14:00",
+      date: activityDate,
       location: "Haraldsgata 226",
       organizer: "Frisklivssentralen",
     },
