@@ -9,13 +9,15 @@ A full-stack web application for Hjertefrisk algorithm. The algorithm is a tool 
 - **Database:** PostgreSQL 17 (local via Docker)
 - **Containerization:** Docker & Docker Compose
 
-## 📑 Table of Contents
+## Andre ReadMEs
+- [Backend README](backend/README.md)
 
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Running the Project](#running-the-project)
-- [Project Structure](#project-structure)
-- [Development Commands](#development-commands)
+## 📑 Innholdsfortegnelse
+- [Prosjektoppsett](#prosjektoppsett)
+- [Koding i Frontend](#koding-i-frontend-database--api-kjøres-i-docker)
+- [Alle Nødvendige Installasjoner](#alle-nødvendige-installasjoner)
+- [Backend Commands](#backend-commands)
+- [Frontend Commands](#frontend-commands)
 - [Team](#-team)
 - [Links](#-links)
 
@@ -24,11 +26,16 @@ A full-stack web application for Hjertefrisk algorithm. The algorithm is a tool 
 
 ## Kjøre prosjektet med Docker
 
-### Bygge og starte prosjektet
+### Bygging og start av hele prosjektet ved hjelp av Docker
 
-Docker Desktop appen må være åpne før du kjører alle kommandoer der man bruker docker.
+Docker Desktop-appen må være åpen før du kjører alle kommandoer der man bruker docker.
 
 Kjør følgende kommando i **rotmappen**:
+
+```bash
+docker compose up --build
+```
+Eventuelt
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
@@ -56,8 +63,6 @@ Når containerne kjører kan du åpne:
 - http://localhost:5000/swagger/index.html  
 
 Swagger viser alle tilgjengelige API-kall.  
-*(Per nå er det kun kobling mot databasen.)*
-
 ---
 
 ## Stoppe Docker
@@ -83,30 +88,59 @@ For å se endringer må du:
 
 2. Bygge og starte på nytt:
    ```bash
-   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+   docker compose up --build
    ```
 
 ---
 
-# 💻 Kjøre prosjektet lokalt i frontend (Database + API kjøres i docker)
+# 💻 Koding i frontend (Database + API kjøres i docker):
 
 I **rotmappen**:
 ```bash
+# Kjører database og backend i docker
 docker compose up --build db backend
 ```
 
 
-Eksempel for **Next.js (frontend)**:
+Kjøring av **Next.js (frontend)**:
 
 ```bash
+# Kjører frontend lokalt
+cd frontend
 npm install
 npm run build
 npm run dev
 ```
 
-## 🔧 Prerequisites
+# Før Git commits:
+## Endringer gjort i Frontend
 
-Before you begin, ensure you have the following installed on your system:
+### ESLint (Finner feil i koden din)
+```bash
+cd frontend
+npm run lint
+```
+### Prettier (Formaterer koden din)
+```bash
+cd frontend
+
+# Hvis du vil sjekke om filene er formatert riktig i forhold til prettier
+npx prettier . --check
+
+# Hvis du vil automatiske formatere alle filer i frontend
+npx prettier . --write
+```
+
+### Endringer gjort i Backend
+```bash
+cd backend
+dotnet format
+```
+
+
+## 🔧 Alle nødvendige installasjoner
+
+Pass på at du har installert alle nødvendige programmer:
 
 ### 1. .NET SDK 10
 **Check installation:**
@@ -164,22 +198,9 @@ docker compose version
 
 **NOTE:** Make sure to start Docker Desktop after installation!
 
-## 📦 Installation
 
-### 1. Clone the repository
-```bash
-git clone [repository-url]
-cd hjertefrisk
-```
 
-### 2. Set up environment variables
-
-Create a `.env` file in the root directory:
-
-```bash
-```
-
-### 3. Install dependencies
+### Install dependencies
 
 **Backend:**
 ```bash
@@ -195,98 +216,13 @@ npm install
 cd ..
 ```
 
-## 🚀 Running the Project
-
-### Start the database
-From the root directory:
-```bash
-docker compose up -d db
-```
-
-Verify the database is running:
-```bash
-docker compose ps
-docker compose logs db
-```
-
-### Start the backend
-In a new terminal:
-```bash
-cd backend
-dotnet run
-```
-
-Backend runs on: `http://localhost:`
-
-### Start the frontend
-In a new terminal:
-```bash
-cd frontend
-npm run dev
-```
-
-Frontend runs on: `http://localhost:`
-
-
-## 📁 Project Structure
-
-```
-hjertefrisk/
-├── backend/
-│   ├── Controllers/         # API endpoints
-│   ├── Models/              # Data models
-│   ├── Services/            # Business logic
-│   ├── Data/                # Database context & migrations
-│   ├── appsettings.json     # Configuration
-│   └── Program.cs           # Entry point
-│
-├── frontend/
-│   ├── src/
-│   │   ├── app/            # Next.js App Router
-│   │   ├── components/     # React components
-│   │   │   ├── atoms/      # Basic components
-│   │   │   ├── molecules/  # Composite components
-│   │   │   ├── organisms/  # Complex components
-│   │   │   └── templates/  # Page layouts
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── lib/            # Utilities & helpers
-│   │   └── styles/         # Global CSS
-│   ├── public/             # Static files
-│   └── package.json
-│
-├── docker-compose.yml       # Docker configuration
-├── .env                     # Environment variables
-└── README.md
-```
-
-
-## 🛠️ Development Commands
-
-### Database Commands
-
-```bash
-# Start database
-docker compose up -d db
-
-# Stop database
-docker compose stop db
-
-# Stop and delete data (factory reset)
-docker compose down -v
-
-# View logs
-docker compose logs -f db
-
-# Run SQL commands
-docker exec -it hjertefrisk-db psql -U postgres -d hjertefrisk_db
-```
 
 ### Backend Commands
 
 ```bash
 cd backend
 
-# Restore packages
+# Restore packages/Build dependencies
 dotnet restore
 
 # Build project
@@ -303,6 +239,7 @@ dotnet test
 
 # Create database migration
 dotnet ef migrations add MigrationName
+
 
 # Apply migrations
 dotnet ef database update
