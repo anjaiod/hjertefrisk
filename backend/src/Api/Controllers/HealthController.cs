@@ -1,8 +1,8 @@
-using Api.Data;
+using backend.src.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Api.Controllers;
+namespace backend.src.Api.Controllers;
 
 [ApiController]
 [Route("health")]

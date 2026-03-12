@@ -1,0 +1,9 @@
+using backend.src.Application.ToDos.DTOs;
+
+namespace backend.src.Application.ToDos.Interfaces;
+
+public interface IToDoService
+{
+    Task<IEnumerable<ToDoDto>> GetAllAsync();
+    Task<ToDoDto> CreateAsync(CreateToDoDto dto);
+}
