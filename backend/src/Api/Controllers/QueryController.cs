@@ -44,4 +44,12 @@ public class QueryController : ControllerBase
     	if (item == null) return NotFound();
     	return Ok(item);
 	}
+
+	[HttpGet("by-name/{name}")]
+	public async Task<IActionResult> GetByName(string name)
+	{
+		var item = await _service.GetByNameAsync(name);
+		if (item == null) return NotFound();
+		return Ok(item);
+	}
 }

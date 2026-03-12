@@ -9,4 +9,6 @@ public interface IQueryService
     Task<QueryDto> CreateAsync(CreateQueryDto dto);
 
     Task<QueryWithQuestionsDto?> GetWithQuestionsAsync(int id);
+
+    Task<QueryWithQuestionsDto?> GetByNameAsync(string name);
 }

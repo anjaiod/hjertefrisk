@@ -64,7 +64,7 @@ export default function PatientHealthQuestionnaire() {
     const fetchQuestions = async () => {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/query/4/questions`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/query/by-name/Helseskjema`,
         );
         if (!res.ok) throw new Error("Kunne ikke hente spørsmål");
         const data = await res.json();
