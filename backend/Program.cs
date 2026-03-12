@@ -17,6 +17,14 @@ using backend.src.Application.Measurements.Interfaces;
 using backend.src.Application.Measurements.Services;
 using backend.src.Application.Patients.Interfaces;
 using backend.src.Application.Patients.Services;
+using backend.src.Application.ToDos.Interfaces;
+using backend.src.Application.ToDos.Services;
+using backend.src.Application.Responses.Interfaces;
+using backend.src.Application.Responses.Services;
+using backend.src.Application.Personnel.Interfaces;
+using backend.src.Application.Personnel.Services;
+using backend.src.Application.QuestionDependencies.Interfaces;
+using backend.src.Application.QuestionDependencies.Services;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -42,6 +50,10 @@ builder.Services.AddScoped<IMeasureService, MeasureService>();
 builder.Services.AddScoped<ISeverityService, SeverityService>();
 builder.Services.AddScoped<IMeasurementService, MeasurementService>();
 builder.Services.AddScoped<IPatientService, PatientService>();
+builder.Services.AddScoped<IToDoService, ToDoService>();
+builder.Services.AddScoped<IResponseService, ResponseService>();
+builder.Services.AddScoped<IPersonnelService, PersonnelService>();
+builder.Services.AddScoped<IQuestionDependencyService, QuestionDependencyService>();
 
 // Optional but recommended for API documentation
 builder.Services.AddEndpointsApiExplorer();
