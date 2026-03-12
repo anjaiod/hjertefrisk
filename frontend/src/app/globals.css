@@ -1,26 +1,51 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  /* Navy */
+  --color-brand-navy: #002f86;
+  --color-brand-navy-light: #4d6ead;
+  --color-brand-navy-lighter: #7f98c4;
+  --color-brand-navy-lightest: #b5c0dc;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Sky */
+  --color-brand-sky: #6cade4;
+  --color-brand-sky-light: #98c5ed;
+  --color-brand-sky-lighter: #b6d6f1;
+  --color-brand-sky-lightest: #d5e7f8;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+  /* Mist */
+  --color-brand-mist: #d3dde4;
+  --color-brand-mist-light: #becdd6;
+  --color-brand-mist-lighter: #dfe5eb;
+  --color-brand-mist-lightest: #ecf0f3;
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Sage */
+  --color-brand-sage: #6fa185;
+  --color-brand-sage-light: #9abeab;
+  --color-brand-sage-lighter: #b7d0c1;
+  --color-brand-sage-lightest: #d4e3dc;
+
+  /* Mint */
+  --color-brand-mint: #acdeb5;
+  --color-brand-mint-light: #c7e7ca;
+  --color-brand-mint-lighter: #d7eedb;
+  --color-brand-mint-lightest: #e8f4e7;
+
+  /* Teal */
+  --color-brand-teal: #03c199;
+  --color-brand-teal-light: #4bd4b6;
+  --color-brand-teal-lighter: #81e1c9;
+  --color-brand-teal-lightest: #b3ede0;
+
+  /* Sun */
+  --color-brand-sun: #ffc746;
+  --color-brand-sun-light: #feda7c;
+  --color-brand-sun-lighter: #ffe2a0;
+  --color-brand-sun-lightest: #ffecc6;
+
+  /* Orange */
+  --color-brand-orange: #ff661f;
+  --color-brand-orange-light: #fe9562;
+  --color-brand-orange-lighter: #ffb38f;
+  --color-brand-orange-lightest: #ffd0bc;
 }

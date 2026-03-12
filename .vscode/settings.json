@@ -3,5 +3,6 @@
     "conventionalCommits.scopes": [
         "backend",
         "frontend"
+        "cicd"
     ]
 }
