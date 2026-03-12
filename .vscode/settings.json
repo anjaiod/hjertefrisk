@@ -2,7 +2,7 @@
     "dotnet.defaultSolution": "api.sln",
     "conventionalCommits.scopes": [
         "backend",
-        "frontend"
+        "frontend",
         "cicd"
     ]
 }
