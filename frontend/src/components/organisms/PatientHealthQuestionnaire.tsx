@@ -7,930 +7,265 @@ import QuestionNumber from "../molecules/QuestionNumber";
 import QuestionTextArea from "../molecules/QuestionTextArea";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
 
-interface PatientHealthData {
-  // Røyking
-  smoker: "ja" | "nei" | "";
-  smokingAmount: string;
-  smokingMotivated: "ja" | "nei" | "";
+interface QuestionOption {
+  questionOptionId: number;
+  fallbackText: string;
+  optionValue: string;
+  displayOrder: number;
+}
 
-  // Fysisk aktivitet
-  exerciseFrequency: string;
-  exerciseDuration: string;
-  exerciseIntensity: string;
-  physicalLimitations: "ja" | "nei" | "";
-  physicalLimitationsDetails: string;
-  exerciseBarriers: "ja" | "nei" | "";
-  exerciseBarriersDetails: string;
-  exerciseMotivated: "ja" | "nei" | "";
+interface QuestionDependency {
+  parentQuestionId: number;
+  childQuestionId: number;
+  triggerTextValue: string | null;
+  operator: string;
+}
 
-  // Kosthold
-  mealsPerDay: string;
-  skipMeals: string;
-  appetite: string;
-  dietMotivated: "ja" | "nei" | "";
-  weightStable: string;
-  weightChange: string;
+interface Question {
+  questionId: number;
+  fallbackText: string;
+  questionType: string;
+  isRequired: boolean;
+  requiredRole: string | null;
+  displayOrder: number;
+  options: QuestionOption[];
+  dependencies: QuestionDependency[];
+}
 
-  // Vekt
-  height: string;
-  weight: string;
-  waistCircumference: string;
+const CATEGORY_NAMES = [
+  "Røyking",
+  "Fysisk aktivitet",
+  "Kosthold",
+  "Vekt",
+  "Søvn",
+  "Alkohol",
+  "Rusmidler",
+];
 
-  // Søvn
-  difficultyFallingAsleep: "ja" | "nei" | "";
-  wakesDuringNight: "ja" | "nei" | "";
-  wakesTooEarly: "ja" | "nei" | "";
-  poorSleepQuality: "ja" | "nei" | "";
-  sleepDayAwakeNight: "ja" | "nei" | "";
-  nightShiftWork: "ja" | "nei" | "";
-  sleepProblemFrequency: string;
-  sleepMedication: "ja" | "nei" | "";
-  sleepGuidance: "ja" | "nei" | "";
-
-  // Alkohol
-  alcoholFrequency: string;
-  alcoholUnitsPerDay: string;
-  alcoholBingeDrinking: string;
-  alcoholUnableToStop: string;
-  alcoholFailedExpectations: string;
-  alcoholMorningDrinking: string;
-  alcoholGuilt: string;
-  alcoholMemoryLoss: string;
-  alcoholInjury: string;
-  alcoholConcern: string;
-
-  // Rusmidler
-  usesSubstances: "ja" | "nei" | "";
-  usedOpioidsGHB: "ja" | "nei" | "";
-  usedOpioidsGHBRecently: "ja" | "nei" | "";
-  usesInjection: "ja" | "nei" | "";
-  substanceMotivated: "ja" | "nei" | "";
+// Hvilke questionId-er tilhører hvilken kategori (basert på displayOrder)
+function getCategoryIndex(displayOrder: number): number {
+  if (displayOrder <= 3) return 0; // Røyking
+  if (displayOrder <= 9) return 1; // Fysisk aktivitet
+  if (displayOrder <= 15) return 2; // Kosthold
+  if (displayOrder <= 18) return 3; // Vekt
+  if (displayOrder <= 27) return 4; // Søvn
+  if (displayOrder <= 37) return 5; // Alkohol
+  return 6; // Rusmidler
 }
 
 export default function PatientHealthQuestionnaire() {
   const [currentStep, setCurrentStep] = useState(0);
-  const [data, setData] = useState<PatientHealthData>({
-    smoker: "",
-    smokingAmount: "",
-    smokingMotivated: "",
-    exerciseFrequency: "",
-    exerciseDuration: "",
-    exerciseIntensity: "",
-    physicalLimitations: "",
-    physicalLimitationsDetails: "",
-    exerciseBarriers: "",
-    exerciseBarriersDetails: "",
-    exerciseMotivated: "",
-    mealsPerDay: "",
-    skipMeals: "",
-    appetite: "",
-    dietMotivated: "",
-    weightStable: "",
-    weightChange: "",
-    height: "",
-    weight: "",
-    waistCircumference: "",
-    difficultyFallingAsleep: "",
-    wakesDuringNight: "",
-    wakesTooEarly: "",
-    poorSleepQuality: "",
-    sleepDayAwakeNight: "",
-    nightShiftWork: "",
-    sleepProblemFrequency: "",
-    sleepMedication: "",
-    sleepGuidance: "",
-    alcoholFrequency: "",
-    alcoholUnitsPerDay: "",
-    alcoholBingeDrinking: "",
-    alcoholUnableToStop: "",
-    alcoholFailedExpectations: "",
-    alcoholMorningDrinking: "",
-    alcoholGuilt: "",
-    alcoholMemoryLoss: "",
-    alcoholInjury: "",
-    alcoholConcern: "",
-    usesSubstances: "",
-    usedOpioidsGHB: "",
-    usedOpioidsGHBRecently: "",
-    usesInjection: "",
-    substanceMotivated: "",
-  });
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const updateData = (field: keyof PatientHealthData, value: unknown) => {
-    setData((prev) => ({ ...prev, [field]: value }));
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/query/4/questions`,
+        );
+        if (!res.ok) throw new Error("Kunne ikke hente spørsmål");
+        const data = await res.json();
+        setQuestions(data.questions);
+      } catch (err) {
+        setError("Noe gikk galt ved henting av spørsmål.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, []);
+
+  const updateAnswer = (questionId: number, value: string) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  const handleNext = () => {
-    setCurrentStep((prev) => {
-      // questions array will be rebuilt after this, so we check dynamically
-      // This ensures we don't skip when new questions are added
-      return prev + 1;
-    });
-  };
-
-  const handleSkip = () => {
-    setCurrentStep((prev) => prev + 1);
-  };
-
+  const handleNext = () => setCurrentStep((prev) => prev + 1);
+  const handleSkip = () => setCurrentStep((prev) => prev + 1);
   const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
-
   const handleSubmit = () => {
-    console.log("Patient health data:", data);
-    // Handle form submission
+    console.log("Svar:", answers);
     alert("Skjema sendt inn!");
   };
 
-  // Category indices
-  const SMOKING = 0;
-  const EXERCISE = 1;
-  const DIET = 2;
-  const WEIGHT = 3;
-  const SLEEP = 4;
-  const ALCOHOL = 5;
-  const SUBSTANCES = 6;
+  // Finn ut om et spørsmål skal vises basert på dependencies
+  const shouldShowQuestion = (question: Question): boolean => {
+    const isChild = questions.some((q) =>
+      q.dependencies.some((d) => d.childQuestionId === question.questionId),
+    );
+    if (!isChild) return true;
 
-  // Build questions and track their categories
-  const questionsData: Array<{ element: ReactElement; category: number }> = [];
+    // Finn alle parent-dependencies for dette spørsmålet
+    const parentDeps = questions.flatMap((q) =>
+      q.dependencies.filter((d) => d.childQuestionId === question.questionId),
+    );
 
-  // Røyking
-  questionsData.push({
-    category: SMOKING,
-    element: (
-      <ConditionalQuestion
-        key="smoker"
-        question="Røyker du fast?"
-        name="patient-smoker"
-        value={data.smoker}
-        onChange={(value) => updateData("smoker", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  if (data.smoker === "ja") {
-    questionsData.push({
-      category: SMOKING,
-      element: (
-        <QuestionTextArea
-          key="smoking-amount"
-          question="Hvor mye røyker du?"
-          name="patient-smoking-amount"
-          value={data.smokingAmount}
-          onChange={(value) => updateData("smokingAmount", value)}
-          onAnswer={handleNext}
-          placeholder="F.eks. 10 sigaretter per dag"
-          rows={2}
-        />
-      ),
+    return parentDeps.some((dep) => {
+      const parentAnswer = answers[dep.parentQuestionId];
+      if (!parentAnswer) return false;
+      if (dep.operator === "=") return parentAnswer === dep.triggerTextValue;
+      if (dep.operator === "OR")
+        return (
+          parentAnswer === dep.triggerTextValue ||
+          parentAnswer.startsWith("nei")
+        );
+      return false;
     });
-    questionsData.push({
-      category: SMOKING,
-      element: (
+  };
+
+  // Bygg den synlige spørsmålslisten dynamisk basert på svar
+  const visibleQuestions = questions.filter(shouldShowQuestion);
+
+  const buildQuestionElement = (question: Question): ReactElement => {
+    const value = answers[question.questionId] ?? "";
+    const name = `question-${question.questionId}`;
+
+    // Determine placeholder based on question text or type
+    const getPlaceholder = (): string | undefined => {
+      const text = question.fallbackText.toLowerCase();
+
+      // Number fields
+      if (text.includes("hvor høy")) return "170";
+      if (text.includes("hvor mye veier")) return "70";
+      if (text.includes("livvidde")) return "80";
+
+      // Text fields
+      if (text.includes("hvor mye røyker"))
+        return "F.eks. 10 sigaretter per dag";
+      if (text.includes("vekten din endret"))
+        return "F.eks. økt 5 kg siste 6 måneder";
+      if (text.includes("begrensninger") && text.includes("skriv"))
+        return "Beskriv dine fysiske begrensninger...";
+      if (text.includes("barrierer") && text.includes("skriv"))
+        return "Beskriv barrierer...";
+
+      return undefined;
+    };
+
+    const getUnit = (): string | undefined => {
+      const text = question.fallbackText.toLowerCase();
+      if (text.includes("hvor høy")) return "cm";
+      if (text.includes("hvor mye veier")) return "kg";
+      if (text.includes("livvidde")) return "cm";
+      return undefined;
+    };
+
+    const getRows = (): number | undefined => {
+      const text = question.fallbackText.toLowerCase();
+      if (text.includes("hvor mye røyker")) return 2;
+      if (text.includes("vekten din endret")) return 2;
+      if (text.includes("begrensninger") || text.includes("barrierer"))
+        return 3;
+      return undefined;
+    };
+
+    const placeholder = getPlaceholder();
+    const unit = getUnit();
+    const rows = getRows();
+
+    if (question.questionType === "boolean") {
+      return (
         <ConditionalQuestion
-          key="smoking-motivated"
-          question="Er du motivert til å slutte med røyking dersom du får hjelp til dette?"
-          name="patient-smoking-motivated"
-          value={data.smokingMotivated}
-          onChange={(value) => updateData("smokingMotivated", value)}
+          key={question.questionId}
+          question={question.fallbackText}
+          name={name}
+          value={value as "ja" | "nei" | ""}
+          onChange={(val) => updateAnswer(question.questionId, val)}
           onAnswer={handleNext}
+          required={question.isRequired}
         />
-      ),
-    });
-  }
-
-  // Fysisk aktivitet
-  questionsData.push({
-    category: EXERCISE,
-    element: (
-      <QuestionRadio
-        key="exercise-frequency"
-        question="Hvor ofte trener du?"
-        name="patient-exercise-frequency"
-        options={[
-          {
-            value: "nesten-aldri",
-            label: "Nesten aldri eller mindre enn en gang i uka",
-          },
-          { value: "en-gang", label: "En gang i uka" },
-          { value: "2-3-ganger", label: "2-3 ganger i uka" },
-          { value: "nesten-hver-dag", label: "Nesten hver dag" },
-        ]}
-        value={data.exerciseFrequency}
-        onChange={(value) => updateData("exerciseFrequency", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: EXERCISE,
-    element: (
-      <QuestionRadio
-        key="exercise-duration"
-        question="Hvor lenge trener du hver gang?"
-        name="patient-exercise-duration"
-        options={[
-          { value: "15min", label: "Rundt 15 minutter" },
-          { value: "30min", label: "Rundt 30 minutter" },
-          { value: "30min-plus", label: "30 minutter eller mer" },
-        ]}
-        value={data.exerciseDuration}
-        onChange={(value) => updateData("exerciseDuration", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: EXERCISE,
-    element: (
-      <QuestionRadio
-        key="exercise-intensity"
-        question="Hvor hardt trener du?"
-        name="patient-exercise-intensity"
-        options={[
-          {
-            value: "rolig",
-            label: "Jeg tar det med ro og blir ikke andpusten eller svett",
-          },
-          { value: "moderat", label: "Jeg blir litt andpusten og svett" },
-          { value: "hardt", label: "Jeg tar det helt ut" },
-        ]}
-        value={data.exerciseIntensity}
-        onChange={(value) => updateData("exerciseIntensity", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: EXERCISE,
-    element: (
-      <ConditionalQuestion
-        key="physical-limitations"
-        question="Har du noen fysiske begrensninger som påvirker dine muligheter til trening?"
-        name="patient-physical-limitations"
-        value={data.physicalLimitations}
-        onChange={(value) => updateData("physicalLimitations", value)}
-        onAnswer={handleNext}
-      >
-        <QuestionTextArea
-          question="Skriv om begrensninger"
-          name="patient-physical-limitations-details"
-          value={data.physicalLimitationsDetails}
-          onChange={(value) => updateData("physicalLimitationsDetails", value)}
-          onAnswer={handleNext}
-          placeholder="Beskriv dine fysiske begrensninger..."
-          rows={3}
-        />
-      </ConditionalQuestion>
-    ),
-  });
-
-  questionsData.push({
-    category: EXERCISE,
-    element: (
-      <ConditionalQuestion
-        key="exercise-barriers"
-        question="Har du noen andre barrierer (angst, smerter, sosiale utfordringer) som påvirker trening?"
-        name="patient-exercise-barriers"
-        value={data.exerciseBarriers}
-        onChange={(value) => updateData("exerciseBarriers", value)}
-        onAnswer={handleNext}
-      >
-        <QuestionTextArea
-          question="Skriv litt om dette"
-          name="patient-exercise-barriers-details"
-          value={data.exerciseBarriersDetails}
-          onChange={(value) => updateData("exerciseBarriersDetails", value)}
-          onAnswer={handleNext}
-          placeholder="Beskriv barrierer..."
-          rows={3}
-        />
-      </ConditionalQuestion>
-    ),
-  });
-
-  questionsData.push({
-    category: EXERCISE,
-    element: (
-      <QuestionRadio
-        key="exercise-motivated"
-        question="Er du motivert til å bli mer fysisk aktiv i hverdagen dersom du får hjelp til dette?"
-        name="patient-exercise-motivated"
-        options={[
-          { value: "ja", label: "Ja" },
-          { value: "nei", label: "Nei" },
-        ]}
-        value={data.exerciseMotivated}
-        onChange={(value) => updateData("exerciseMotivated", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  // Kosthold
-  questionsData.push({
-    category: DIET,
-    element: (
-      <QuestionRadio
-        key="meals-per-day"
-        question="Hvor mange måltider spiser du per dag?"
-        name="patient-meals-per-day"
-        options={[
-          { value: "1-2", label: "1-2 måltider" },
-          { value: "3", label: "3 måltider" },
-          { value: "4-5", label: "4-5 måltider" },
-          { value: "6-plus", label: "6 eller flere måltider" },
-        ]}
-        value={data.mealsPerDay}
-        onChange={(value) => updateData("mealsPerDay", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: DIET,
-    element: (
-      <QuestionRadio
-        key="skip-meals"
-        question="Hvor ofte hopper du over måltider?"
-        name="patient-skip-meals"
-        options={[
-          { value: "aldri", label: "Aldri" },
-          { value: "sjelden", label: "Sjelden" },
-          { value: "noen-ganger", label: "Noen ganger i uken" },
-          { value: "ofte", label: "Ofte" },
-        ]}
-        value={data.skipMeals}
-        onChange={(value) => updateData("skipMeals", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: DIET,
-    element: (
-      <QuestionRadio
-        key="appetite"
-        question="Hvordan vil du beskrive appetitten din?"
-        name="patient-appetite"
-        options={[
-          { value: "dårlig", label: "Dårlig" },
-          { value: "normal", label: "Normal" },
-          { value: "god", label: "God" },
-          { value: "veldig-god", label: "Veldig god" },
-        ]}
-        value={data.appetite}
-        onChange={(value) => updateData("appetite", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: DIET,
-    element: (
-      <ConditionalQuestion
-        key="diet-motivated"
-        question="Er du motivert til å forbedre kostholdet ditt?"
-        name="patient-diet-motivated"
-        value={data.dietMotivated}
-        onChange={(value) => updateData("dietMotivated", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: DIET,
-    element: (
-      <QuestionRadio
-        key="weight-stable"
-        question="Har vekten din vært stabil det siste året?"
-        name="patient-weight-stable"
-        options={[
-          { value: "ja", label: "Ja" },
-          { value: "nei-okt", label: "Nei, den har økt" },
-          { value: "nei-minsket", label: "Nei, den har minsket" },
-        ]}
-        value={data.weightStable}
-        onChange={(value) => updateData("weightStable", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  if (data.weightStable.startsWith("nei")) {
-    questionsData.push({
-      category: DIET,
-      element: (
-        <QuestionTextArea
-          key="weight-change"
-          question="Hvor mye har vekten din endret seg?"
-          name="patient-weight-change"
-          value={data.weightChange}
-          onChange={(value) => updateData("weightChange", value)}
-          onAnswer={handleNext}
-          placeholder="F.eks. økt 5 kg siste 6 måneder"
-          rows={2}
-        />
-      ),
-    });
-  }
-
-  // Vekt
-  questionsData.push({
-    category: WEIGHT,
-    element: (
-      <QuestionNumber
-        key="height"
-        question="Hvor høy er du?"
-        name="patient-height"
-        value={data.height}
-        onChange={(value) => updateData("height", value)}
-        onAnswer={handleNext}
-        placeholder="170"
-        unit="cm"
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: WEIGHT,
-    element: (
-      <QuestionNumber
-        key="weight"
-        question="Hvor mye veier du?"
-        name="patient-weight"
-        value={data.weight}
-        onChange={(value) => updateData("weight", value)}
-        onAnswer={handleNext}
-        placeholder="70"
-        unit="kg"
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: WEIGHT,
-    element: (
-      <QuestionNumber
-        key="waist"
-        question="Hva er din livvidde?"
-        name="patient-waist"
-        value={data.waistCircumference}
-        onChange={(value) => updateData("waistCircumference", value)}
-        onAnswer={handleNext}
-        placeholder="80"
-        unit="cm"
-      />
-    ),
-  });
-
-  // Søvn
-  questionsData.push({
-    category: SLEEP,
-    element: (
-      <ConditionalQuestion
-        key="difficulty-falling-asleep"
-        question="Er det vanskelig for deg å sovne om kvelden?"
-        name="patient-difficulty-falling-asleep"
-        value={data.difficultyFallingAsleep}
-        onChange={(value) => updateData("difficultyFallingAsleep", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: SLEEP,
-    element: (
-      <ConditionalQuestion
-        key="wakes-during-night"
-        question="Våkner du flere ganger i løpet av natten?"
-        name="patient-wakes-during-night"
-        value={data.wakesDuringNight}
-        onChange={(value) => updateData("wakesDuringNight", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: SLEEP,
-    element: (
-      <ConditionalQuestion
-        key="wakes-too-early"
-        question="Våkner du for tidlig om morgenen?"
-        name="patient-wakes-too-early"
-        value={data.wakesTooEarly}
-        onChange={(value) => updateData("wakesTooEarly", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: SLEEP,
-    element: (
-      <ConditionalQuestion
-        key="poor-sleep-quality"
-        question="Synes du selv at du sover for dårlig?"
-        name="patient-poor-sleep-quality"
-        value={data.poorSleepQuality}
-        onChange={(value) => updateData("poorSleepQuality", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: SLEEP,
-    element: (
-      <ConditionalQuestion
-        key="sleep-day-awake-night"
-        question="Sover du om dagen og er våken om natten?"
-        name="patient-sleep-day-awake-night"
-        value={data.sleepDayAwakeNight}
-        onChange={(value) => updateData("sleepDayAwakeNight", value)}
-        onAnswer={handleNext}
-      >
-        <ConditionalQuestion
-          question="Jobber du nattskift?"
-          name="patient-night-shift"
-          value={data.nightShiftWork}
-          onChange={(value) => updateData("nightShiftWork", value)}
-          onAnswer={handleNext}
-        />
-      </ConditionalQuestion>
-    ),
-  });
-
-  questionsData.push({
-    category: SLEEP,
-    element: (
-      <QuestionRadio
-        key="sleep-problem-frequency"
-        question="Hvor ofte har du problemer med søvn?"
-        name="patient-sleep-problem-frequency"
-        options={[
-          { value: "aldri", label: "Aldri" },
-          { value: "sjelden", label: "Sjelden" },
-          { value: "1-2-uker", label: "1-2 ganger per uke" },
-          { value: "3-5-uker", label: "3-5 ganger per uke" },
-          { value: "hver-natt", label: "Hver natt" },
-        ]}
-        value={data.sleepProblemFrequency}
-        onChange={(value) => updateData("sleepProblemFrequency", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: SLEEP,
-    element: (
-      <ConditionalQuestion
-        key="sleep-medication"
-        question="Tar du sovemedisin?"
-        name="patient-sleep-medication"
-        value={data.sleepMedication}
-        onChange={(value) => updateData("sleepMedication", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: SLEEP,
-    element: (
-      <ConditionalQuestion
-        key="sleep-guidance"
-        question="Ønsker du veiledning om søvn?"
-        name="patient-sleep-guidance"
-        value={data.sleepGuidance}
-        onChange={(value) => updateData("sleepGuidance", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  // Alkohol (AUDIT)
-  questionsData.push({
-    category: ALCOHOL,
-    element: (
-      <QuestionRadio
-        key="alcohol-frequency"
-        question="Hvor ofte drikker du alkohol?"
-        name="patient-alcohol-frequency"
-        options={[
-          { value: "0", label: "Aldri" },
-          { value: "1", label: "Månedlig eller sjeldnere" },
-          { value: "2", label: "2-4 ganger i måneden" },
-          { value: "3", label: "2-3 ganger i uken" },
-          { value: "4", label: "4 eller flere ganger i uken" },
-        ]}
-        value={data.alcoholFrequency}
-        onChange={(value) => updateData("alcoholFrequency", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: ALCOHOL,
-    element: (
-      <QuestionRadio
-        key="alcohol-units"
-        question="Hvor mange enheter drikker du på en typisk dag når du drikker?"
-        name="patient-alcohol-units"
-        options={[
-          { value: "0", label: "1-2" },
-          { value: "1", label: "3-4" },
-          { value: "2", label: "5-6" },
-          { value: "3", label: "7-9" },
-          { value: "4", label: "10 eller flere" },
-        ]}
-        value={data.alcoholUnitsPerDay}
-        onChange={(value) => updateData("alcoholUnitsPerDay", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: ALCOHOL,
-    element: (
-      <QuestionRadio
-        key="alcohol-binge"
-        question="Hvor ofte drikker du 6 eller flere enheter ved en og samme anledning?"
-        name="patient-alcohol-binge"
-        options={[
-          { value: "0", label: "Aldri" },
-          { value: "1", label: "Sjeldnere enn månedlig" },
-          { value: "2", label: "Månedlig" },
-          { value: "3", label: "Ukentlig" },
-          { value: "4", label: "Daglig eller nesten daglig" },
-        ]}
-        value={data.alcoholBingeDrinking}
-        onChange={(value) => updateData("alcoholBingeDrinking", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: ALCOHOL,
-    element: (
-      <QuestionRadio
-        key="alcohol-unable-to-stop"
-        question="Hvor ofte i løpet av det siste året har du opplevd at du ikke klarte å stoppe å drikke når du først hadde begynt?"
-        name="patient-alcohol-unable-to-stop"
-        options={[
-          { value: "0", label: "Aldri" },
-          { value: "1", label: "Sjeldnere enn månedlig" },
-          { value: "2", label: "Månedlig" },
-          { value: "3", label: "Ukentlig" },
-          { value: "4", label: "Daglig eller nesten daglig" },
-        ]}
-        value={data.alcoholUnableToStop}
-        onChange={(value) => updateData("alcoholUnableToStop", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: ALCOHOL,
-    element: (
-      <QuestionRadio
-        key="alcohol-failed-expectations"
-        question="Hvor ofte i løpet av det siste året har du ikke klart å gjøre det som normalt forventes av deg på grunn av alkoholbruk?"
-        name="patient-alcohol-failed-expectations"
-        options={[
-          { value: "0", label: "Aldri" },
-          { value: "1", label: "Sjeldnere enn månedlig" },
-          { value: "2", label: "Månedlig" },
-          { value: "3", label: "Ukentlig" },
-          { value: "4", label: "Daglig eller nesten daglig" },
-        ]}
-        value={data.alcoholFailedExpectations}
-        onChange={(value) => updateData("alcoholFailedExpectations", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: ALCOHOL,
-    element: (
-      <QuestionRadio
-        key="alcohol-morning-drinking"
-        question="Hvor ofte i løpet av det siste året har du trengt å drikke alkohol på morgenen for å komme i gang etter å ha drukket mye dagen før?"
-        name="patient-alcohol-morning"
-        options={[
-          { value: "0", label: "Aldri" },
-          { value: "1", label: "Sjeldnere enn månedlig" },
-          { value: "2", label: "Månedlig" },
-          { value: "3", label: "Ukentlig" },
-          { value: "4", label: "Daglig eller nesten daglig" },
-        ]}
-        value={data.alcoholMorningDrinking}
-        onChange={(value) => updateData("alcoholMorningDrinking", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: ALCOHOL,
-    element: (
-      <QuestionRadio
-        key="alcohol-guilt"
-        question="Hvor ofte i løpet av det siste året har du hatt skyldfølelse eller dårlig samvittighet etter å ha drukket?"
-        name="patient-alcohol-guilt"
-        options={[
-          { value: "0", label: "Aldri" },
-          { value: "1", label: "Sjeldnere enn månedlig" },
-          { value: "2", label: "Månedlig" },
-          { value: "3", label: "Ukentlig" },
-          { value: "4", label: "Daglig eller nesten daglig" },
-        ]}
-        value={data.alcoholGuilt}
-        onChange={(value) => updateData("alcoholGuilt", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: ALCOHOL,
-    element: (
-      <QuestionRadio
-        key="alcohol-memory-loss"
-        question="Hvor ofte i løpet av det siste året har du ikke kunnet huske hva som skjedde kvelden før fordi du hadde drukket?"
-        name="patient-alcohol-memory"
-        options={[
-          { value: "0", label: "Aldri" },
-          { value: "1", label: "Sjeldnere enn månedlig" },
-          { value: "2", label: "Månedlig" },
-          { value: "3", label: "Ukentlig" },
-          { value: "4", label: "Daglig eller nesten daglig" },
-        ]}
-        value={data.alcoholMemoryLoss}
-        onChange={(value) => updateData("alcoholMemoryLoss", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: ALCOHOL,
-    element: (
-      <QuestionRadio
-        key="alcohol-injury"
-        question="Har du eller noen andre blitt skadet som følge av at du hadde drukket?"
-        name="patient-alcohol-injury"
-        options={[
-          { value: "0", label: "Nei" },
-          { value: "2", label: "Ja, men ikke i løpet av det siste året" },
-          { value: "4", label: "Ja, i løpet av det siste året" },
-        ]}
-        value={data.alcoholInjury}
-        onChange={(value) => updateData("alcoholInjury", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  questionsData.push({
-    category: ALCOHOL,
-    element: (
-      <QuestionRadio
-        key="alcohol-concern"
-        question="Har en slektning, venn, lege eller annet helsepersonell vist bekymring for alkoholvanene dine eller foreslått at du burde trappe ned?"
-        name="patient-alcohol-concern"
-        options={[
-          { value: "0", label: "Nei" },
-          { value: "2", label: "Ja, men ikke i løpet av det siste året" },
-          { value: "4", label: "Ja, i løpet av det siste året" },
-        ]}
-        value={data.alcoholConcern}
-        onChange={(value) => updateData("alcoholConcern", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  // Rusmidler
-  questionsData.push({
-    category: SUBSTANCES,
-    element: (
-      <ConditionalQuestion
-        key="uses-substances"
-        question="Bruker du rusmidler?"
-        name="patient-uses-substances"
-        value={data.usesSubstances}
-        onChange={(value) => updateData("usesSubstances", value)}
-        onAnswer={handleNext}
-      />
-    ),
-  });
-
-  if (data.usesSubstances === "ja") {
-    questionsData.push({
-      category: SUBSTANCES,
-      element: (
-        <ConditionalQuestion
-          key="used-opioids-ghb"
-          question="Har du noen gang brukt opioider eller GHB?"
-          name="patient-used-opioids-ghb"
-          value={data.usedOpioidsGHB}
-          onChange={(value) => updateData("usedOpioidsGHB", value)}
-          onAnswer={handleNext}
-        />
-      ),
-    });
-
-    questionsData.push({
-      category: SUBSTANCES,
-      element: (
-        <ConditionalQuestion
-          key="used-opioids-recently"
-          question="Har du brukt opioider eller GHB i det siste?"
-          name="patient-used-opioids-recently"
-          value={data.usedOpioidsGHBRecently}
-          onChange={(value) => updateData("usedOpioidsGHBRecently", value)}
-          onAnswer={handleNext}
-        />
-      ),
-    });
-
-    questionsData.push({
-      category: SUBSTANCES,
-      element: (
-        <ConditionalQuestion
-          key="uses-injection"
-          question="Bruker du sprøyte?"
-          name="patient-uses-injection"
-          value={data.usesInjection}
-          onChange={(value) => updateData("usesInjection", value)}
-          onAnswer={handleNext}
-        />
-      ),
-    });
-
-    questionsData.push({
-      category: SUBSTANCES,
-      element: (
-        <ConditionalQuestion
-          key="substance-motivated"
-          question="Er du motivert til å slutte med rusmidler?"
-          name="patient-substance-motivated"
-          value={data.substanceMotivated}
-          onChange={(value) => updateData("substanceMotivated", value)}
-          onAnswer={handleNext}
-        />
-      ),
-    });
-  }
-
-  // Extract questions and their categories
-  const questions = questionsData.map((q) => q.element);
-  const questionCategories = questionsData.map((q) => q.category);
-
-  // Calculate category counts
-  const categoryCounts = [0, 0, 0, 0, 0, 0, 0];
-  questionCategories.forEach((cat) => {
-    categoryCounts[cat]++;
-  });
-
-  // Define categories with calculated counts
-  const categories = [
-    { name: "Røyking", count: categoryCounts[0] },
-    { name: "Fysisk aktivitet", count: categoryCounts[1] },
-    { name: "Kosthold", count: categoryCounts[2] },
-    { name: "Vekt", count: categoryCounts[3] },
-    { name: "Søvn", count: categoryCounts[4] },
-    { name: "Alkohol", count: categoryCounts[5] },
-    { name: "Rusmidler", count: categoryCounts[6] },
-  ];
-
-  // Ensure currentStep stays within bounds when questions array changes
-  // This is necessary when user goes back and changes an answer that removes follow-up questions
-  useEffect(() => {
-    if (currentStep >= questions.length && questions.length > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCurrentStep(questions.length - 1);
+      );
     }
-  }, [questions.length, currentStep]);
+
+    if (question.questionType === "radio") {
+      return (
+        <QuestionRadio
+          key={question.questionId}
+          question={question.fallbackText}
+          name={name}
+          options={question.options.map((o) => ({
+            value: o.optionValue,
+            label: o.fallbackText,
+          }))}
+          value={value}
+          onChange={(val) => updateAnswer(question.questionId, val)}
+          onAnswer={handleNext}
+          required={question.isRequired}
+        />
+      );
+    }
+
+    if (question.questionType === "number") {
+      return (
+        <QuestionNumber
+          key={question.questionId}
+          question={question.fallbackText}
+          name={name}
+          value={value}
+          onChange={(val) => updateAnswer(question.questionId, val)}
+          onAnswer={handleNext}
+          placeholder={placeholder}
+          unit={unit}
+          required={question.isRequired}
+        />
+      );
+    }
+
+    // text / textarea
+    return (
+      <QuestionTextArea
+        key={question.questionId}
+        question={question.fallbackText}
+        name={name}
+        value={value}
+        onChange={(val) => updateAnswer(question.questionId, val)}
+        onAnswer={handleNext}
+        placeholder={placeholder}
+        rows={rows}
+        required={question.isRequired}
+      />
+    );
+  };
+
+  const questionElements = visibleQuestions.map(buildQuestionElement);
+  const questionCategories = visibleQuestions.map((q) =>
+    getCategoryIndex(q.displayOrder),
+  );
+
+  const categoryCounts = CATEGORY_NAMES.map(
+    (_, i) => questionCategories.filter((c) => c === i).length,
+  );
+  const categories = CATEGORY_NAMES.map((name, i) => ({
+    name,
+    count: categoryCounts[i],
+  }));
+
+  useEffect(() => {
+    if (currentStep >= visibleQuestions.length && visibleQuestions.length > 0) {
+      setCurrentStep(visibleQuestions.length - 1);
+    }
+  }, [visibleQuestions.length, currentStep]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-500">Laster spørsmål...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex">
@@ -939,17 +274,16 @@ export default function PatientHealthQuestionnaire() {
           <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
             Helseskjema
           </h1>
-
           <QuestionWizard
             currentStep={currentStep}
-            totalSteps={questions.length}
+            totalSteps={questionElements.length}
             onSkip={handleSkip}
             onPrevious={handlePrevious}
             onSubmit={handleSubmit}
             categories={categories}
             questionCategories={questionCategories}
           >
-            {questions[currentStep]}
+            {questionElements[currentStep]}
           </QuestionWizard>
         </div>
       </main>

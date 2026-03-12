@@ -39,4 +39,47 @@ public class QueryService : IQueryService
         await _db.SaveChangesAsync();
         return new QueryDto { Id = entity.Id, Name = entity.Name };
     }
+
+    public async Task<QueryWithQuestionsDto?> GetWithQuestionsAsync(int id)
+{
+    var query = await _db.Queries
+        .AsNoTracking()
+        .Where(q => q.Id == id)
+        .Select(q => new QueryWithQuestionsDto
+        {
+            Id = q.Id,
+            Name = q.Name,
+            Questions = q.QueryQuestions
+                .OrderBy(qq => qq.DisplayOrder)
+                .Select(qq => new QuestionWithDetailsDto
+                {
+                    QuestionId = qq.Question.QuestionId,
+                    FallbackText = qq.Question.FallbackText,
+                    QuestionType = qq.Question.QuestionType,
+                    IsRequired = qq.Question.IsRequired,
+                    RequiredRole = qq.Question.RequiredRole,
+                    DisplayOrder = qq.DisplayOrder,
+                    Options = qq.Question.Options
+                        .OrderBy(o => o.DisplayOrder)
+                        .Select(o => new QuestionOptionDto
+                        {
+                            QuestionOptionId = o.QuestionOptionId,
+                            FallbackText = o.FallbackText,
+                            OptionValue = o.OptionValue,
+                            DisplayOrder = o.DisplayOrder
+                        }).ToList(),
+                    Dependencies = qq.Question.ParentDependencies
+                        .Select(d => new QuestionDependencyDto
+                        {
+                            ParentQuestionId = d.ParentQuestionId,
+                            ChildQuestionId = d.ChildQuestionId,
+                            TriggerTextValue = d.TriggerTextValue,
+                            Operator = d.Operator
+                        }).ToList()
+                }).ToList()
+        })
+        .FirstOrDefaultAsync();
+
+    return query;
+}
 }
