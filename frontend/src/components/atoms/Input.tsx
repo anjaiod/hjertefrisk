@@ -22,6 +22,7 @@ type InputProps = BaseProps & InputHTMLAttributes<HTMLInputElement>;
 type SelectProps = BaseProps &
   SelectHTMLAttributes<HTMLSelectElement> & {
     options: Option[];
+    placeholder?: string;
   };
 type TextAreaProps = BaseProps & TextareaHTMLAttributes<HTMLTextAreaElement>;
 
@@ -51,17 +52,22 @@ export function Input(props: Props) {
   ].join(" ");
 
   if (as === "select") {
-    const { options, ...selectProps } = rest as SelectProps;
+    const { options, placeholder, ...selectProps } = rest as SelectProps;
 
     return (
       <select
         {...selectProps}
-        className={[
-          baseClassName,
-          "cursor-pointer appearance-none pr-12",
-          "bg-[url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2220%22 height=%2220%22 viewBox=%220 0 20 20%22 fill=%22none%22%3E%3Cpath d=%22M5 7.5L10 13L15 7.5%22 stroke=%22%23647A89%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E')] bg-size-[20px_20px] bg-position-[right_1.25rem_center] bg-no-repeat",
-        ].join(" ")}
+        className={[baseClassName, "cursor-pointer appearance-none pr-8"].join(" ")}
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 13L15 7.5' stroke='%23647A89' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "right 0.75rem center",
+          backgroundSize: "20px 20px",
+        }}
       >
+        {placeholder && (
+          <option value="" disabled hidden>{placeholder}</option>
+        )}
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}

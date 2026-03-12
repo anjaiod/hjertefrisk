@@ -1,23 +1,18 @@
 import PatientRow from "../molecules/PatientRow";
-// import { RiskLevel } from "../atoms/StatusBadge";
+import { TagVariant } from "../atoms/Tag";
 
 export interface Patient {
   id: string;
   name: string;
   lastVisited: string;
-  // riskLevel: RiskLevel;
-  score: number;
+  riskLevel: TagVariant;
 }
 
 interface PatientTableProps {
   patients: Patient[];
-  renderActions?: (patient: Patient) => React.ReactNode;
 }
 
-export default function PatientTable({
-  patients,
-  renderActions,
-}: PatientTableProps) {
+export default function PatientTable({ patients }: PatientTableProps) {
   return (
     <div className="rounded-xl overflow-hidden border border-brand-mist/50 shadow-sm">
       <table className="w-full">
@@ -43,9 +38,7 @@ export default function PatientTable({
               key={patient.id}
               name={patient.name}
               lastVisited={patient.lastVisited}
-              //riskLevel={patient.riskLevel}
-              score={patient.score}
-              actions={renderActions?.(patient)}
+              riskLevel={patient.riskLevel}
             />
           ))}
         </tbody>
