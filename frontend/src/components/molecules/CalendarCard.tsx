@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 
-export function CalendarCard() {
+type Activity = {
+  id: number;
+  title: string;
+  date: string;
+  location: string;
+  organizer: string;
+};
+
+export function CalendarCard({ activities }: { activities: Activity[] }) {
   const today = new Date();
 
   const [currentDate, setCurrentDate] = useState(
@@ -27,6 +35,10 @@ export function CalendarCard() {
   });
 
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  // placeholder for activities in calendar
+  const activityDate = new Date();
+  activityDate.setDate(today.getDate() + 3);
 
   return (
     <div className="bg-white rounded-xl border border-brand-mist shadow-sm p-4 w-[300px]">
@@ -69,21 +81,28 @@ export function CalendarCard() {
             day === today.getDate() &&
             month === today.getMonth() &&
             year === today.getFullYear();
+          // placeholder for activities in calendar
+          const hasActivity =
+            day === activityDate.getDate() &&
+            month === activityDate.getMonth() &&
+            year === activityDate.getFullYear();
 
           return (
             <div
               key={day}
               className={`
-                aspect-square flex items-center justify-center
-                rounded text-xs cursor-pointer
-                ${
-                  isToday
-                    ? "bg-brand-sky-lightest border border-brand-sky text-brand-navy font-semibold"
-                    : "hover:bg-brand-mist-lightest"
-                }
-              `}
+              aspect-square flex items-center justify-center cursor-pointer
+            `}
             >
-              {day}
+              <div
+                className={`
+                w-8 h-8 flex items-center justify-center rounded-full
+                ${isToday ? "bg-brand-mint-lighter text-brand-navy" : ""}
+                ${hasActivity ? "bg-brand-sky text-brand-navy" : ""}
+              `}
+              >
+                {day}
+              </div>
             </div>
           );
         })}
