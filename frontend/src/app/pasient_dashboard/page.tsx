@@ -36,7 +36,7 @@ export default function PatientDashboardPage() {
               <ActivityList activities={activities} />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-3 gap-6">
               <QuestionnaireList />
 
               <div className="flex flex-col gap-6">
