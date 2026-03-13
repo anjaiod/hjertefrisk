@@ -1,12 +1,17 @@
+"use client";
+
 import { PatientProfile } from "../../components/molecules/PatientProfile";
 import { PatientSidebarNav } from "../../components/organisms/PatientSidebarNav";
 import { CalendarCard } from "../../components/molecules/CalendarCard";
 import { ActivityList } from "../../components/molecules/ActivityList";
 import { QuestionnaireList } from "../../components/molecules/QuestionnaireList";
-import { FeatureCard } from "../../components/atoms/FeatureCard";
+import { DashboardCard } from "@/components/molecules/DashboardCard";
 import { PatientHeader } from "../../components/organisms/PatientHeader";
+import { useRouter } from "next/navigation";
 
 export default function PatientDashboardPage() {
+  const router = useRouter();
+
   // aktiviteter
   const activities = [
     {
@@ -40,18 +45,18 @@ export default function PatientDashboardPage() {
               <QuestionnaireList />
 
               <div className="flex flex-col gap-6">
-                <FeatureCard
-                  icon="❗️"
-                  title="Din risikoside"
-                  description="Trykk her for å gå til din risikoside"
-                  iconBgColor="bg-green-100"
+                <DashboardCard
+                  text="Trykk her for å gå til din risikoside"
+                  onClick={() =>
+                    router.push("/pasient_dashboard/pasientRisikoside")
+                  }
                 />
 
-                <FeatureCard
-                  icon="💪"
-                  title="Tiltak"
-                  description="Trykk her for å gå til tiltak"
-                  iconBgColor="bg-teal-100"
+                <DashboardCard
+                  text="Trykk her for å gå til tiltak"
+                  onClick={() =>
+                    router.push("/pasient_dashboard/pasientTiltakside")
+                  }
                 />
               </div>
             </div>
