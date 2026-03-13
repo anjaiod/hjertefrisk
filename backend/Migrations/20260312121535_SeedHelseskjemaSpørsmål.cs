@@ -9,10 +9,11 @@ namespace api.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             // Language
-            migrationBuilder.InsertData(
-                table: "Language",
-                columns: new[] { "Code", "Name" },
-                values: new object[] { "no", "Norsk" });
+            migrationBuilder.Sql(@"
+                INSERT INTO ""Language"" (""Code"", ""Name"")
+                VALUES ('no', 'Norsk')
+                ON CONFLICT (""Code"") DO NOTHING;
+            ");
 
             // Query
             migrationBuilder.InsertData(
