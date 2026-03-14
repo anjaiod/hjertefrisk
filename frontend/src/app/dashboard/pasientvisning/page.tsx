@@ -2,20 +2,58 @@ import PatientTable, { Patient } from "@/components/organisms/PatientTable";
 import { SidebarNav } from "@/components/organisms/SidebarNav";
 import { Input } from "@/components/atoms/Input";
 import { SearchBar } from "@/components/atoms/SearchBar";
+import { TagVariant } from "@/components/atoms/Tag";
 
-const mockPatients: Patient[] = [
-  { id: "1", name: "Pasient Pasientsen 1", lastVisited: "09.03.2026", riskLevel: "high" },
-  { id: "2", name: "Pasient Pasientsen 2", lastVisited: "09.03.2026", riskLevel: "high" },
-  { id: "3", name: "Pasient Pasientsen 3", lastVisited: "09.03.2026", riskLevel: "high" },
-  { id: "4", name: "Pasient Pasientsen 4", lastVisited: "09.03.2026", riskLevel: "medium" },
-  { id: "5", name: "Pasient Pasientsen 5", lastVisited: "09.03.2026", riskLevel: "medium" },
-  { id: "6", name: "Pasient Pasientsen 6", lastVisited: "09.03.2026", riskLevel: "medium" },
-  { id: "7", name: "Pasient Pasientsen 7", lastVisited: "09.03.2026", riskLevel: "low" },
-  { id: "8", name: "Pasient Pasientsen 8", lastVisited: "09.03.2026", riskLevel: "low" },
-  { id: "9", name: "Pasient Pasientsen 9", lastVisited: "09.03.2026", riskLevel: "low" },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
-export default function Page() {
+interface PatientDto {
+  id: number;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
+function scoreToRiskLevel(score: number): TagVariant {
+  if (score >= 7) return "high";
+  if (score >= 4) return "medium";
+  return "low";
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("nb-NO", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+async function fetchPatients(): Promise<Patient[]> {
+  const res = await fetch(`${API_URL}/api/patients`, { cache: "no-store" });
+  if (!res.ok) throw new Error("Kunne ikke hente pasienter");
+  const patients: PatientDto[] = await res.json();
+
+  return Promise.all(
+    patients.map(async (p) => {
+      let riskLevel: TagVariant = "low";
+      try {
+        const scoreRes = await fetch(`${API_URL}/api/patients/${p.id}/score`, { cache: "no-store" });
+        if (scoreRes.ok) {
+          const { totalScore } = await scoreRes.json();
+          riskLevel = scoreToRiskLevel(totalScore);
+        }
+      } catch {
+        // fallback to "low" if score fetch fails
+      }
+      return {
+        id: String(p.id),
+        name: p.name,
+        lastVisited: formatDate(p.createdAt),
+        riskLevel,
+      };
+    })
+  );
+}
+
+export default async function Page() {
+  const patients = await fetchPatients();
+
   return (
     <div className="flex">
       <SidebarNav activePath="/dashboard/pasientvisning" />
@@ -39,7 +77,7 @@ export default function Page() {
               <SearchBar placeholder="Søk..." />
             </div>
           </div>
-          <PatientTable patients={mockPatients} />
+          <PatientTable patients={patients} />
         </div>
       </main>
     </div>
