@@ -36,6 +36,7 @@ export default function PatientTable({ patients }: PatientTableProps) {
           {patients.map((patient) => (
             <PatientRow
               key={patient.id}
+              id={patient.id}
               name={patient.name}
               lastVisited={patient.lastVisited}
               riskLevel={patient.riskLevel}
