@@ -12,12 +12,21 @@ import { useRouter } from "next/navigation";
 export default function PatientDashboardPage() {
   const router = useRouter();
 
-  // aktiviteter
+  const today = new Date();
+
+  const activityDate = new Date();
+  activityDate.setDate(today.getDate() + 3);
+
+  const activityDateText = activityDate.toLocaleDateString("no-NO", {
+    day: "numeric",
+    month: "long",
+  });
+
   const activities = [
     {
       id: 1,
       title: "Gå på kostholdskurs",
-      date: "I dag 14:00",
+      date: `${activityDateText} 14:00`,
       location: "Haraldsgata 226",
       organizer: "Frisklivssentralen",
     },
@@ -36,8 +45,8 @@ export default function PatientDashboardPage() {
               <PatientProfile />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <CalendarCard activities={activities} />
+            <div className="grid grid-cols-[320px_1fr] gap-6">
+              <CalendarCard activityDate={activityDate} />
               <ActivityList activities={activities} />
             </div>
 
