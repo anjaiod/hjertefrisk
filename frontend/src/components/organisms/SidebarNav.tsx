@@ -36,8 +36,8 @@ export function SidebarNav({
   const primaryItems: NavItem[] = [
     {
       label: "Pasientoversikt",
-      href: "#",
-      active: activePath === "/#",
+      href: "/dashboard/pasientvisning",
+      active: activePath === "/dashboard/pasientvisning",
       icon: (
         <svg
           fill="none"
