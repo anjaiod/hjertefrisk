@@ -3,15 +3,9 @@ import { SidebarNav } from "@/components/organisms/SidebarNav";
 import { Input } from "@/components/atoms/Input";
 import { SearchBar } from "@/components/atoms/SearchBar";
 import { TagVariant } from "@/components/atoms/Tag";
+import { PatientDto } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
-
-interface PatientDto {
-  id: number;
-  name: string;
-  email: string;
-  createdAt: string;
-}
 
 function scoreToRiskLevel(score: number): TagVariant {
   if (score >= 7) return "high";
