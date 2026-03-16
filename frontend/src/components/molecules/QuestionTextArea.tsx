@@ -6,6 +6,7 @@ interface QuestionTextAreaProps {
   name: string;
   value: string;
   onChange: (value: string) => void;
+  onAnswer?: () => void;
   placeholder?: string;
   rows?: number;
   required?: boolean;
@@ -16,6 +17,7 @@ export default function QuestionTextArea({
   name,
   value,
   onChange,
+  onAnswer,
   placeholder,
   rows = 3,
   required = false,
@@ -31,6 +33,15 @@ export default function QuestionTextArea({
         rows={rows}
         onChange={onChange}
       />
+      {onAnswer && (
+        <button
+          type="button"
+          onClick={onAnswer}
+          className="mt-3 px-4 py-2 bg-brand-navy text-white rounded-md hover:opacity-90"
+        >
+          Lagre svar
+        </button>
+      )}
     </div>
   );
 }

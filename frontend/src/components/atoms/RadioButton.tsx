@@ -24,9 +24,9 @@ export default function RadioButton({
         value={value}
         checked={checked}
         onChange={(e) => onChange(e.target.value)}
-        className="w-4 h-4 text-brand-navy cursor-pointer"
+        className="w-5 h-5 text-brand-navy cursor-pointer"
       />
-      <label htmlFor={id} className="text-sm cursor-pointer">
+      <label htmlFor={id} className="text-lg cursor-pointer">
         {label}
       </label>
     </div>
