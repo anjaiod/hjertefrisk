@@ -60,8 +60,16 @@ public class AppDbContext : DbContext
             .HasIndex(x => x.Email)
             .IsUnique();
 
+        modelBuilder.Entity<Patient>()
+            .HasIndex(x => x.SupabaseUserId)
+            .IsUnique();
+
         modelBuilder.Entity<Personnel>()
             .HasIndex(x => x.Email)
+            .IsUnique();
+
+        modelBuilder.Entity<Personnel>()
+            .HasIndex(x => x.SupabaseUserId)
             .IsUnique();
 
         // -------------------------

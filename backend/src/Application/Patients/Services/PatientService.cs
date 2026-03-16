@@ -22,6 +22,7 @@ public class PatientService : IPatientService
             .Select(p => new PatientDto
             {
                 Id = p.Id,
+                SupabaseUserId = p.SupabaseUserId,
                 Name = p.Name,
                 Email = p.Email,
                 CreatedAt = p.CreatedAt
@@ -33,6 +34,7 @@ public class PatientService : IPatientService
     {
         var entity = new Patient
         {
+            SupabaseUserId = dto.SupabaseUserId.Trim(),
             Name = dto.Name.Trim(),
             Email = dto.Email.Trim()
         };
@@ -43,6 +45,7 @@ public class PatientService : IPatientService
         return new PatientDto
         {
             Id = entity.Id,
+            SupabaseUserId = entity.SupabaseUserId,
             Name = entity.Name,
             Email = entity.Email,
             CreatedAt = entity.CreatedAt
