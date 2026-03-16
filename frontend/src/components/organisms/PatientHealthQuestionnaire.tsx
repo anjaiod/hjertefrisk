@@ -1,0 +1,292 @@
+"use client";
+
+import { useState, useEffect, ReactElement } from "react";
+import QuestionWizard from "../molecules/QuestionWizard";
+import QuestionRadio from "../molecules/QuestionRadio";
+import QuestionNumber from "../molecules/QuestionNumber";
+import QuestionTextArea from "../molecules/QuestionTextArea";
+import ConditionalQuestion from "../molecules/ConditionalQuestion";
+
+interface QuestionOption {
+  questionOptionId: number;
+  fallbackText: string;
+  optionValue: string;
+  displayOrder: number;
+}
+
+interface QuestionDependency {
+  parentQuestionId: number;
+  childQuestionId: number;
+  triggerTextValue: string | null;
+  operator: string;
+}
+
+interface Question {
+  questionId: number;
+  fallbackText: string;
+  questionType: string;
+  isRequired: boolean;
+  requiredRole: string | null;
+  displayOrder: number;
+  options: QuestionOption[];
+  dependencies: QuestionDependency[];
+}
+
+const CATEGORY_NAMES = [
+  "Røyking",
+  "Fysisk aktivitet",
+  "Kosthold",
+  "Vekt",
+  "Søvn",
+  "Alkohol",
+  "Rusmidler",
+];
+
+// Hvilke questionId-er tilhører hvilken kategori (basert på displayOrder)
+function getCategoryIndex(displayOrder: number): number {
+  if (displayOrder <= 3) return 0; // Røyking
+  if (displayOrder <= 9) return 1; // Fysisk aktivitet
+  if (displayOrder <= 15) return 2; // Kosthold
+  if (displayOrder <= 18) return 3; // Vekt
+  if (displayOrder <= 27) return 4; // Søvn
+  if (displayOrder <= 37) return 5; // Alkohol
+  return 6; // Rusmidler
+}
+
+export default function PatientHealthQuestionnaire() {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/query/by-name/Helseskjema`,
+        );
+        if (!res.ok) throw new Error("Kunne ikke hente spørsmål");
+        const data = await res.json();
+        setQuestions(data.questions);
+      } catch (err) {
+        setError("Noe gikk galt ved henting av spørsmål.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, []);
+
+  const updateAnswer = (questionId: number, value: string) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  };
+
+  const handleNext = () => setCurrentStep((prev) => prev + 1);
+  const handleSkip = () => setCurrentStep((prev) => prev + 1);
+  const handlePrevious = () => {
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
+  };
+  const handleSubmit = () => {
+    console.log("Svar:", answers);
+    alert("Skjema sendt inn!");
+  };
+
+  // Finn ut om et spørsmål skal vises basert på dependencies
+  const shouldShowQuestion = (question: Question): boolean => {
+    const isChild = questions.some((q) =>
+      q.dependencies.some((d) => d.childQuestionId === question.questionId),
+    );
+    if (!isChild) return true;
+
+    // Finn alle parent-dependencies for dette spørsmålet
+    const parentDeps = questions.flatMap((q) =>
+      q.dependencies.filter((d) => d.childQuestionId === question.questionId),
+    );
+
+    return parentDeps.some((dep) => {
+      const parentAnswer = answers[dep.parentQuestionId];
+      if (!parentAnswer) return false;
+      if (dep.operator === "=") return parentAnswer === dep.triggerTextValue;
+      if (dep.operator === "OR")
+        return (
+          parentAnswer === dep.triggerTextValue ||
+          parentAnswer.startsWith("nei")
+        );
+      return false;
+    });
+  };
+
+  // Bygg den synlige spørsmålslisten dynamisk basert på svar
+  const visibleQuestions = questions.filter(shouldShowQuestion);
+
+  const buildQuestionElement = (question: Question): ReactElement => {
+    const value = answers[question.questionId] ?? "";
+    const name = `question-${question.questionId}`;
+
+    // Determine placeholder based on question text or type
+    const getPlaceholder = (): string | undefined => {
+      const text = question.fallbackText.toLowerCase();
+
+      // Number fields
+      if (text.includes("hvor høy")) return "170";
+      if (text.includes("hvor mye veier")) return "70";
+      if (text.includes("livvidde")) return "80";
+
+      // Text fields
+      if (text.includes("hvor mye røyker"))
+        return "F.eks. 10 sigaretter per dag";
+      if (text.includes("vekten din endret"))
+        return "F.eks. økt 5 kg siste 6 måneder";
+      if (text.includes("begrensninger") && text.includes("skriv"))
+        return "Beskriv dine fysiske begrensninger...";
+      if (text.includes("barrierer") && text.includes("skriv"))
+        return "Beskriv barrierer...";
+
+      return undefined;
+    };
+
+    const getUnit = (): string | undefined => {
+      const text = question.fallbackText.toLowerCase();
+      if (text.includes("hvor høy")) return "cm";
+      if (text.includes("hvor mye veier")) return "kg";
+      if (text.includes("livvidde")) return "cm";
+      return undefined;
+    };
+
+    const getRows = (): number | undefined => {
+      const text = question.fallbackText.toLowerCase();
+      if (text.includes("hvor mye røyker")) return 2;
+      if (text.includes("vekten din endret")) return 2;
+      if (text.includes("begrensninger") || text.includes("barrierer"))
+        return 3;
+      return undefined;
+    };
+
+    const placeholder = getPlaceholder();
+    const unit = getUnit();
+    const rows = getRows();
+
+    if (question.questionType === "boolean") {
+      return (
+        <ConditionalQuestion
+          key={question.questionId}
+          question={question.fallbackText}
+          name={name}
+          value={value as "ja" | "nei" | ""}
+          onChange={(val) => updateAnswer(question.questionId, val)}
+          onAnswer={handleNext}
+          required={question.isRequired}
+        />
+      );
+    }
+
+    if (question.questionType === "radio") {
+      return (
+        <QuestionRadio
+          key={question.questionId}
+          question={question.fallbackText}
+          name={name}
+          options={question.options.map((o) => ({
+            value: o.optionValue,
+            label: o.fallbackText,
+          }))}
+          value={value}
+          onChange={(val) => updateAnswer(question.questionId, val)}
+          onAnswer={handleNext}
+          required={question.isRequired}
+        />
+      );
+    }
+
+    if (question.questionType === "number") {
+      return (
+        <QuestionNumber
+          key={question.questionId}
+          question={question.fallbackText}
+          name={name}
+          value={value}
+          onChange={(val) => updateAnswer(question.questionId, val)}
+          onAnswer={handleNext}
+          placeholder={placeholder}
+          unit={unit}
+          required={question.isRequired}
+        />
+      );
+    }
+
+    // text / textarea
+    return (
+      <QuestionTextArea
+        key={question.questionId}
+        question={question.fallbackText}
+        name={name}
+        value={value}
+        onChange={(val) => updateAnswer(question.questionId, val)}
+        onAnswer={handleNext}
+        placeholder={placeholder}
+        rows={rows}
+        required={question.isRequired}
+      />
+    );
+  };
+
+  const questionElements = visibleQuestions.map(buildQuestionElement);
+  const questionCategories = visibleQuestions.map((q) =>
+    getCategoryIndex(q.displayOrder),
+  );
+
+  const categoryCounts = CATEGORY_NAMES.map(
+    (_, i) => questionCategories.filter((c) => c === i).length,
+  );
+  const categories = CATEGORY_NAMES.map((name, i) => ({
+    name,
+    count: categoryCounts[i],
+  }));
+
+  useEffect(() => {
+    if (currentStep >= visibleQuestions.length && visibleQuestions.length > 0) {
+      setCurrentStep(visibleQuestions.length - 1);
+    }
+  }, [visibleQuestions.length, currentStep]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-500">Laster spørsmål...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex">
+      <main className="flex-1 bg-slate-50 p-8">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+            Helseskjema
+          </h1>
+          <QuestionWizard
+            currentStep={currentStep}
+            totalSteps={questionElements.length}
+            onSkip={handleSkip}
+            onPrevious={handlePrevious}
+            onSubmit={handleSubmit}
+            categories={categories}
+            questionCategories={questionCategories}
+          >
+            {questionElements[currentStep]}
+          </QuestionWizard>
+        </div>
+      </main>
+    </div>
+  );
+}

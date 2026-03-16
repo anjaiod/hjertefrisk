@@ -1,0 +1,98 @@
+"use client";
+
+interface Category {
+  name: string;
+  count: number;
+}
+
+interface CategorizedProgressBarProps {
+  categories: Category[];
+  currentStep: number;
+  questionCategories: number[];
+}
+
+export default function CategorizedProgressBar({
+  categories,
+  currentStep,
+  questionCategories,
+}: CategorizedProgressBarProps) {
+  const totalSteps = questionCategories.length;
+  // Ensure currentStep doesn't exceed bounds
+  const safeCurrentStep = Math.min(currentStep, totalSteps - 1);
+  const currentCategoryIndex = questionCategories[safeCurrentStep];
+  const currentCategory = categories[currentCategoryIndex];
+
+  // Calculate how many questions completed in each category
+  const completedPerCategory = categories.map((_, categoryIndex) => {
+    return questionCategories.filter(
+      (qCat, qIndex) => qCat === categoryIndex && qIndex <= safeCurrentStep,
+    ).length;
+  });
+
+  return (
+    <div className="w-full">
+      {/* Category Segments */}
+      <div className="flex gap-1 mb-3">
+        {categories.map((category, index) => {
+          const totalInCategory = category.count;
+          const completedInCategory = completedPerCategory[index];
+          const progressPercent =
+            totalInCategory > 0
+              ? (completedInCategory / totalInCategory) * 100
+              : 0;
+          const isActive = index === currentCategoryIndex;
+
+          return (
+            <div
+              key={index}
+              className="flex-1 relative"
+              style={{ flexBasis: `${(category.count / totalSteps) * 100}%` }}
+            >
+              {/* Background */}
+              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                {/* Progress */}
+                <div
+                  className="bg-brand-mint h-3 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${progressPercent}%`,
+                  }}
+                />
+              </div>
+              {/* Category Label */}
+              <div
+                className={`text-xs mt-1 text-center ${
+                  isActive
+                    ? "font-semibold text-gray-800"
+                    : "font-normal text-gray-600"
+                }`}
+              >
+                {category.name}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Current Progress Text */}
+      <div className="flex items-center justify-between text-sm">
+        <span className="font-medium text-gray-700">
+          {currentCategory ? (
+            <>
+              Spørsmål {Math.min(currentStep + 1, totalSteps)} av {totalSteps}
+            </>
+          ) : (
+            <>
+              Spørsmål {Math.min(currentStep + 1, totalSteps)} av {totalSteps}
+            </>
+          )}
+        </span>
+        <span className="text-gray-500">
+          {Math.round(
+            (Math.min(currentStep + 1, totalSteps) / totalSteps) * 100,
+          )}
+          %
+        </span>
+      </div>
+    </div>
+  );
+}
