@@ -6,7 +6,7 @@ export default function Page() {
           Gå til Dashboard
         </a>
 
-        <a href="/pasient_dashboard" className="text-brand-navy underline">
+        <a href="/patient_dashboard" className="text-brand-navy underline">
           Gå til Pasient Dashboard
         </a>
     </div>
