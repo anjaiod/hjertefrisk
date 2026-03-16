@@ -1,18 +1,32 @@
+"use client";
+
 import { PatientProfile } from "../../components/molecules/PatientProfile";
 import { PatientSidebarNav } from "../../components/organisms/PatientSidebarNav";
 import { CalendarCard } from "../../components/molecules/CalendarCard";
 import { ActivityList } from "../../components/molecules/ActivityList";
 import { QuestionnaireList } from "../../components/molecules/QuestionnaireList";
-import { FeatureCard } from "../../components/atoms/FeatureCard";
+import { DashboardCard } from "@/components/molecules/DashboardCard";
 import { PatientHeader } from "../../components/organisms/PatientHeader";
+import { useRouter } from "next/navigation";
 
 export default function PatientDashboardPage() {
-  // aktiviteter
+  const router = useRouter();
+
+  const today = new Date();
+
+  const activityDate = new Date();
+  activityDate.setDate(today.getDate() + 3);
+
+  const activityDateText = activityDate.toLocaleDateString("no-NO", {
+    day: "numeric",
+    month: "long",
+  });
+
   const activities = [
     {
       id: 1,
       title: "Gå på kostholdskurs",
-      date: "I dag 14:00",
+      date: `${activityDateText} 14:00`,
       location: "Haraldsgata 226",
       organizer: "Frisklivssentralen",
     },
@@ -31,27 +45,27 @@ export default function PatientDashboardPage() {
               <PatientProfile />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <CalendarCard />
+            <div className="grid grid-cols-[320px_1fr] gap-6">
+              <CalendarCard activityDate={activityDate} />
               <ActivityList activities={activities} />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-3 gap-6">
               <QuestionnaireList />
 
               <div className="flex flex-col gap-6">
-                <FeatureCard
-                  icon="❗️"
-                  title="Din risikoside"
-                  description="Trykk her for å gå til din risikoside"
-                  iconBgColor="bg-green-100"
+                <DashboardCard
+                  text="Trykk her for å gå til din risikoside"
+                  onClick={() =>
+                    router.push("/pasient_dashboard/pasientRisikoside")
+                  }
                 />
 
-                <FeatureCard
-                  icon="💪"
-                  title="Tiltak"
-                  description="Trykk her for å gå til tiltak"
-                  iconBgColor="bg-teal-100"
+                <DashboardCard
+                  text="Trykk her for å gå til tiltak"
+                  onClick={() =>
+                    router.push("/pasient_dashboard/pasientTiltakside")
+                  }
                 />
               </div>
             </div>
