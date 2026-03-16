@@ -12,14 +12,14 @@ export function PatientHeader() {
         <SearchBar className="w-64" />
 
         <button
-          onClick={() => (window.location.href = "../../pasient_dashboard")}
-          className="bg-teal-500 hover:bg-teal-600 transition rounded-full w-10 h-10 flex items-center justify-center"
+          onClick={() => (window.location.href = "../../pasientDashboard")}
+          className="bg-brand-navy hover:bg-brand-navy-light transition rounded-full w-10 h-10 flex items-center justify-center cursor-pointer"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#064e3b"
+            stroke="white"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"

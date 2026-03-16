@@ -1,4 +1,7 @@
+import { Button } from "../atoms/Button";
+
 export function QuestionnaireList() {
+  // placeholder names
   const forms = [
     "Besvart Januar 2026",
     "Besvart Februar 2026",
@@ -6,11 +9,10 @@ export function QuestionnaireList() {
   ];
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 col-span-2">
       <h3 className="text-lg font-semibold text-slate-900 mb-4">
         Tidligere spørreskjema
       </h3>
-
       <div className="flex flex-col gap-3">
         {forms.map((form) => (
           <div
@@ -19,9 +21,7 @@ export function QuestionnaireList() {
           >
             <span className="text-slate-700">{form}</span>
 
-            <button className="bg-brand-navy text-white px-4 py-1 rounded-md">
-              Åpne
-            </button>
+            <Button>Åpne</Button>
           </div>
         ))}
       </div>

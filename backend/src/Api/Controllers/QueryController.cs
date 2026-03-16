@@ -36,4 +36,20 @@ public class QueryController : ControllerBase
 		var created = await _service.CreateAsync(dto);
 		return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
 	}
+
+	[HttpGet("{id:int}/questions")]
+	public async Task<IActionResult> GetWithQuestions(int id)
+	{
+    	var item = await _service.GetWithQuestionsAsync(id);
+    	if (item == null) return NotFound();
+    	return Ok(item);
+	}
+
+	[HttpGet("by-name/{name}")]
+	public async Task<IActionResult> GetByName(string name)
+	{
+		var item = await _service.GetByNameAsync(name);
+		if (item == null) return NotFound();
+		return Ok(item);
+	}
 }

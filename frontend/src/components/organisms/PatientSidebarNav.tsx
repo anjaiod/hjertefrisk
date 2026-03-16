@@ -8,11 +8,20 @@ type NavItem = {
 
 function Item({ item }: { item: NavItem }) {
   const classes = [
-    "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold transition-all",
+    "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold transition-all cursor-pointer",
     item.active
       ? "bg-brand-sky/20 text-brand-navy"
       : "text-slate-700 hover:bg-brand-mist/40 hover:text-brand-navy hover:shadow-sm",
   ].join(" ");
+
+  if (!item.href) {
+    return (
+      <button className={classes}>
+        <span className="w-5 h-5">{item.icon}</span>
+        <span>{item.label}</span>
+      </button>
+    );
+  }
 
   return (
     <a href={item.href} className={classes}>
@@ -69,8 +78,8 @@ export function PatientSidebarNav({
     },
     {
       label: "Hjertefrisk",
-      href: "/pasient_dashboard/patientHjertefrisk",
-      active: activePath === "/pasient_dashboard/patientHjertefrisk",
+      href: "/pasientDashboard/pasientHjertefrisk",
+      active: activePath === "/pasientDashboard/pasientHjertefrisk",
       icon: (
         <svg
           fill="none"
@@ -88,8 +97,8 @@ export function PatientSidebarNav({
     },
     {
       label: "Vitalia",
-      href: "/pasient_dashboard/patientVitals",
-      active: activePath === "/pasient_dashboard/patientVitals",
+      href: "/pasientDashboard/pasientVitalia",
+      active: activePath === "/pasientDashboard/pasientVitalia",
       icon: (
         <svg
           fill="none"
@@ -112,8 +121,8 @@ export function PatientSidebarNav({
     },
     {
       label: "Innstillinger",
-      href: "/pasient_dashboard/patientSettings",
-      active: activePath === "/pasient_dashboard/patientSettings",
+      href: "/pasientDashboard/pasientInnstillinger",
+      active: activePath === "/pasientDashboard/pasientInnstillinger",
       icon: (
         <svg
           fill="none"
@@ -137,10 +146,12 @@ export function PatientSidebarNav({
   ];
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-56 flex-col border-r border-brand-sky/30 bg-gradient-to-b from-white to-brand-mist/10 p-6 md:flex">
-      <div className="px-4">
-        <p className="text-sm text-slate-600">Innlogget som</p>
-        <p className="text-2xl font-bold text-brand-navy">{patientName}</p>
+    <aside className="sticky top-0 hidden h-screen w-72 flex-col border-r border-brand-sky/30 bg-gradient-to-b from-white to-brand-mist/10 p-6 md:flex">
+      <div className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm">
+        <div className="space-y-0.5">
+          <p className="font-bold text-brand-navy">{patientName}</p>
+          <p className="text-sm text-slate-600">Innlogget som pasient</p>
+        </div>
       </div>
 
       <div className="my-6 h-px bg-gradient-to-r from-transparent via-brand-sky to-transparent" />
