@@ -5,6 +5,10 @@ namespace backend.src.Application.Patients.DTOs;
 public class CreatePatientDto
 {
     [Required]
+    [StringLength(128, MinimumLength = 1)]
+    public required string SupabaseUserId { get; set; }
+
+    [Required]
     [StringLength(200, MinimumLength = 1)]
     public required string Name { get; set; }
 

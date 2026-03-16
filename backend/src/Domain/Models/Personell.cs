@@ -3,6 +3,7 @@ namespace backend.src.Domain.Models;
 public class Personnel
 {
     public int Id { get; set; }              // PK
+    public string SupabaseUserId { get; set; } = "";
     public string Name { get; set; } = "";
     public string Email { get; set; } = "";  
     public DateTime CreatedAt { get; set; }
