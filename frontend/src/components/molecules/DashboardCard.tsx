@@ -1,3 +1,5 @@
+import { Button } from "../atoms/Button";
+
 type DashboardCardProps = {
   text: string;
   onClick?: () => void;
@@ -6,12 +8,9 @@ type DashboardCardProps = {
 export function DashboardCard({ text, onClick }: DashboardCardProps) {
   return (
     <div className="bg-white rounded-2xl shadow-md p-8">
-      <button
-        onClick={onClick}
-        className="w-full bg-brand-teal hover:bg-brand-teal-light text-white font-semibold py-6 rounded-lg transition"
-      >
+      <Button onClick={onClick} variant="confirm" className="w-full">
         {text}
-      </button>
+      </Button>
     </div>
   );
 }

@@ -12,7 +12,7 @@ export function PatientHeader() {
         <SearchBar className="w-64" />
 
         <button
-          onClick={() => (window.location.href = "../../pasient_dashboard")}
+          onClick={() => (window.location.href = "../../pasientDashboard")}
           className="bg-brand-navy hover:bg-brand-navy-light transition rounded-full w-10 h-10 flex items-center justify-center cursor-pointer"
         >
           <svg
