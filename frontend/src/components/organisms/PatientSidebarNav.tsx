@@ -78,8 +78,8 @@ export function PatientSidebarNav({
     },
     {
       label: "Hjertefrisk",
-      href: "/pasient_dashboard/patientHjertefrisk",
-      active: activePath === "/pasient_dashboard/patientHjertefrisk",
+      href: "/pasientDashboard/pasientHjertefrisk",
+      active: activePath === "/pasientDashboard/pasientHjertefrisk",
       icon: (
         <svg
           fill="none"
@@ -97,8 +97,8 @@ export function PatientSidebarNav({
     },
     {
       label: "Vitalia",
-      href: "/pasient_dashboard/patientVitals",
-      active: activePath === "/pasient_dashboard/patientVitals",
+      href: "/pasientDashboard/pasientVitalia",
+      active: activePath === "/pasientDashboard/pasientVitalia",
       icon: (
         <svg
           fill="none"
@@ -121,8 +121,8 @@ export function PatientSidebarNav({
     },
     {
       label: "Innstillinger",
-      href: "/pasient_dashboard/patientSettings",
-      active: activePath === "/pasient_dashboard/patientSettings",
+      href: "/pasientDashboard/pasientInnstillinger",
+      active: activePath === "/pasientDashboard/pasientInnstillinger",
       icon: (
         <svg
           fill="none"

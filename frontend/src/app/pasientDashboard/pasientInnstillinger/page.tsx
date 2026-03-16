@@ -4,11 +4,13 @@ import { PatientHeader } from "../../../components/organisms/PatientHeader";
 export default function Page() {
   return (
     <div className="flex">
-      <PatientSidebarNav activePath="/pasient_dashboard/patientHjertefrisk" />
+      <PatientSidebarNav activePath="/pasientDashboard/pasientInnstillinger" />
+
       <div className="flex flex-col flex-1">
         <PatientHeader />
+
         <main>
-          <h1>Hjertefrisk</h1>
+          <h1>Innstillinger</h1>
         </main>
       </div>
     </div>

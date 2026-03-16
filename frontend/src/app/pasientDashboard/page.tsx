@@ -34,7 +34,7 @@ export default function PatientDashboardPage() {
 
   return (
     <div className="flex">
-      <PatientSidebarNav activePath="/patient_dashboard" />
+      <PatientSidebarNav activePath="/pasientDashboard" />
 
       <div className="flex flex-col flex-1">
         <PatientHeader />
@@ -57,14 +57,14 @@ export default function PatientDashboardPage() {
                 <DashboardCard
                   text="Trykk her for å gå til din risikoside"
                   onClick={() =>
-                    router.push("/pasient_dashboard/pasientRisikoside")
+                    router.push("/pasientDashboard/pasientRisikoside")
                   }
                 />
 
                 <DashboardCard
                   text="Trykk her for å gå til tiltak"
                   onClick={() =>
-                    router.push("/pasient_dashboard/pasientTiltakside")
+                    router.push("/pasientDashboard/pasientTiltakside")
                   }
                 />
               </div>
