@@ -168,8 +168,7 @@ static string NormalizePostgresConnectionString(string input)
         Database = databaseName,
         Username = username,
         Password = password,
-        SslMode = sslMode,
-        TrustServerCertificate = true
+        SslMode = sslMode
     };
 
     return builder.ConnectionString;
