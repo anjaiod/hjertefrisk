@@ -22,6 +22,26 @@ namespace api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("backend.src.Domain.Models.Category", b =>
+                {
+                    b.Property<int>("CategoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CategoryId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("CategoryId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Categories");
+                });
+
             modelBuilder.Entity("backend.src.Domain.Models.Language", b =>
                 {
                     b.Property<string>("Code")
@@ -100,6 +120,9 @@ namespace api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("MeasurementId"));
 
+                    b.Property<int?>("CategoryId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("FallbackText")
                         .IsRequired()
                         .HasColumnType("text");
@@ -109,6 +132,8 @@ namespace api.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("MeasurementId");
+
+                    b.HasIndex("CategoryId");
 
                     b.ToTable("Measurements");
                 });
@@ -198,9 +223,16 @@ namespace api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("SupabaseUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("SupabaseUserId")
                         .IsUnique();
 
                     b.ToTable("Patients");
@@ -242,9 +274,16 @@ namespace api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("SupabaseUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("SupabaseUserId")
                         .IsUnique();
 
                     b.ToTable("Personnel");
@@ -293,6 +332,9 @@ namespace api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("QuestionId"));
 
+                    b.Property<int?>("CategoryId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("FallbackText")
                         .IsRequired()
                         .HasColumnType("text");
@@ -308,6 +350,8 @@ namespace api.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("QuestionId");
+
+                    b.HasIndex("CategoryId");
 
                     b.ToTable("Questions");
                 });
@@ -545,6 +589,16 @@ namespace api.Migrations
                     b.Navigation("Measure");
                 });
 
+            modelBuilder.Entity("backend.src.Domain.Models.Measurement", b =>
+                {
+                    b.HasOne("backend.src.Domain.Models.Category", "Category")
+                        .WithMany("Measurements")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Category");
+                });
+
             modelBuilder.Entity("backend.src.Domain.Models.MeasurementResult", b =>
                 {
                     b.HasOne("backend.src.Domain.Models.Measurement", "Measurement")
@@ -646,6 +700,16 @@ namespace api.Migrations
                     b.Navigation("Query");
 
                     b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("backend.src.Domain.Models.Question", b =>
+                {
+                    b.HasOne("backend.src.Domain.Models.Category", "Category")
+                        .WithMany("Questions")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.QuestionDependency", b =>
@@ -786,6 +850,13 @@ namespace api.Migrations
                     b.Navigation("Patient");
 
                     b.Navigation("Personnel");
+                });
+
+            modelBuilder.Entity("backend.src.Domain.Models.Category", b =>
+                {
+                    b.Navigation("Measurements");
+
+                    b.Navigation("Questions");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.Language", b =>

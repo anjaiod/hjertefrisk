@@ -8,6 +8,7 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) {}
 
     public DbSet<Language> Language => Set<Language>();
+    public DbSet<Category> Categories => Set<Category>();
     public DbSet<Patient> Patients => Set<Patient>();
     public DbSet<Personnel> Personnel => Set<Personnel>();
     public DbSet<Query> Queries => Set<Query>();
@@ -34,6 +35,7 @@ public class AppDbContext : DbContext
         // KEYS
         // -------------------------
         modelBuilder.Entity<Language>().HasKey(x => x.Code);
+        modelBuilder.Entity<Category>().HasKey(x => x.CategoryId);
 
         modelBuilder.Entity<QuestionText>().HasKey(x => new { x.QuestionId, x.LanguageCode });
         modelBuilder.Entity<OptionText>().HasKey(x => new { x.QuestionOptionId, x.LanguageCode });
@@ -60,8 +62,20 @@ public class AppDbContext : DbContext
             .HasIndex(x => x.Email)
             .IsUnique();
 
+        modelBuilder.Entity<Patient>()
+            .HasIndex(x => x.SupabaseUserId)
+            .IsUnique();
+
         modelBuilder.Entity<Personnel>()
             .HasIndex(x => x.Email)
+            .IsUnique();
+
+        modelBuilder.Entity<Personnel>()
+            .HasIndex(x => x.SupabaseUserId)
+            .IsUnique();
+
+        modelBuilder.Entity<Category>()
+            .HasIndex(x => x.Name)
             .IsUnique();
 
         // -------------------------
@@ -140,6 +154,19 @@ public class AppDbContext : DbContext
             .HasOne(x => x.Patient)
             .WithMany(p => p.Responses)
             .HasForeignKey(x => x.PatientId);
+
+        // Category
+        modelBuilder.Entity<Question>()
+            .HasOne(x => x.Category)
+            .WithMany(c => c.Questions)
+            .HasForeignKey(x => x.CategoryId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Measurement>()
+            .HasOne(x => x.Category)
+            .WithMany(c => c.Measurements)
+            .HasForeignKey(x => x.CategoryId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Response>()
             .HasOne(x => x.Question)

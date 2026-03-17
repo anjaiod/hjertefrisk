@@ -1,4 +1,6 @@
 export * from "./Language";
+export * from "./Auth";
+export * from "./Category";
 export * from "./Query";
 export * from "./Question";
 export * from "./QuestionOption";
