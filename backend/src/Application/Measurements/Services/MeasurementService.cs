@@ -3,6 +3,7 @@ using backend.src.Application.Measurements.Interfaces;
 using backend.src.Domain.Models;
 using backend.src.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace backend.src.Application.Measurements.Services;
 
@@ -32,6 +33,23 @@ public class MeasurementService : IMeasurementService
 
     public async Task<MeasurementDto> CreateAsync(CreateMeasurementDto dto)
     {
+        if (dto == null)
+        {
+            throw new ArgumentNullException(nameof(dto));
+        }
+
+        if (dto.CategoryId != null)
+        {
+            var categoryExists = await _db.Categories
+                .AsNoTracking()
+                .AnyAsync(c => c.CategoryId == dto.CategoryId);
+
+            if (!categoryExists)
+            {
+                throw new KeyNotFoundException($"Category with id {dto.CategoryId} was not found.");
+            }
+        }
+
         var entity = new Measurement
         {
             CategoryId = dto.CategoryId,
