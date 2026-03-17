@@ -34,38 +34,22 @@ using Npgsql;
 var builder = WebApplication.CreateBuilder(args);
 const string CorsPolicyName = "FrontendDev";
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins("http://localhost:3001", "http://localhost:3000")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
-
 // Add services to the container
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
-
-builder.Services.AddControllers();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(CorsPolicyName, policy =>
     {
         policy
-            .WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
+            .WithOrigins(
+                "http://localhost:3000",
+                "http://localhost:3001",
+                "http://127.0.0.1:3000")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
+
+builder.Services.AddControllers();
 
 var rawConnectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("ConnectionStrings:Default is not configured.");
@@ -107,8 +91,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors(CorsPolicyName);
-
-app.UseCors("AllowFrontend");
 
 app.MapControllers();
 
@@ -168,8 +150,7 @@ static string NormalizePostgresConnectionString(string input)
         Database = databaseName,
         Username = username,
         Password = password,
-        SslMode = sslMode,
-        TrustServerCertificate = true
+        SslMode = sslMode
     };
 
     return builder.ConnectionString;

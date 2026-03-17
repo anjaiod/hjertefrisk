@@ -30,9 +30,17 @@ public class CategoryService : ICategoryService
 
     public async Task<CategoryDto> CreateAsync(CreateCategoryDto dto)
     {
+        var name = dto.Name.Trim();
+
+        var exists = await _db.Categories.AnyAsync(c => c.Name == name);
+        if (exists)
+        {
+            throw new InvalidOperationException($"A category with the name '{name}' already exists.");
+        }
+
         var entity = new Category
         {
-            Name = dto.Name.Trim()
+            Name = name
         };
 
         _db.Categories.Add(entity);
