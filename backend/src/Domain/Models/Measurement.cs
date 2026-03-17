@@ -3,8 +3,11 @@ namespace backend.src.Domain.Models;
 public class Measurement
 {
     public int MeasurementId { get; set; }            // PK
+    public int? CategoryId { get; set; }
     public string Unit { get; set; } = "";
-    public string FallbackText { get; set; }
+    public string FallbackText { get; set; } = "";
+
+    public Category? Category { get; set; }
 
     public ICollection<MeasurementText> Texts { get; set; } = new List<MeasurementText>();
     public ICollection<MeasurementResult> Results { get; set; } = new List<MeasurementResult>();
