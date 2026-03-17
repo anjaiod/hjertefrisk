@@ -22,6 +22,8 @@ public class MeasurementService : IMeasurementService
             .Select(m => new MeasurementDto
             {
                 MeasurementId = m.MeasurementId,
+                CategoryId = m.CategoryId,
+                CategoryName = m.Category != null ? m.Category.Name : null,
                 Unit = m.Unit,
                 FallbackText = m.FallbackText
             })
@@ -32,6 +34,7 @@ public class MeasurementService : IMeasurementService
     {
         var entity = new Measurement
         {
+            CategoryId = dto.CategoryId,
             Unit = dto.Unit.Trim(),
             FallbackText = dto.FallbackText.Trim()
         };
@@ -42,6 +45,8 @@ public class MeasurementService : IMeasurementService
         return new MeasurementDto
         {
             MeasurementId = entity.MeasurementId,
+            CategoryId = entity.CategoryId,
+            CategoryName = null,
             Unit = entity.Unit,
             FallbackText = entity.FallbackText
         };

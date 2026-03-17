@@ -7,6 +7,8 @@ using backend.src.Application.Queries.Services;
 
 using backend.src.Application.Questions.Interfaces;
 using backend.src.Application.Questions.Services;
+using backend.src.Application.Categories.Interfaces;
+using backend.src.Application.Categories.Services;
 using backend.src.Application.QuestionOptions.Interfaces;
 using backend.src.Application.QuestionOptions.Services;
 using backend.src.Application.Measures.Interfaces;
@@ -74,6 +76,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<ILanguageService, LanguageService>();
 
 builder.Services.AddScoped<IQueryService, QueryService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 builder.Services.AddScoped<IQuestionService, QuestionService>();
 builder.Services.AddScoped<IQuestionOptionService, QuestionOptionService>();

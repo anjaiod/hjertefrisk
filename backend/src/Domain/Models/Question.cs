@@ -3,10 +3,13 @@ namespace backend.src.Domain.Models;
 public class Question
 {
     public int QuestionId { get; set; }              // PK
-    public string FallbackText { get; set; }        
+    public int? CategoryId { get; set; }
+    public string FallbackText { get; set; } = "";
     public string QuestionType { get; set; } = "";   
     public bool IsRequired { get; set; }
     public string? RequiredRole { get; set; }        
+
+    public Category? Category { get; set; }
 
     public ICollection<QuestionText> Texts { get; set; } = new List<QuestionText>();
     public ICollection<QuestionOption> Options { get; set; } = new List<QuestionOption>();

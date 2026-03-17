@@ -22,6 +22,8 @@ public class QuestionService : IQuestionService
             .Select(q => new QuestionDto
             {
                 QuestionId = q.QuestionId,
+                CategoryId = q.CategoryId,
+                CategoryName = q.Category != null ? q.Category.Name : null,
                 FallbackText = q.FallbackText,
                 QuestionType = q.QuestionType,
                 IsRequired = q.IsRequired,
@@ -34,6 +36,7 @@ public class QuestionService : IQuestionService
     {
         var entity = new Question
         {
+            CategoryId = dto.CategoryId,
             FallbackText = dto.FallbackText.Trim(),
             QuestionType = dto.QuestionType.Trim(),
             IsRequired = dto.IsRequired,
@@ -46,6 +49,8 @@ public class QuestionService : IQuestionService
         return new QuestionDto
         {
             QuestionId = entity.QuestionId,
+            CategoryId = entity.CategoryId,
+            CategoryName = null,
             FallbackText = entity.FallbackText,
             QuestionType = entity.QuestionType,
             IsRequired = entity.IsRequired,
