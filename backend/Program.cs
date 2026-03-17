@@ -29,6 +29,7 @@ using backend.src.Application.QuestionDependencies.Interfaces;
 using backend.src.Application.QuestionDependencies.Services;
 
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 const string CorsPolicyName = "FrontendDev";
@@ -66,8 +67,10 @@ builder.Services.AddCors(options =>
     });
 });
 
-var connectionString = builder.Configuration.GetConnectionString("Default")
+var rawConnectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("ConnectionStrings:Default is not configured.");
+
+var connectionString = NormalizePostgresConnectionString(rawConnectionString);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -110,3 +113,64 @@ app.UseCors("AllowFrontend");
 app.MapControllers();
 
 app.Run();
+
+static string NormalizePostgresConnectionString(string input)
+{
+    if (string.IsNullOrWhiteSpace(input))
+    {
+        throw new InvalidOperationException("Connection string cannot be empty.");
+    }
+
+    if (!Uri.TryCreate(input, UriKind.Absolute, out var uri) ||
+        (uri.Scheme != "postgres" && uri.Scheme != "postgresql"))
+    {
+        return input;
+    }
+
+    var userInfo = uri.UserInfo.Split(':', 2, StringSplitOptions.None);
+    var username = userInfo.Length > 0 ? Uri.UnescapeDataString(userInfo[0]) : "";
+    var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+
+    var databaseName = uri.AbsolutePath.Trim('/');
+    if (string.IsNullOrWhiteSpace(databaseName))
+    {
+        databaseName = "postgres";
+    }
+
+    var sslModeValue = "require";
+    var query = uri.Query.TrimStart('?');
+    if (!string.IsNullOrWhiteSpace(query))
+    {
+        foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var keyValue = pair.Split('=', 2, StringSplitOptions.None);
+            var key = keyValue[0];
+
+            if (key.Equals("sslmode", StringComparison.OrdinalIgnoreCase))
+            {
+                sslModeValue = keyValue.Length > 1 && !string.IsNullOrWhiteSpace(keyValue[1])
+                    ? Uri.UnescapeDataString(keyValue[1])
+                    : "require";
+                break;
+            }
+        }
+    }
+
+    if (!Enum.TryParse<SslMode>(sslModeValue, ignoreCase: true, out var sslMode))
+    {
+        sslMode = SslMode.Require;
+    }
+
+    var builder = new NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.IsDefaultPort ? 5432 : uri.Port,
+        Database = databaseName,
+        Username = username,
+        Password = password,
+        SslMode = sslMode,
+        TrustServerCertificate = true
+    };
+
+    return builder.ConnectionString;
+}
