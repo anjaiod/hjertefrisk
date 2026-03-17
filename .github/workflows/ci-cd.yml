@@ -15,23 +15,36 @@ env:
 jobs:
   verify-stack:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: hjertefriskuser
-          POSTGRES_PASSWORD: hjertepass3421
-          POSTGRES_DB: hjertefriskdb
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -d hjertefriskdb -U hjertefriskuser"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Provision runtime env files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${{ secrets.SUPABASE_DB_URL }}" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not configured." >&2
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" ] || \
+             [ -z "${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" ] || \
+             [ -z "${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" ]; then
+            echo "::error::Frontend Supabase secrets are not fully configured." >&2
+            exit 1
+          fi
+
+          cat <<EOF > .env
+          SUPABASE_DB_URL=${{ secrets.SUPABASE_DB_URL }}
+          EOF
+
+          cat <<EOF > ${{ env.FRONTEND_DIR }}/.env
+          NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          EOF
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
@@ -57,7 +70,7 @@ jobs:
         working-directory: ${{ env.BACKEND_DIR }}
         env:
           ASPNETCORE_URLS: http://0.0.0.0:8080
-          ConnectionStrings__Default: Host=localhost;Port=5432;Database=hjertefriskdb;Username=hjertefriskuser;Password=hjertepass3421
+          ConnectionStrings__Default: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -euo pipefail
           dotnet run --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build -- --urls http://0.0.0.0:8080 &
