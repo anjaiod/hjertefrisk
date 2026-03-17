@@ -1,4 +1,5 @@
 export type CreateQuestionDto = {
+  categoryId?: number | null;
   fallbackText: string;
   questionType: string;
   isRequired: boolean;
@@ -7,6 +8,8 @@ export type CreateQuestionDto = {
 
 export type QuestionDto = {
   questionId: number;
+  categoryId?: number | null;
+  categoryName?: string | null;
   fallbackText: string;
   questionType: string;
   isRequired: boolean;
