@@ -52,4 +52,20 @@ public class QueryController : ControllerBase
 		if (item == null) return NotFound();
 		return Ok(item);
 	}
+
+	[HttpGet("full/{id:int}")]
+	public async Task<IActionResult> GetFullById(int id)
+	{
+		var item = await _service.GetWithQuestionsAsync(id);
+		if (item == null) return NotFound();
+		return Ok(item);
+	}
+
+	[HttpGet("full/by-name/{name}")]
+	public async Task<IActionResult> GetFullByName(string name)
+	{
+		var item = await _service.GetByNameAsync(name);
+		if (item == null) return NotFound();
+		return Ok(item);
+	}
 }

@@ -22,6 +22,14 @@ public class PatientsController : ControllerBase
         return Ok(items);
     }
 
+    [HttpGet("by-supabase-user/{supabaseUserId}")]
+    public async Task<IActionResult> GetBySupabaseUserId(string supabaseUserId)
+    {
+        var item = await _service.GetBySupabaseUserIdAsync(supabaseUserId);
+        if (item == null) return NotFound();
+        return Ok(item);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreatePatientDto dto)
     {
