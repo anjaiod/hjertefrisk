@@ -78,8 +78,8 @@ export function PatientSidebarNav({
     },
     {
       label: "Hjertefrisk",
-      href: "/pasientDashboard/pasientHjertefrisk",
-      active: activePath === "/pasientDashboard/pasientHjertefrisk",
+      href: "/pasientSkjema",
+      active: activePath === "/pasientSkjema",
       icon: (
         <svg
           fill="none"
