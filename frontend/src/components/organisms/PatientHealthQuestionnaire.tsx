@@ -15,25 +15,9 @@ import QuestionNumber from "../molecules/QuestionNumber";
 import QuestionTextArea from "../molecules/QuestionTextArea";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
 
-const CATEGORY_NAMES = [
-  "Røyking",
-  "Fysisk aktivitet",
-  "Kosthold",
-  "Vekt",
-  "Søvn",
-  "Alkohol",
-  "Rusmidler",
-];
-
-// Hvilke questionId-er tilhører hvilken kategori (basert på displayOrder)
-function getCategoryIndex(displayOrder: number): number {
-  if (displayOrder <= 3) return 0; // Røyking
-  if (displayOrder <= 9) return 1; // Fysisk aktivitet
-  if (displayOrder <= 15) return 2; // Kosthold
-  if (displayOrder <= 18) return 3; // Vekt
-  if (displayOrder <= 27) return 4; // Søvn
-  if (displayOrder <= 37) return 5; // Alkohol
-  return 6; // Rusmidler
+function getCategoryLabel(question: QueryQuestionWithDetailsDto): string {
+  const trimmed = question.categoryName?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : "Ukjent";
 }
 
 export default function PatientHealthQuestionnaire() {
@@ -348,17 +332,37 @@ export default function PatientHealthQuestionnaire() {
   );
 
   const questionCategories = useMemo(
-    () => visibleQuestions.map((q) => getCategoryIndex(q.displayOrder)),
+    () => {
+      const indexByCategory = new Map<string, number>();
+
+      visibleQuestions.forEach((question) => {
+        const category = getCategoryLabel(question);
+        if (!indexByCategory.has(category)) {
+          indexByCategory.set(category, indexByCategory.size);
+        }
+      });
+
+      return visibleQuestions.map((question) => {
+        const category = getCategoryLabel(question);
+        return indexByCategory.get(category) ?? 0;
+      });
+    },
     [visibleQuestions],
   );
 
-  const categoryCounts = CATEGORY_NAMES.map(
-    (_, i) => questionCategories.filter((c) => c === i).length,
-  );
-  const categories = CATEGORY_NAMES.map((name, i) => ({
-    name,
-    count: categoryCounts[i],
-  }));
+  const categories = useMemo(() => {
+    const countByCategory = new Map<string, number>();
+
+    visibleQuestions.forEach((question) => {
+      const category = getCategoryLabel(question);
+      countByCategory.set(category, (countByCategory.get(category) ?? 0) + 1);
+    });
+
+    return Array.from(countByCategory.entries()).map(([name, count]) => ({
+      name,
+      count,
+    }));
+  }, [visibleQuestions]);
 
   useEffect(() => {
     if (currentStep >= visibleQuestions.length && visibleQuestions.length > 0) {

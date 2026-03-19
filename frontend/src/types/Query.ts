@@ -23,6 +23,8 @@ export type QueryQuestionDependencyDto = {
 
 export type QueryQuestionWithDetailsDto = {
   questionId: number;
+  categoryId?: number | null;
+  categoryName?: string | null;
   fallbackText: string;
   questionType: string;
   isRequired: boolean;
