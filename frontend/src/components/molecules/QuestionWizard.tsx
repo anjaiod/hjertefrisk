@@ -15,6 +15,7 @@ interface QuestionWizardProps {
   onSkip: () => void;
   onPrevious: () => void;
   onSubmit: () => void;
+  isSubmitting?: boolean;
   categories?: Category[];
   questionCategories?: number[];
 }
@@ -26,6 +27,7 @@ export default function QuestionWizard({
   onSkip,
   onPrevious,
   onSubmit,
+  isSubmitting = false,
   categories,
   questionCategories,
 }: QuestionWizardProps) {
@@ -52,9 +54,10 @@ export default function QuestionWizard({
             <button
               type="button"
               onClick={onSubmit}
-              className="px-6 py-2 bg-brand-navy text-white rounded-md hover:opacity-90"
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-brand-navy text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Send inn
+              {isSubmitting ? "Sender..." : "Send inn"}
             </button>
           ) : (
             <button
