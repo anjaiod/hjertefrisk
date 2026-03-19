@@ -63,6 +63,9 @@ export default function PatientHealthQuestionnaire() {
 
   useEffect(() => {
     const resolvePatient = async () => {
+      setIsPatientLoading(true);
+      setPatientId(null);
+
       if (isAuthLoading) {
         return;
       }
@@ -172,9 +175,7 @@ export default function PatientHealthQuestionnaire() {
 
     try {
       setIsSubmitting(true);
-      await Promise.all(
-        payload.map((item) => apiClient.post("/api/Responses", item)),
-      );
+      await apiClient.post("/api/Responses/bulk", payload);
       setSubmitSuccess("Skjema sendt inn!");
     } catch (err) {
       setSubmitError("Kunne ikke lagre svarene.");
@@ -416,6 +417,7 @@ export default function PatientHealthQuestionnaire() {
             onSkip={handleSkip}
             onPrevious={handlePrevious}
             onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
             categories={categories}
             questionCategories={questionCategories}
           >

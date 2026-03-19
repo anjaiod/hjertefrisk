@@ -6,4 +6,5 @@ public interface IResponseService
 {
     Task<IEnumerable<ResponseDto>> GetAllAsync();
     Task<ResponseDto> CreateAsync(CreateResponseDto dto);
+    Task<IEnumerable<ResponseDto>> UpsertManyAsync(IEnumerable<CreateResponseDto> dtos);
 }

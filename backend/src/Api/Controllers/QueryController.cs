@@ -56,7 +56,7 @@ public class QueryController : ControllerBase
 	[HttpGet("full/{id:int}")]
 	public async Task<IActionResult> GetFullById(int id)
 	{
-		var item = await _service.GetFullByIdAsync(id);
+		var item = await _service.GetWithQuestionsAsync(id);
 		if (item == null) return NotFound();
 		return Ok(item);
 	}
@@ -64,7 +64,7 @@ public class QueryController : ControllerBase
 	[HttpGet("full/by-name/{name}")]
 	public async Task<IActionResult> GetFullByName(string name)
 	{
-		var item = await _service.GetFullByNameAsync(name);
+		var item = await _service.GetByNameAsync(name);
 		if (item == null) return NotFound();
 		return Ok(item);
 	}

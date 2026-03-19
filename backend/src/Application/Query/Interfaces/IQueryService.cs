@@ -11,8 +11,4 @@ public interface IQueryService
     Task<QueryWithQuestionsDto?> GetWithQuestionsAsync(int id);
 
     Task<QueryWithQuestionsDto?> GetByNameAsync(string name);
-
-    Task<QueryWithQuestionsDto?> GetFullByIdAsync(int id);
-
-    Task<QueryWithQuestionsDto?> GetFullByNameAsync(string name);
 }

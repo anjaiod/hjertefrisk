@@ -60,6 +60,7 @@ async function request<TResponse = void>(
           message = details;
         }
       } catch {
+        // Response body may be plain text; keep original message in that case.
       }
     }
 
