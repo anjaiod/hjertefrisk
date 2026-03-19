@@ -68,9 +68,12 @@ export default function PatientHealthQuestionnaire() {
         const data = await apiClient.get<QueryWithQuestionsDto>(
           "/api/Query/full/by-name/Helseskjema",
         );
-        if (!res.ok) throw new Error("Kunne ikke hente spørsmål");
-        const data = await res.json();
-        setQuestions(data.questions);
+        const patientQuestions = (data.questions ?? []).filter(
+          (question) =>
+            question.requiredRole == null ||
+            question.requiredRole.toLowerCase() === "patient",
+        );
+        setQuestions(patientQuestions);
       } catch (err) {
         setQuestionsError("Noe gikk galt ved henting av spørsmål.");
         console.error(err);
@@ -207,7 +210,7 @@ export default function PatientHealthQuestionnaire() {
   };
 
   // Finn ut om et spørsmål skal vises basert på dependencies
-  const shouldShowQuestion = (question: Question): boolean => {
+  const shouldShowQuestion = (question: QueryQuestionWithDetailsDto): boolean => {
     const isChild = questions.some((q) =>
       q.dependencies.some((d) => d.childQuestionId === question.questionId),
     );
@@ -243,8 +246,37 @@ export default function PatientHealthQuestionnaire() {
     });
   };
 
-  // Bygg den synlige spørsmålslisten dynamisk basert på svar
-  const visibleQuestions = questions.filter(shouldShowQuestion);
+  const visibleQuestions = questions
+    .filter((q) => q.requiredRole !== "clinician")
+    .filter(shouldShowQuestion);
+
+  // Bygg kategorier dynamisk fra spørsmålene
+  const categoryMap = new Map<number, string>();
+  visibleQuestions.forEach((q) => {
+    if (q.categoryId != null && q.categoryName) {
+      categoryMap.set(q.categoryId, q.categoryName);
+    }
+  });
+
+  const uniqueCategories = Array.from(categoryMap.entries()).map(
+    ([id, name]) => ({
+      id,
+      name,
+    }),
+  );
+
+  const questionCategories = visibleQuestions.map((q) =>
+    uniqueCategories.findIndex((c) => c.id === q.categoryId),
+  );
+
+  const categoryCounts = uniqueCategories.map(
+    (_, i) => questionCategories.filter((c) => c === i).length,
+  );
+
+  const categories = uniqueCategories.map((cat, i) => ({
+    name: cat.name,
+    count: categoryCounts[i],
+  }));
 
   const buildQuestionElement = (question: QueryQuestionWithDetailsDto): ReactElement => {
     const value = answers[question.questionId] ?? "";
@@ -347,17 +379,6 @@ export default function PatientHealthQuestionnaire() {
   };
 
   const questionElements = visibleQuestions.map(buildQuestionElement);
-  const questionCategories = visibleQuestions.map((q) =>
-    getCategoryIndex(q.displayOrder),
-  );
-
-  const categoryCounts = CATEGORY_NAMES.map(
-    (_, i) => questionCategories.filter((c) => c === i).length,
-  );
-  const categories = CATEGORY_NAMES.map((name, i) => ({
-    name,
-    count: categoryCounts[i],
-  }));
 
   useEffect(() => {
     if (currentStep >= visibleQuestions.length && visibleQuestions.length > 0) {
