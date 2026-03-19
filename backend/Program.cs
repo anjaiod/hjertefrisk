@@ -57,7 +57,9 @@ var rawConnectionString = builder.Configuration.GetConnectionString("Default")
 var connectionString = NormalizePostgresConnectionString(rawConnectionString);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(
+        connectionString,
+        npgsqlOptions => npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
 
 // Application services / repositories
 builder.Services.AddScoped<ILanguageService, LanguageService>();
@@ -89,7 +91,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+var httpsPort = app.Configuration["ASPNETCORE_HTTPS_PORT"] ?? app.Configuration["HTTPS_PORT"];
+if (!string.IsNullOrWhiteSpace(httpsPort))
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors(CorsPolicyName);
 
 app.MapControllers();

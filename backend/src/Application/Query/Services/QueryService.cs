@@ -54,6 +54,8 @@ public class QueryService : IQueryService
                 .Select(qq => new QuestionWithDetailsDto
                 {
                     QuestionId = qq.Question.QuestionId,
+                    CategoryId = qq.Question.CategoryId,
+                    CategoryName = qq.Question.Category != null ? qq.Question.Category.Name : null,
                     FallbackText = qq.Question.FallbackText,
                     QuestionType = qq.Question.QuestionType,
                     IsRequired = qq.Question.IsRequired,
@@ -73,6 +75,8 @@ public class QueryService : IQueryService
                         {
                             ParentQuestionId = d.ParentQuestionId,
                             ChildQuestionId = d.ChildQuestionId,
+                            TriggerOptionId = d.TriggerOptionId,
+                            TriggerOptionValue = d.TriggerOption != null ? d.TriggerOption.OptionValue : null,
                             TriggerTextValue = d.TriggerTextValue,
                             Operator = d.Operator
                         }).ToList()
@@ -97,6 +101,8 @@ public async Task<QueryWithQuestionsDto?> GetByNameAsync(string name)
                 .Select(qq => new QuestionWithDetailsDto
                 {
                     QuestionId = qq.Question.QuestionId,
+                    CategoryId = qq.Question.CategoryId,
+                    CategoryName = qq.Question.Category != null ? qq.Question.Category.Name : null,
                     FallbackText = qq.Question.FallbackText,
                     QuestionType = qq.Question.QuestionType,
                     IsRequired = qq.Question.IsRequired,
@@ -116,6 +122,8 @@ public async Task<QueryWithQuestionsDto?> GetByNameAsync(string name)
                         {
                             ParentQuestionId = d.ParentQuestionId,
                             ChildQuestionId = d.ChildQuestionId,
+                            TriggerOptionId = d.TriggerOptionId,
+                            TriggerOptionValue = d.TriggerOption != null ? d.TriggerOption.OptionValue : null,
                             TriggerTextValue = d.TriggerTextValue,
                             Operator = d.Operator
                         }).ToList()

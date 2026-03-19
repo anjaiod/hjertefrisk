@@ -18,12 +18,16 @@ interface QuestionOption {
 interface QuestionDependency {
   parentQuestionId: number;
   childQuestionId: number;
+  triggerOptionValue?: string | null;
   triggerTextValue: string | null;
   operator: string;
+  triggerOptionId?: number | null;
 }
 
 interface Question {
   questionId: number;
+  categoryId?: number | null;
+  categoryName?: string | null;
   fallbackText: string;
   questionType: string;
   isRequired: boolean;
@@ -31,26 +35,6 @@ interface Question {
   displayOrder: number;
   options: QuestionOption[];
   dependencies: QuestionDependency[];
-}
-
-const CATEGORY_NAMES = [
-  "Røyking",
-  "Fysisk aktivitet",
-  "Kosthold",
-  "Overvekt",
-  "Søvn",
-  "Alkoholbruk",
-  "Rusmiddelbruk",
-];
-
-function getCategoryIndex(displayOrder: number): number {
-  if (displayOrder <= 3) return 0;
-  if (displayOrder <= 9) return 1;
-  if (displayOrder <= 15) return 2;
-  if (displayOrder <= 18) return 3;
-  if (displayOrder <= 27) return 4;
-  if (displayOrder <= 37) return 5;
-  return 6;
 }
 
 function toPatientPerspective(text: string): string {
@@ -78,13 +62,19 @@ export default function HealthQuestionnaire() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const apiBaseUrl =
+    process.env.NEXT_PUBLIC_API_URL?.trim() || "http://localhost:5000";
+
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/query/by-name/Helseskjema`,
-        );
-        if (!response.ok) throw new Error("Kunne ikke hente spørsmål");
+        const endpoint = `${apiBaseUrl}/api/query/by-name/Helseskjema`;
+        const response = await fetch(endpoint);
+        if (!response.ok) {
+          throw new Error(
+            `Kunne ikke hente spørsmål (HTTP ${response.status} ${response.statusText}) fra ${endpoint}`,
+          );
+        }
         const data = await response.json();
         setQuestions(data.questions ?? []);
       } catch (err) {
@@ -96,7 +86,7 @@ export default function HealthQuestionnaire() {
     };
 
     fetchQuestions();
-  }, []);
+  }, [apiBaseUrl]);
 
   const updateAnswer = (questionId: number, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -116,15 +106,37 @@ export default function HealthQuestionnaire() {
     return parentDeps.some((dependency) => {
       const parentAnswer = answers[dependency.parentQuestionId];
       if (!parentAnswer) return false;
+
+      // Preferred path: match directly against trigger option value from API.
+      if (dependency.triggerOptionValue) {
+        return parentAnswer === dependency.triggerOptionValue;
+      }
+
+      // Fallback path: map triggerOptionId to optionValue on parent question.
+      if (dependency.triggerOptionId != null) {
+        const parentQuestion = questions.find(
+          (q) => q.questionId === dependency.parentQuestionId,
+        );
+        const triggerOption = parentQuestion?.options.find(
+          (o) => o.questionOptionId === dependency.triggerOptionId,
+        );
+        return triggerOption
+          ? parentAnswer === triggerOption.optionValue
+          : false;
+      }
+
+      // Text/boolean fallback.
       if (dependency.operator === "=") {
         return parentAnswer === dependency.triggerTextValue;
       }
+
       if (dependency.operator === "OR") {
         return (
           parentAnswer === dependency.triggerTextValue ||
-          parentAnswer.startsWith("nei")
+          parentAnswer.startsWith("ja")
         );
       }
+
       return false;
     });
   };
@@ -136,16 +148,7 @@ export default function HealthQuestionnaire() {
     if (text.includes("hvor høy")) return "170";
     if (text.includes("hvor mye veier")) return "70";
     if (text.includes("livvidde")) return "80";
-    if (text.includes("hvor mye røyker")) return "F.eks. 10 sigaretter per dag";
-    if (text.includes("vekten din endret")) {
-      return "F.eks. økt 5 kg siste 6 måneder";
-    }
-    if (text.includes("begrensninger") && text.includes("skriv")) {
-      return "Beskriv dine fysiske begrensninger...";
-    }
-    if (text.includes("barrierer") && text.includes("skriv")) {
-      return "Beskriv barrierer...";
-    }
+    if (text.includes("fyll inn")) return "Skriv tall";
     return undefined;
   };
 
@@ -154,6 +157,12 @@ export default function HealthQuestionnaire() {
     if (text.includes("hvor høy")) return "cm";
     if (text.includes("hvor mye veier")) return "kg";
     if (text.includes("livvidde")) return "cm";
+    if (text.includes("blodtrykk")) return "mmHg";
+    if (text.includes("hba1c")) return "mmol/mol";
+    if (text.includes("fastende")) return "mmol/L";
+    if (text.includes("kolesterol")) return "mmol/L";
+    if (text.includes("triglyserider")) return "mmol/L";
+
     return undefined;
   };
 
@@ -229,12 +238,30 @@ export default function HealthQuestionnaire() {
     );
   };
 
-  const groupedQuestions = CATEGORY_NAMES.map((categoryName, index) => ({
-    categoryName,
-    questions: visibleQuestions.filter(
-      (question) => getCategoryIndex(question.displayOrder) === index,
-    ),
-  })).filter((category) => category.questions.length > 0);
+  const groupedQuestions = Array.from(
+    visibleQuestions
+      .reduce((groups, question) => {
+        const categoryName = question.categoryName?.trim() || "Uten kategori";
+        const categoryKey =
+          question.categoryId != null
+            ? `category-${question.categoryId}`
+            : `category-name-${categoryName.toLowerCase()}`;
+
+        const existingGroup = groups.get(categoryKey);
+        if (existingGroup) {
+          existingGroup.questions.push(question);
+          return groups;
+        }
+
+        groups.set(categoryKey, {
+          categoryKey,
+          categoryName,
+          questions: [question],
+        });
+        return groups;
+      }, new Map<string, { categoryKey: string; categoryName: string; questions: Question[] }>())
+      .values(),
+  );
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -264,7 +291,7 @@ export default function HealthQuestionnaire() {
             !error &&
             groupedQuestions.map((group, index) => (
               <CollapsibleSection
-                key={group.categoryName}
+                key={group.categoryKey}
                 title={group.categoryName}
                 defaultOpen={index === 0}
               >
