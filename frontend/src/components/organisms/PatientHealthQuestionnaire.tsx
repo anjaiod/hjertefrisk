@@ -17,12 +17,16 @@ interface QuestionOption {
 interface QuestionDependency {
   parentQuestionId: number;
   childQuestionId: number;
+  triggerOptionId?: number | null;
+  triggerOptionValue?: string | null;
   triggerTextValue: string | null;
   operator: string;
 }
 
 interface Question {
   questionId: number;
+  categoryId?: number | null;
+  categoryName?: string | null;
   fallbackText: string;
   questionType: string;
   isRequired: boolean;
@@ -30,27 +34,6 @@ interface Question {
   displayOrder: number;
   options: QuestionOption[];
   dependencies: QuestionDependency[];
-}
-
-const CATEGORY_NAMES = [
-  "Røyking",
-  "Fysisk aktivitet",
-  "Kosthold",
-  "Vekt",
-  "Søvn",
-  "Alkohol",
-  "Rusmidler",
-];
-
-// Hvilke questionId-er tilhører hvilken kategori (basert på displayOrder)
-function getCategoryIndex(displayOrder: number): number {
-  if (displayOrder <= 3) return 0; // Røyking
-  if (displayOrder <= 9) return 1; // Fysisk aktivitet
-  if (displayOrder <= 15) return 2; // Kosthold
-  if (displayOrder <= 18) return 3; // Vekt
-  if (displayOrder <= 27) return 4; // Søvn
-  if (displayOrder <= 37) return 5; // Alkohol
-  return 6; // Rusmidler
 }
 
 export default function PatientHealthQuestionnaire() {
@@ -68,7 +51,7 @@ export default function PatientHealthQuestionnaire() {
         );
         if (!res.ok) throw new Error("Kunne ikke hente spørsmål");
         const data = await res.json();
-        setQuestions(data.questions);
+        setQuestions(data.questions ?? []);
       } catch (err) {
         setError("Noe gikk galt ved henting av spørsmål.");
         console.error(err);
@@ -93,14 +76,12 @@ export default function PatientHealthQuestionnaire() {
     alert("Skjema sendt inn!");
   };
 
-  // Finn ut om et spørsmål skal vises basert på dependencies
   const shouldShowQuestion = (question: Question): boolean => {
     const isChild = questions.some((q) =>
       q.dependencies.some((d) => d.childQuestionId === question.questionId),
     );
     if (!isChild) return true;
 
-    // Finn alle parent-dependencies for dette spørsmålet
     const parentDeps = questions.flatMap((q) =>
       q.dependencies.filter((d) => d.childQuestionId === question.questionId),
     );
@@ -108,33 +89,70 @@ export default function PatientHealthQuestionnaire() {
     return parentDeps.some((dep) => {
       const parentAnswer = answers[dep.parentQuestionId];
       if (!parentAnswer) return false;
-      if (dep.operator === "=") return parentAnswer === dep.triggerTextValue;
-      if (dep.operator === "OR")
-        return (
-          parentAnswer === dep.triggerTextValue ||
-          parentAnswer.startsWith("nei")
+
+      if (dep.triggerOptionValue) {
+        return parentAnswer === dep.triggerOptionValue;
+      }
+
+      if (dep.triggerOptionId != null) {
+        const parentQuestion = questions.find(
+          (q) => q.questionId === dep.parentQuestionId,
         );
+        const triggerOption = parentQuestion?.options.find(
+          (o) => o.questionOptionId === dep.triggerOptionId,
+        );
+        return triggerOption
+          ? parentAnswer === triggerOption.optionValue
+          : false;
+      }
+
+      if (dep.operator === "=") return parentAnswer === dep.triggerTextValue;
+
       return false;
     });
   };
 
-  // Bygg den synlige spørsmålslisten dynamisk basert på svar
-  const visibleQuestions = questions.filter(shouldShowQuestion);
+  const visibleQuestions = questions
+    .filter((q) => q.requiredRole !== "clinician")
+    .filter(shouldShowQuestion);
+
+  // Bygg kategorier dynamisk fra spørsmålene
+  const categoryMap = new Map<number, string>();
+  visibleQuestions.forEach((q) => {
+    if (q.categoryId != null && q.categoryName) {
+      categoryMap.set(q.categoryId, q.categoryName);
+    }
+  });
+
+  const uniqueCategories = Array.from(categoryMap.entries()).map(
+    ([id, name]) => ({
+      id,
+      name,
+    }),
+  );
+
+  const questionCategories = visibleQuestions.map((q) =>
+    uniqueCategories.findIndex((c) => c.id === q.categoryId),
+  );
+
+  const categoryCounts = uniqueCategories.map(
+    (_, i) => questionCategories.filter((c) => c === i).length,
+  );
+
+  const categories = uniqueCategories.map((cat, i) => ({
+    name: cat.name,
+    count: categoryCounts[i],
+  }));
 
   const buildQuestionElement = (question: Question): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
 
-    // Determine placeholder based on question text or type
     const getPlaceholder = (): string | undefined => {
       const text = question.fallbackText.toLowerCase();
-
-      // Number fields
       if (text.includes("hvor høy")) return "170";
       if (text.includes("hvor mye veier")) return "70";
       if (text.includes("livvidde")) return "80";
-
-      // Text fields
       if (text.includes("hvor mye røyker"))
         return "F.eks. 10 sigaretter per dag";
       if (text.includes("vekten din endret"))
@@ -143,7 +161,6 @@ export default function PatientHealthQuestionnaire() {
         return "Beskriv dine fysiske begrensninger...";
       if (text.includes("barrierer") && text.includes("skriv"))
         return "Beskriv barrierer...";
-
       return undefined;
     };
 
@@ -163,10 +180,6 @@ export default function PatientHealthQuestionnaire() {
         return 3;
       return undefined;
     };
-
-    const placeholder = getPlaceholder();
-    const unit = getUnit();
-    const rows = getRows();
 
     if (question.questionType === "boolean") {
       return (
@@ -209,14 +222,13 @@ export default function PatientHealthQuestionnaire() {
           value={value}
           onChange={(val) => updateAnswer(question.questionId, val)}
           onAnswer={handleNext}
-          placeholder={placeholder}
-          unit={unit}
+          placeholder={getPlaceholder()}
+          unit={getUnit()}
           required={question.isRequired}
         />
       );
     }
 
-    // text / textarea
     return (
       <QuestionTextArea
         key={question.questionId}
@@ -225,25 +237,14 @@ export default function PatientHealthQuestionnaire() {
         value={value}
         onChange={(val) => updateAnswer(question.questionId, val)}
         onAnswer={handleNext}
-        placeholder={placeholder}
-        rows={rows}
+        placeholder={getPlaceholder()}
+        rows={getRows()}
         required={question.isRequired}
       />
     );
   };
 
   const questionElements = visibleQuestions.map(buildQuestionElement);
-  const questionCategories = visibleQuestions.map((q) =>
-    getCategoryIndex(q.displayOrder),
-  );
-
-  const categoryCounts = CATEGORY_NAMES.map(
-    (_, i) => questionCategories.filter((c) => c === i).length,
-  );
-  const categories = CATEGORY_NAMES.map((name, i) => ({
-    name,
-    count: categoryCounts[i],
-  }));
 
   useEffect(() => {
     if (currentStep >= visibleQuestions.length && visibleQuestions.length > 0) {
