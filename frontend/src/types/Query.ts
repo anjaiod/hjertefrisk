@@ -15,6 +15,8 @@ export type QueryQuestionOptionDto = {
 };
 
 export type QueryQuestionDependencyDto = {
+  triggerOptionId: null;
+  triggerOptionValue: unknown;
   parentQuestionId: number;
   childQuestionId: number;
   triggerTextValue?: string | null;

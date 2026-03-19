@@ -33,6 +33,8 @@ public class QuestionDependencyDto
 {
     public int ParentQuestionId { get; set; }
     public int ChildQuestionId { get; set; }
+    public int? TriggerOptionId { get; set; }
+    public string? TriggerOptionValue { get; set; }
     public string? TriggerTextValue { get; set; }
     public string Operator { get; set; } = "";
 }
