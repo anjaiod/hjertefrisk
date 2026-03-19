@@ -1,9 +1,14 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { useUser } from "@/context/UserContext";
+
 type NavItem = {
   label: string;
   href?: string;
   //onClick?: () => void;
   active?: boolean;
-  icon: React.ReactNode;
+  icon: ReactNode;
 };
 
 function Item({ item }: { item: NavItem }) {
@@ -38,6 +43,10 @@ export function PatientSidebarNav({
   patientName?: string;
   activePath?: string;
 }) {
+  const { user } = useUser();
+  const resolvedPatientName =
+    user?.role === "pasient" ? user.name : patientName;
+
   const items: NavItem[] = [
     {
       // should become a pop-up?
@@ -149,7 +158,7 @@ export function PatientSidebarNav({
     <aside className="sticky top-0 hidden h-screen w-72 flex-col border-r border-brand-sky/30 bg-gradient-to-b from-white to-brand-mist/10 p-6 md:flex">
       <div className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm">
         <div className="space-y-0.5">
-          <p className="font-bold text-brand-navy">{patientName}</p>
+          <p className="font-bold text-brand-navy">{resolvedPatientName}</p>
           <p className="text-sm text-slate-600">Innlogget som pasient</p>
         </div>
       </div>

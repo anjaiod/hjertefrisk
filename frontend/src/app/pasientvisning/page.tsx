@@ -1,12 +1,10 @@
 import PatientTable, { Patient } from "@/components/organisms/PatientTable";
-import { SidebarNav } from "@/components/organisms/SidebarNav";
 import { Input } from "@/components/atoms/Input";
 import { SearchBar } from "@/components/atoms/SearchBar";
 import { TagVariant } from "@/components/atoms/Tag";
 import { PatientDto } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
-
 function scoreToRiskLevel(score: number): TagVariant {
   if (score >= 7) return "high";
   if (score >= 4) return "medium";
@@ -15,7 +13,11 @@ function scoreToRiskLevel(score: number): TagVariant {
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString("nb-NO", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return d.toLocaleDateString("nb-NO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
 async function fetchPatients(): Promise<Patient[]> {
@@ -27,7 +29,9 @@ async function fetchPatients(): Promise<Patient[]> {
     patients.map(async (p) => {
       let riskLevel: TagVariant = "low";
       try {
-        const scoreRes = await fetch(`${API_URL}/api/patients/${p.id}/score`, { cache: "no-store" });
+        const scoreRes = await fetch(`${API_URL}/api/patients/${p.id}/score`, {
+          cache: "no-store",
+        });
         if (scoreRes.ok) {
           const { totalScore } = await scoreRes.json();
           riskLevel = scoreToRiskLevel(totalScore);
@@ -41,7 +45,7 @@ async function fetchPatients(): Promise<Patient[]> {
         lastVisited: formatDate(p.createdAt),
         riskLevel,
       };
-    })
+    }),
   );
 }
 
@@ -49,31 +53,26 @@ export default async function Page() {
   const patients = await fetchPatients();
 
   return (
-    <div className="flex">
-      <SidebarNav activePath="/dashboard/pasientvisning" />
-      <main className="flex-1 bg-slate-50 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-brand-navy">Pasienter</h1>
-            <div className="flex items-center gap-3">
-              <Input
-                as="select"
-                className="w-36"
-                options={[
-                  { value: "high", label: "Status: Høy" },
-                  { value: "medium", label: "Status: Middels" },
-                  { value: "low", label: "Status: Lav" },
-                  { value: "lastVisited", label: "Sist besøkt" },
-                ]}
-                placeholder="Filtrer"
-                defaultValue=""
-              />
-              <SearchBar placeholder="Søk..." />
-            </div>
-          </div>
-          <PatientTable patients={patients} />
+    <div className="max-w-7xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-brand-navy">Pasienter</h1>
+        <div className="flex items-center gap-3">
+          <Input
+            as="select"
+            className="w-36"
+            options={[
+              { value: "high", label: "Status: Høy" },
+              { value: "medium", label: "Status: Middels" },
+              { value: "low", label: "Status: Lav" },
+              { value: "lastVisited", label: "Sist besøkt" },
+            ]}
+            placeholder="Filtrer"
+            defaultValue=""
+          />
+          <SearchBar placeholder="Søk..." />
         </div>
-      </main>
+      </div>
+      <PatientTable patients={patients} />
     </div>
   );
 }

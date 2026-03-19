@@ -52,6 +52,25 @@ public class PatientService : IPatientService
         };
     }
 
+    public async Task<PatientDto?> GetBySupabaseUserIdAsync(string supabaseUserId)
+    {
+        var trimmed = supabaseUserId.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed)) return null;
+
+        return await _db.Patients
+            .AsNoTracking()
+            .Where(p => p.SupabaseUserId == trimmed)
+            .Select(p => new PatientDto
+            {
+                Id = p.Id,
+                SupabaseUserId = p.SupabaseUserId,
+                Name = p.Name,
+                Email = p.Email,
+                CreatedAt = p.CreatedAt
+            })
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<int> GetTotalScoreAsync(int patientId)
     {
         var responses = await _db.Responses
@@ -104,6 +123,28 @@ public class PatientService : IPatientService
         }
 
         return totalScore;
+    }
+
+    public async Task<IEnumerable<LatestMeasurementResultDto>> GetLatestMeasurementsAsync(int patientId)
+    {
+        // We only need height (1) + weight (2) for the dashboard.
+        // Avoid GroupBy translation issues by grouping in-memory.
+        var rows = await _db.MeasurementResults
+            .AsNoTracking()
+            .Where(r => r.PatientId == patientId && (r.MeasurementId == 1 || r.MeasurementId == 2))
+            .OrderByDescending(r => r.RegisteredAt)
+            .ToListAsync();
+
+        return rows
+            .GroupBy(r => r.MeasurementId)
+            .Select(g => g.First())
+            .Select(r => new LatestMeasurementResultDto
+            {
+                MeasurementId = r.MeasurementId,
+                Result = r.Result,
+                RegisteredAt = r.RegisteredAt
+            })
+            .ToList();
     }
 
     private static bool IsSeverityMatch(Severity severity, int? optionId, string? textValue, decimal? numberValue)

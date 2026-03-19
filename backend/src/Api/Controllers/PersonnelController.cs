@@ -22,6 +22,13 @@ public class PersonnelController : ControllerBase
         return Ok(items);
     }
 
+    [HttpGet("by-supabase/{supabaseUserId}")]
+    public async Task<IActionResult> GetBySupabaseUserId(string supabaseUserId)
+    {
+        var item = await _service.GetBySupabaseUserIdAsync(supabaseUserId);
+        return item == null ? NotFound() : Ok(item);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreatePersonnelDto dto)
     {

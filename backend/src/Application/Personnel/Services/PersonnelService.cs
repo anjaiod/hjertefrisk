@@ -51,4 +51,23 @@ public class PersonnelService : IPersonnelService
             CreatedAt = entity.CreatedAt
         };
     }
+
+    public async Task<PersonnelDto?> GetBySupabaseUserIdAsync(string supabaseUserId)
+    {
+        var trimmed = supabaseUserId.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed)) return null;
+
+        return await _db.Personnel
+            .AsNoTracking()
+            .Where(p => p.SupabaseUserId == trimmed)
+            .Select(p => new PersonnelDto
+            {
+                Id = p.Id,
+                SupabaseUserId = p.SupabaseUserId,
+                Name = p.Name,
+                Email = p.Email,
+                CreatedAt = p.CreatedAt
+            })
+            .FirstOrDefaultAsync();
+    }
 }

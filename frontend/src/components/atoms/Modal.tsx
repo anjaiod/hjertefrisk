@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 interface ModalProps {
@@ -10,14 +10,7 @@ interface ModalProps {
 }
 
 export function Modal({ onClose, children, title }: ModalProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
-
-  if (!mounted) return null;
+  if (typeof document === "undefined") return null;
 
   return createPortal(
     <div
@@ -35,11 +28,13 @@ export function Modal({ onClose, children, title }: ModalProps) {
           ✕
         </button>
         {title && (
-          <h2 className="text-2xl font-semibold text-brand-navy text-center mb-2">{title}</h2>
+          <h2 className="text-2xl font-semibold text-brand-navy text-center mb-2">
+            {title}
+          </h2>
         )}
         {children}
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
