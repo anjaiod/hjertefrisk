@@ -1,10 +1,12 @@
 export type CreatePatientDto = {
+  supabaseUserId: string;
   name: string;
   email: string;
 };
 
 export type PatientDto = {
   id: number;
+  supabaseUserId: string;
   name: string;
   email: string;
   createdAt: string;

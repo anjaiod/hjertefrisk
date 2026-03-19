@@ -123,4 +123,14 @@ public async Task<QueryWithQuestionsDto?> GetByNameAsync(string name)
         })
         .FirstOrDefaultAsync();
 }
+
+public async Task<QueryWithQuestionsDto?> GetFullByIdAsync(int id)
+{
+    return await GetWithQuestionsAsync(id);
+}
+
+public async Task<QueryWithQuestionsDto?> GetFullByNameAsync(string name)
+{
+    return await GetByNameAsync(name);
+}
 }
