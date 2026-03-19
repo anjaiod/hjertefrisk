@@ -30,6 +30,24 @@ public class PatientService : IPatientService
             .ToListAsync();
     }
 
+    public async Task<PatientDto?> GetBySupabaseUserIdAsync(string supabaseUserId)
+    {
+        var trimmedUserId = supabaseUserId.Trim();
+
+        return await _db.Patients
+            .AsNoTracking()
+            .Where(p => p.SupabaseUserId == trimmedUserId)
+            .Select(p => new PatientDto
+            {
+                Id = p.Id,
+                SupabaseUserId = p.SupabaseUserId,
+                Name = p.Name,
+                Email = p.Email,
+                CreatedAt = p.CreatedAt
+            })
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<PatientDto> CreateAsync(CreatePatientDto dto)
     {
         var entity = new Patient
