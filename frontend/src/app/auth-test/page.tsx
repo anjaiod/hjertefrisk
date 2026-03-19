@@ -1,49 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import type { Session, User } from "@supabase/supabase-js";
+import type { Session } from "@supabase/supabase-js";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function AuthTestPage() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadSession = async () => {
-      setErrorMessage(null);
-      const {
-        data: { session: currentSession },
-        error,
-      } = await supabase.auth.getSession();
-
-      if (error) {
-        setErrorMessage(error.message);
-        setIsLoading(false);
-        return;
-      }
-
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      setIsLoading(false);
-    };
-
-    void loadSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, latestSession) => {
-      setSession(latestSession);
-      setUser(latestSession?.user ?? null);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  const { user, session, isLoading, error } = useAuth();
 
   const userMetadata = useMemo(() => {
     if (!user) return null;
@@ -72,9 +37,9 @@ export default function AuthTestPage() {
           <p className="mt-6 text-sm text-slate-600">Laster brukerdata...</p>
         ) : null}
 
-        {errorMessage ? (
+        {error ? (
           <p className="mt-6 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-            {errorMessage}
+            {error}
           </p>
         ) : null}
 
