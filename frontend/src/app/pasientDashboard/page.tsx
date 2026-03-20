@@ -43,8 +43,8 @@ export default function PatientDashboardPage() {
           `/api/patients/${encodeURIComponent(String(localPatientId))}/latest-measurements`,
         );
 
-        const latestHeight = latest.find((m) => m.measurementId === 1)?.result;
-        const latestWeight = latest.find((m) => m.measurementId === 2)?.result;
+        const latestHeight = latest.find((m) => m.measurementId === 2)?.result;
+        const latestWeight = latest.find((m) => m.measurementId === 1)?.result;
 
         setHeight(typeof latestHeight === "number" ? latestHeight : null);
         setWeight(typeof latestWeight === "number" ? latestWeight : null);

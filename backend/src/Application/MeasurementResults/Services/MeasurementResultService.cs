@@ -2,7 +2,6 @@ using backend.src.Application.MeasurementResults.DTOs;
 using backend.src.Application.MeasurementResults.Interfaces;
 using backend.src.Domain.Models;
 using backend.src.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace backend.src.Application.MeasurementResults.Services;
 
@@ -21,56 +20,23 @@ public class MeasurementResultService : IMeasurementResultService
         if (incoming.Count == 0)
             return Array.Empty<MeasurementResultDto>();
 
+        // RegisteredAt is part of the PK, so each submission always creates a new
+        // history row rather than mutating an existing one.
         var now = DateTime.UtcNow;
 
-        await using var transaction = await _db.Database.BeginTransactionAsync();
-
-        var patientIds = incoming.Select(x => x.PatientId).Distinct().ToList();
-        var measurementIds = incoming.Select(x => x.MeasurementId).Distinct().ToList();
-
-        // Load latest existing result per (patient, measurement) so we can update in place.
-        var existingRows = await _db.MeasurementResults
-            .Where(r => patientIds.Contains(r.PatientId) && measurementIds.Contains(r.MeasurementId))
-            .OrderByDescending(r => r.RegisteredAt)
-            .ToListAsync();
-
-        // Group by (patientId, measurementId) and keep only the latest.
-        var latestByKey = existingRows
-            .GroupBy(r => (r.PatientId, r.MeasurementId))
-            .ToDictionary(g => g.Key, g => g.First());
-
-        var results = new List<MeasurementResult>();
-
-        foreach (var dto in incoming)
+        var entities = incoming.Select(dto => new MeasurementResult
         {
-            var key = (dto.PatientId, dto.MeasurementId);
+            MeasurementId = dto.MeasurementId,
+            PatientId = dto.PatientId,
+            Result = dto.Result,
+            RegisteredBy = dto.RegisteredBy,
+            RegisteredAt = now,
+        }).ToList();
 
-            if (latestByKey.TryGetValue(key, out var existing))
-            {
-                existing.Result = dto.Result;
-                existing.RegisteredBy = dto.RegisteredBy;
-                existing.RegisteredAt = now;
-                results.Add(existing);
-            }
-            else
-            {
-                var created = new MeasurementResult
-                {
-                    MeasurementId = dto.MeasurementId,
-                    PatientId = dto.PatientId,
-                    Result = dto.Result,
-                    RegisteredBy = dto.RegisteredBy,
-                    RegisteredAt = now,
-                };
-                _db.MeasurementResults.Add(created);
-                results.Add(created);
-            }
-        }
-
+        _db.MeasurementResults.AddRange(entities);
         await _db.SaveChangesAsync();
-        await transaction.CommitAsync();
 
-        return results.Select(r => new MeasurementResultDto
+        return entities.Select(r => new MeasurementResultDto
         {
             MeasurementId = r.MeasurementId,
             PatientId = r.PatientId,

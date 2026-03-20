@@ -312,6 +312,7 @@ public class AppDbContext : DbContext
             .HasOne(x => x.RegisteredByPersonnel)
             .WithMany(p => p.RegisteredMeasurementResults)
             .HasForeignKey(x => x.RegisteredBy)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
