@@ -4,6 +4,7 @@ import { useState, useEffect, ReactElement } from "react";
 import { ApiClientError, apiClient } from "@/lib/apiClient";
 import { useUser } from "@/context/UserContext";
 import type {
+  CreateMeasurementResultDto,
   CreateResponseDto,
   PatientDto,
   QueryQuestionWithDetailsDto,
@@ -224,9 +225,39 @@ export default function PatientHealthQuestionnaire() {
       return;
     }
 
+    const measurementPayload: CreateMeasurementResultDto[] = [];
+    for (const question of visibleQuestions) {
+      if (question.measurementId == null) continue;
+      if (question.questionType !== "number") continue;
+      const rawValue = (answers[question.questionId] ?? "").trim();
+      if (!rawValue) continue;
+      const parsedValue = Number(rawValue.replace(",", "."));
+      if (!Number.isFinite(parsedValue)) continue;
+      measurementPayload.push({
+        measurementId: question.measurementId,
+        patientId,
+        result: parsedValue,
+      });
+    }
+
+    const weightEntry = measurementPayload.find((m) => m.measurementId === 1);
+    const heightEntry = measurementPayload.find((m) => m.measurementId === 2);
+    if (weightEntry && heightEntry && heightEntry.result > 0) {
+      const heightM = heightEntry.result / 100;
+      const bmi = weightEntry.result / (heightM * heightM);
+      measurementPayload.push({
+        measurementId: 10,
+        patientId,
+        result: Math.round(bmi * 10) / 10,
+      });
+    }
+
     try {
       setIsSubmitting(true);
       await apiClient.post("/api/Responses/bulk", payload);
+      if (measurementPayload.length > 0) {
+        await apiClient.post("/api/MeasurementResults/bulk", measurementPayload);
+      }
       setSubmitSuccess("Skjema sendt inn!");
     } catch (err) {
       setSubmitError("Kunne ikke lagre svarene.");

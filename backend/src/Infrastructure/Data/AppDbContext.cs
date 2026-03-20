@@ -237,6 +237,13 @@ public class AppDbContext : DbContext
             .WithMany(p => p.ToDos)
             .HasForeignKey(x => x.PersonnelId);
 
+        // Question -> Measurement (optional)
+        modelBuilder.Entity<Question>()
+            .HasOne(x => x.Measurement)
+            .WithMany()
+            .HasForeignKey(x => x.MeasurementId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // Measure + MeasureText
         modelBuilder.Entity<Measure>()
             .HasOne(x => x.Question)
@@ -305,6 +312,7 @@ public class AppDbContext : DbContext
             .HasOne(x => x.RegisteredByPersonnel)
             .WithMany(p => p.RegisteredMeasurementResults)
             .HasForeignKey(x => x.RegisteredBy)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

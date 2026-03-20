@@ -86,8 +86,8 @@ export default async function DashboardPage({
       ? await getLatestMeasurementsForPatient(patientId)
       : [];
 
-  const heightResult = latestMeasurements.find((m) => m.measurementId === 1);
-  const weightResult = latestMeasurements.find((m) => m.measurementId === 2);
+  const heightResult = latestMeasurements.find((m) => m.measurementId === 2);
+  const weightResult = latestMeasurements.find((m) => m.measurementId === 1);
 
   const height = heightResult ? Number(heightResult.result) : null;
   const weight = weightResult ? Number(weightResult.result) : null;
