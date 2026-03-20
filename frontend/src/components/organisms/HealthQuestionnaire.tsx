@@ -1,12 +1,13 @@
 "use client";
 
 import { ReactElement, useEffect, useState } from "react";
-import { SidebarNav } from "./SidebarNav";
 import CollapsibleSection from "../molecules/CollapsibleSection";
 import QuestionRadio from "../molecules/QuestionRadio";
 import QuestionNumber from "../molecules/QuestionNumber";
 import QuestionTextArea from "../molecules/QuestionTextArea";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
+import { apiClient } from "@/lib/apiClient";
+import type { CreateResponseDto, QueryWithQuestionsDto } from "@/types";
 
 interface QuestionOption {
   questionOptionId: number;
@@ -31,7 +32,7 @@ interface Question {
   fallbackText: string;
   questionType: string;
   isRequired: boolean;
-  requiredRole: string | null;
+  requiredRole?: string | null;
   displayOrder: number;
   options: QuestionOption[];
   dependencies: QuestionDependency[];
@@ -56,27 +57,27 @@ function toPatientPerspective(text: string): string {
     );
 }
 
-export default function HealthQuestionnaire() {
+interface HealthQuestionnaireProps {
+  patientId: number | null;
+}
+
+export default function HealthQuestionnaire({ patientId }: HealthQuestionnaireProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const apiBaseUrl =
-    process.env.NEXT_PUBLIC_API_URL?.trim() || "http://localhost:5000";
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const [formKey, setFormKey] = useState(0);
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const endpoint = `${apiBaseUrl}/api/query/by-name/Helseskjema`;
-        const response = await fetch(endpoint);
-        if (!response.ok) {
-          throw new Error(
-            `Kunne ikke hente spørsmål (HTTP ${response.status} ${response.statusText}) fra ${endpoint}`,
-          );
-        }
-        const data = await response.json();
-        setQuestions(data.questions ?? []);
+        const data = await apiClient.get<QueryWithQuestionsDto>(
+          "/api/Query/full/by-name/Helseskjema",
+        );
+        setQuestions((data.questions ?? []) as unknown as Question[]);
       } catch (err) {
         setError("Noe gikk galt ved henting av spørsmål.");
         console.error(err);
@@ -85,8 +86,8 @@ export default function HealthQuestionnaire() {
       }
     };
 
-    fetchQuestions();
-  }, [apiBaseUrl]);
+    void fetchQuestions();
+  }, []);
 
   const updateAnswer = (questionId: number, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -107,12 +108,10 @@ export default function HealthQuestionnaire() {
       const parentAnswer = answers[dependency.parentQuestionId];
       if (!parentAnswer) return false;
 
-      // Preferred path: match directly against trigger option value from API.
       if (dependency.triggerOptionValue) {
         return parentAnswer === dependency.triggerOptionValue;
       }
 
-      // Fallback path: map triggerOptionId to optionValue on parent question.
       if (dependency.triggerOptionId != null) {
         const parentQuestion = questions.find(
           (q) => q.questionId === dependency.parentQuestionId,
@@ -125,7 +124,6 @@ export default function HealthQuestionnaire() {
           : false;
       }
 
-      // Text/boolean fallback.
       if (dependency.operator === "=") {
         return parentAnswer === dependency.triggerTextValue;
       }
@@ -263,9 +261,61 @@ export default function HealthQuestionnaire() {
       .values(),
   );
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    console.log("Form data:", answers);
+    setSubmitError(null);
+    setSubmitSuccess(null);
+
+    if (patientId == null) {
+      setSubmitError("Ingen pasient er valgt. Gå tilbake og velg en pasient.");
+      return;
+    }
+
+    const payload: CreateResponseDto[] = [];
+
+    for (const question of visibleQuestions) {
+      const rawValue = (answers[question.questionId] ?? "").trim();
+      if (!rawValue) continue;
+
+      const matchedOption = question.options.find(
+        (option) => option.optionValue === rawValue,
+      );
+
+      const base: CreateResponseDto = {
+        patientId,
+        questionId: question.questionId,
+        selectedOptionId: matchedOption?.questionOptionId ?? null,
+      };
+
+      if (question.questionType === "number") {
+        const parsedValue = Number(rawValue.replace(",", "."));
+        if (Number.isFinite(parsedValue)) {
+          payload.push({ ...base, numberValue: parsedValue });
+          continue;
+        }
+      }
+
+      payload.push({ ...base, textValue: rawValue });
+    }
+
+    if (payload.length === 0) {
+      setSubmitError("Fyll inn minst ett svar før innsending.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await apiClient.post("/api/Responses/bulk", payload);
+      setAnswers({});
+      setFormKey((k) => k + 1);
+      setSubmitSuccess("Skjema sendt inn!");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      setSubmitError("Kunne ikke lagre svarene.");
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -279,8 +329,16 @@ export default function HealthQuestionnaire() {
             Helseskjema - Levevaner og Målinger
           </h1>
 
+          {patientId == null && (
+            <p className="text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-4 py-3">
+              Ingen pasient er valgt. Gå tilbake og velg en pasient.
+            </p>
+          )}
+
           {loading && <p className="text-gray-500">Laster spørsmål...</p>}
           {error && <p className="text-red-500">{error}</p>}
+          {submitError && <p className="text-red-500">{submitError}</p>}
+          {submitSuccess && <p className="text-green-700">{submitSuccess}</p>}
 
           {!loading && !error && groupedQuestions.length === 0 && (
             <p className="text-gray-500">Fant ingen spørsmål i skjemaet.</p>
@@ -290,7 +348,7 @@ export default function HealthQuestionnaire() {
             !error &&
             groupedQuestions.map((group, index) => (
               <CollapsibleSection
-                key={group.categoryKey}
+                key={`${formKey}-${group.categoryKey}`}
                 title={group.categoryName}
                 defaultOpen={index === 0}
               >
@@ -309,9 +367,10 @@ export default function HealthQuestionnaire() {
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-brand-navy text-white rounded-md hover:opacity-90"
+              disabled={isSubmitting || patientId == null}
+              className="px-6 py-2 bg-brand-navy text-white rounded-md hover:opacity-90 disabled:opacity-50"
             >
-              Send inn
+              {isSubmitting ? "Sender inn..." : "Send inn"}
             </button>
           </div>
         </form>
