@@ -27,6 +27,7 @@ export type QueryQuestionWithDetailsDto = {
   questionId: number;
   categoryId?: number | null;
   categoryName?: string | null;
+  measurementId?: number | null;
   fallbackText: string;
   questionType: string;
   isRequired: boolean;

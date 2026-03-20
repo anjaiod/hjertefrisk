@@ -27,6 +27,8 @@ using backend.src.Application.Personnel.Interfaces;
 using backend.src.Application.Personnel.Services;
 using backend.src.Application.QuestionDependencies.Interfaces;
 using backend.src.Application.QuestionDependencies.Services;
+using backend.src.Application.MeasurementResults.Interfaces;
+using backend.src.Application.MeasurementResults.Services;
 
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -77,6 +79,7 @@ builder.Services.AddScoped<IToDoService, ToDoService>();
 builder.Services.AddScoped<IResponseService, ResponseService>();
 builder.Services.AddScoped<IPersonnelService, PersonnelService>();
 builder.Services.AddScoped<IQuestionDependencyService, QuestionDependencyService>();
+builder.Services.AddScoped<IMeasurementResultService, MeasurementResultService>();
 
 // Optional but recommended for API documentation
 builder.Services.AddEndpointsApiExplorer();

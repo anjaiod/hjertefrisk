@@ -7,7 +7,8 @@ import QuestionNumber from "../molecules/QuestionNumber";
 import QuestionTextArea from "../molecules/QuestionTextArea";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
 import { apiClient } from "@/lib/apiClient";
-import type { CreateResponseDto, QueryWithQuestionsDto } from "@/types";
+import { useUser } from "@/context/UserContext";
+import type { CreateMeasurementResultDto, CreateResponseDto, QueryWithQuestionsDto } from "@/types";
 
 interface QuestionOption {
   questionOptionId: number;
@@ -29,6 +30,7 @@ interface Question {
   questionId: number;
   categoryId?: number | null;
   categoryName?: string | null;
+  measurementId?: number | null;
   fallbackText: string;
   questionType: string;
   isRequired: boolean;
@@ -62,6 +64,7 @@ interface HealthQuestionnaireProps {
 }
 
 export default function HealthQuestionnaire({ patientId }: HealthQuestionnaireProps) {
+  const { user } = useUser();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
@@ -303,9 +306,46 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
       return;
     }
 
+    const personnelId = user ? parseInt(user.id, 10) : null;
+
+    const measurementPayload: CreateMeasurementResultDto[] = [];
+    for (const question of visibleQuestions) {
+      if (question.measurementId == null) continue;
+      if (question.questionType !== "number") continue;
+      const rawValue = (answers[question.questionId] ?? "").trim();
+      if (!rawValue) continue;
+      const parsedValue = Number(rawValue.replace(",", "."));
+      if (!Number.isFinite(parsedValue)) continue;
+      if (personnelId == null || !Number.isFinite(personnelId)) continue;
+      measurementPayload.push({
+        measurementId: question.measurementId,
+        patientId,
+        result: parsedValue,
+        registeredBy: personnelId,
+      });
+    }
+
+    if (personnelId != null && Number.isFinite(personnelId)) {
+      const heightEntry = measurementPayload.find((m) => m.measurementId === 2);
+      const weightEntry = measurementPayload.find((m) => m.measurementId === 1);
+      if (heightEntry && weightEntry && heightEntry.result > 0) {
+        const heightM = heightEntry.result / 100;
+        const bmi = weightEntry.result / (heightM * heightM);
+        measurementPayload.push({
+          measurementId: 10,
+          patientId,
+          result: Math.round(bmi * 10) / 10,
+          registeredBy: personnelId,
+        });
+      }
+    }
+
     try {
       setIsSubmitting(true);
       await apiClient.post("/api/Responses/bulk", payload);
+      if (measurementPayload.length > 0) {
+        await apiClient.post("/api/MeasurementResults/bulk", measurementPayload);
+      }
       setAnswers({});
       setFormKey((k) => k + 1);
       setSubmitSuccess("Skjema sendt inn!");
