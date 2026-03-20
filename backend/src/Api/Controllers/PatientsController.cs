@@ -22,12 +22,11 @@ public class PatientsController : ControllerBase
         return Ok(items);
     }
 
-    [HttpGet("by-supabase-user/{supabaseUserId}")]
+    [HttpGet("by-supabase/{supabaseUserId}")]
     public async Task<IActionResult> GetBySupabaseUserId(string supabaseUserId)
     {
         var item = await _service.GetBySupabaseUserIdAsync(supabaseUserId);
-        if (item == null) return NotFound();
-        return Ok(item);
+        return item == null ? NotFound() : Ok(item);
     }
 
     [HttpPost]
@@ -42,5 +41,12 @@ public class PatientsController : ControllerBase
     {
         var totalScore = await _service.GetTotalScoreAsync(id);
         return Ok(new { patientId = id, totalScore });
+    }
+
+    [HttpGet("{id:int}/latest-measurements")]
+    public async Task<IActionResult> GetLatestMeasurements(int id)
+    {
+        var results = await _service.GetLatestMeasurementsAsync(id);
+        return Ok(results);
     }
 }

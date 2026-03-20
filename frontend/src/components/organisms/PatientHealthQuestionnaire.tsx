@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, ReactElement, useMemo } from "react";
+import { useState, useEffect, ReactElement } from "react";
 import { ApiClientError, apiClient } from "@/lib/apiClient";
-import { useAuth } from "@/hooks/useAuth";
+import { useUser } from "@/context/UserContext";
 import type {
   CreateResponseDto,
   PatientDto,
@@ -45,7 +45,7 @@ interface Question {
 }
 
 export default function PatientHealthQuestionnaire() {
-  const { user, isLoading: isAuthLoading, error: authError } = useAuth();
+  const { user: localUser, isAuthReady } = useUser();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [questions, setQuestions] = useState<QueryQuestionWithDetailsDto[]>([]);
@@ -90,48 +90,75 @@ export default function PatientHealthQuestionnaire() {
       setIsPatientLoading(true);
       setPatientId(null);
 
-      if (isAuthLoading) {
+      if (!isAuthReady) {
         return;
       }
 
-      if (authError) {
-        setPatientError(authError);
-        setIsPatientLoading(false);
-        return;
-      }
-
-      if (!user) {
+      if (!localUser) {
         setPatientId(null);
         setPatientError("Du må være logget inn for å fylle ut skjemaet.");
         setIsPatientLoading(false);
         return;
       }
 
+      if (localUser && localUser.role !== "pasient") {
+        setPatientError("Denne siden er kun for pasienter.");
+        setIsPatientLoading(false);
+        return;
+      }
+
+      // Prefer local numeric patient id from UserContext (already resolved via backend).
+      if (localUser?.role === "pasient") {
+        const parsedLocalId = Number.parseInt(localUser.id, 10);
+        if (Number.isFinite(parsedLocalId)) {
+          setPatientError(null);
+          setPatientId(parsedLocalId);
+          setIsPatientLoading(false);
+          return;
+        }
+      }
+
       try {
         setPatientError(null);
         const patient = await apiClient.get<PatientDto>(
-          `/api/Patients/by-supabase-user/${encodeURIComponent(user.id)}`,
+          `/api/Patients/by-supabase/${encodeURIComponent(localUser.supabaseUserId)}`,
         );
         setPatientId(patient.id);
       } catch (err) {
-        setPatientId(null);
         if (err instanceof ApiClientError && err.status === 404) {
-          setPatientError("Fant ikke pasientprofil for innlogget bruker.");
-        } else if (err instanceof ApiClientError) {
-          setPatientError(
-            `Kunne ikke hente pasientprofil (${err.status}). Sjekk at backend kjører og at endpointet er oppdatert.`,
-          );
+          try {
+            const created = await apiClient.post<PatientDto>("/api/Patients", {
+              supabaseUserId: localUser.supabaseUserId,
+              name: localUser.name,
+              email: localUser.email ?? "",
+            });
+
+            setPatientError(null);
+            setPatientId(created.id);
+            return;
+          } catch (createErr) {
+            setPatientId(null);
+            setPatientError("Fant ikke pasientprofil for innlogget bruker.");
+            console.error(createErr);
+          }
         } else {
-          setPatientError("Kunne ikke hente pasientprofil.");
+          setPatientId(null);
+          if (err instanceof ApiClientError) {
+            setPatientError(
+              `Kunne ikke hente pasientprofil (${err.status}). Sjekk at backend kjører og at endpointet er oppdatert.`,
+            );
+          } else {
+            setPatientError("Kunne ikke hente pasientprofil.");
+          }
+          console.error(err);
         }
-        console.error(err);
       } finally {
         setIsPatientLoading(false);
       }
     };
 
     void resolvePatient();
-  }, [authError, isAuthLoading, user]);
+  }, [isAuthReady, localUser]);
 
   const updateAnswer = (questionId: number, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -146,7 +173,7 @@ export default function PatientHealthQuestionnaire() {
     setSubmitError(null);
     setSubmitSuccess(null);
 
-    if (!user) {
+    if (!localUser) {
       setSubmitError("Du må være logget inn for å sende inn skjemaet.");
       return;
     }
@@ -210,7 +237,9 @@ export default function PatientHealthQuestionnaire() {
   };
 
   // Finn ut om et spørsmål skal vises basert på dependencies
-  const shouldShowQuestion = (question: QueryQuestionWithDetailsDto): boolean => {
+  const shouldShowQuestion = (
+    question: QueryQuestionWithDetailsDto,
+  ): boolean => {
     const isChild = questions.some((q) =>
       q.dependencies.some((d) => d.childQuestionId === question.questionId),
     );
@@ -278,7 +307,9 @@ export default function PatientHealthQuestionnaire() {
     count: categoryCounts[i],
   }));
 
-  const buildQuestionElement = (question: QueryQuestionWithDetailsDto): ReactElement => {
+  const buildQuestionElement = (
+    question: QueryQuestionWithDetailsDto,
+  ): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
 
@@ -386,7 +417,7 @@ export default function PatientHealthQuestionnaire() {
     }
   }, [visibleQuestions.length, currentStep]);
 
-  const isLoading = isQuestionsLoading || isAuthLoading || isPatientLoading;
+  const isLoading = isQuestionsLoading || isPatientLoading;
   const mainError = questionsError ?? patientError;
 
   if (isLoading) {

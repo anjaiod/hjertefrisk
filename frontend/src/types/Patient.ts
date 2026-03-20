@@ -16,3 +16,9 @@ export type PatientScoreDto = {
   patientId: number;
   totalScore: number;
 };
+
+export type LatestMeasurementResultDto = {
+  measurementId: number;
+  result: number;
+  registeredAt: string;
+};

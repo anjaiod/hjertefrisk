@@ -270,7 +270,6 @@ export default function HealthQuestionnaire() {
 
   return (
     <div className="flex">
-      <SidebarNav activePath="/behandler_skjema" />
       <main className="flex-1 bg-slate-50">
         <form
           onSubmit={handleSubmit}
