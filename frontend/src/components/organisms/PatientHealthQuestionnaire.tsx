@@ -15,9 +15,33 @@ import QuestionNumber from "../molecules/QuestionNumber";
 import QuestionTextArea from "../molecules/QuestionTextArea";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
 
-function getCategoryLabel(question: QueryQuestionWithDetailsDto): string {
-  const trimmed = question.categoryName?.trim();
-  return trimmed && trimmed.length > 0 ? trimmed : "Ukjent";
+interface QuestionOption {
+  questionOptionId: number;
+  fallbackText: string;
+  optionValue: string;
+  displayOrder: number;
+}
+
+interface QuestionDependency {
+  parentQuestionId: number;
+  childQuestionId: number;
+  triggerOptionId?: number | null;
+  triggerOptionValue?: string | null;
+  triggerTextValue: string | null;
+  operator: string;
+}
+
+interface Question {
+  questionId: number;
+  categoryId?: number | null;
+  categoryName?: string | null;
+  fallbackText: string;
+  questionType: string;
+  isRequired: boolean;
+  requiredRole: string | null;
+  displayOrder: number;
+  options: QuestionOption[];
+  dependencies: QuestionDependency[];
 }
 
 export default function PatientHealthQuestionnaire() {
@@ -192,7 +216,6 @@ export default function PatientHealthQuestionnaire() {
     );
     if (!isChild) return true;
 
-    // Finn alle parent-dependencies for dette spørsmålet
     const parentDeps = questions.flatMap((q) =>
       q.dependencies.filter((d) => d.childQuestionId === question.questionId),
     );
@@ -200,36 +223,70 @@ export default function PatientHealthQuestionnaire() {
     return parentDeps.some((dep) => {
       const parentAnswer = answers[dep.parentQuestionId];
       if (!parentAnswer) return false;
-      if (dep.operator === "=") return parentAnswer === dep.triggerTextValue;
-      if (dep.operator === "OR")
-        return (
-          parentAnswer === dep.triggerTextValue ||
-          parentAnswer.startsWith("nei")
+
+      if (dep.triggerOptionValue) {
+        return parentAnswer === dep.triggerOptionValue;
+      }
+
+      if (dep.triggerOptionId != null) {
+        const parentQuestion = questions.find(
+          (q) => q.questionId === dep.parentQuestionId,
         );
+        const triggerOption = parentQuestion?.options.find(
+          (o) => o.questionOptionId === dep.triggerOptionId,
+        );
+        return triggerOption
+          ? parentAnswer === triggerOption.optionValue
+          : false;
+      }
+
+      if (dep.operator === "=") return parentAnswer === dep.triggerTextValue;
+
       return false;
     });
   };
 
-  // Bygg den synlige spørsmålslisten dynamisk basert på svar
-  const visibleQuestions = useMemo(
-    () => questions.filter(shouldShowQuestion),
-    [answers, questions],
+  const visibleQuestions = questions
+    .filter((q) => q.requiredRole !== "clinician")
+    .filter(shouldShowQuestion);
+
+  // Bygg kategorier dynamisk fra spørsmålene
+  const categoryMap = new Map<number, string>();
+  visibleQuestions.forEach((q) => {
+    if (q.categoryId != null && q.categoryName) {
+      categoryMap.set(q.categoryId, q.categoryName);
+    }
+  });
+
+  const uniqueCategories = Array.from(categoryMap.entries()).map(
+    ([id, name]) => ({
+      id,
+      name,
+    }),
   );
+
+  const questionCategories = visibleQuestions.map((q) =>
+    uniqueCategories.findIndex((c) => c.id === q.categoryId),
+  );
+
+  const categoryCounts = uniqueCategories.map(
+    (_, i) => questionCategories.filter((c) => c === i).length,
+  );
+
+  const categories = uniqueCategories.map((cat, i) => ({
+    name: cat.name,
+    count: categoryCounts[i],
+  }));
 
   const buildQuestionElement = (question: QueryQuestionWithDetailsDto): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
 
-    // Determine placeholder based on question text or type
     const getPlaceholder = (): string | undefined => {
       const text = question.fallbackText.toLowerCase();
-
-      // Number fields
       if (text.includes("hvor høy")) return "170";
       if (text.includes("hvor mye veier")) return "70";
       if (text.includes("livvidde")) return "80";
-
-      // Text fields
       if (text.includes("hvor mye røyker"))
         return "F.eks. 10 sigaretter per dag";
       if (text.includes("vekten din endret"))
@@ -238,7 +295,6 @@ export default function PatientHealthQuestionnaire() {
         return "Beskriv dine fysiske begrensninger...";
       if (text.includes("barrierer") && text.includes("skriv"))
         return "Beskriv barrierer...";
-
       return undefined;
     };
 
@@ -258,10 +314,6 @@ export default function PatientHealthQuestionnaire() {
         return 3;
       return undefined;
     };
-
-    const placeholder = getPlaceholder();
-    const unit = getUnit();
-    const rows = getRows();
 
     if (question.questionType === "boolean") {
       return (
@@ -304,14 +356,13 @@ export default function PatientHealthQuestionnaire() {
           value={value}
           onChange={(val) => updateAnswer(question.questionId, val)}
           onAnswer={handleNext}
-          placeholder={placeholder}
-          unit={unit}
+          placeholder={getPlaceholder()}
+          unit={getUnit()}
           required={question.isRequired}
         />
       );
     }
 
-    // text / textarea
     return (
       <QuestionTextArea
         key={question.questionId}
@@ -320,50 +371,14 @@ export default function PatientHealthQuestionnaire() {
         value={value}
         onChange={(val) => updateAnswer(question.questionId, val)}
         onAnswer={handleNext}
-        placeholder={placeholder}
-        rows={rows}
+        placeholder={getPlaceholder()}
+        rows={getRows()}
         required={question.isRequired}
       />
     );
   };
 
-  const questionElements = useMemo(
-    () => visibleQuestions.map(buildQuestionElement),
-    [answers, visibleQuestions],
-  );
-
-  const questionCategories = useMemo(
-    () => {
-      const indexByCategory = new Map<string, number>();
-
-      visibleQuestions.forEach((question) => {
-        const category = getCategoryLabel(question);
-        if (!indexByCategory.has(category)) {
-          indexByCategory.set(category, indexByCategory.size);
-        }
-      });
-
-      return visibleQuestions.map((question) => {
-        const category = getCategoryLabel(question);
-        return indexByCategory.get(category) ?? 0;
-      });
-    },
-    [visibleQuestions],
-  );
-
-  const categories = useMemo(() => {
-    const countByCategory = new Map<string, number>();
-
-    visibleQuestions.forEach((question) => {
-      const category = getCategoryLabel(question);
-      countByCategory.set(category, (countByCategory.get(category) ?? 0) + 1);
-    });
-
-    return Array.from(countByCategory.entries()).map(([name, count]) => ({
-      name,
-      count,
-    }));
-  }, [visibleQuestions]);
+  const questionElements = visibleQuestions.map(buildQuestionElement);
 
   useEffect(() => {
     if (currentStep >= visibleQuestions.length && visibleQuestions.length > 0) {

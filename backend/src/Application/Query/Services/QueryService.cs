@@ -75,6 +75,8 @@ public class QueryService : IQueryService
                         {
                             ParentQuestionId = d.ParentQuestionId,
                             ChildQuestionId = d.ChildQuestionId,
+                            TriggerOptionId = d.TriggerOptionId,
+                            TriggerOptionValue = d.TriggerOption != null ? d.TriggerOption.OptionValue : null,
                             TriggerTextValue = d.TriggerTextValue,
                             Operator = d.Operator
                         }).ToList()
@@ -120,6 +122,8 @@ public async Task<QueryWithQuestionsDto?> GetByNameAsync(string name)
                         {
                             ParentQuestionId = d.ParentQuestionId,
                             ChildQuestionId = d.ChildQuestionId,
+                            TriggerOptionId = d.TriggerOptionId,
+                            TriggerOptionValue = d.TriggerOption != null ? d.TriggerOption.OptionValue : null,
                             TriggerTextValue = d.TriggerTextValue,
                             Operator = d.Operator
                         }).ToList()
