@@ -3,8 +3,8 @@ import { Input } from "@/components/atoms/Input";
 import { SearchBar } from "@/components/atoms/SearchBar";
 import { TagVariant } from "@/components/atoms/Tag";
 import { PatientDto } from "@/types";
+import { getApiBaseUrl } from "@/lib/apiClient";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 function scoreToRiskLevel(score: number): TagVariant {
   if (score >= 7) return "high";
   if (score >= 4) return "medium";
@@ -21,7 +21,8 @@ function formatDate(iso: string): string {
 }
 
 async function fetchPatients(): Promise<Patient[]> {
-  const res = await fetch(`${API_URL}/api/patients`, { cache: "no-store" });
+  const apiBaseUrl = getApiBaseUrl();
+  const res = await fetch(`${apiBaseUrl}/api/patients`, { cache: "no-store" });
   if (!res.ok) throw new Error("Kunne ikke hente pasienter");
   const patients: PatientDto[] = await res.json();
 
@@ -29,9 +30,12 @@ async function fetchPatients(): Promise<Patient[]> {
     patients.map(async (p) => {
       let riskLevel: TagVariant = "low";
       try {
-        const scoreRes = await fetch(`${API_URL}/api/patients/${p.id}/score`, {
-          cache: "no-store",
-        });
+        const scoreRes = await fetch(
+          `${apiBaseUrl}/api/patients/${p.id}/score`,
+          {
+            cache: "no-store",
+          },
+        );
         if (scoreRes.ok) {
           const { totalScore } = await scoreRes.json();
           riskLevel = scoreToRiskLevel(totalScore);

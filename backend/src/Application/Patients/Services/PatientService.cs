@@ -32,11 +32,12 @@ public class PatientService : IPatientService
 
     public async Task<PatientDto?> GetBySupabaseUserIdAsync(string supabaseUserId)
     {
-        var trimmedUserId = supabaseUserId.Trim();
+        var trimmed = supabaseUserId.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed)) return null;
 
         return await _db.Patients
             .AsNoTracking()
-            .Where(p => p.SupabaseUserId == trimmedUserId)
+            .Where(p => p.SupabaseUserId == trimmed)
             .Select(p => new PatientDto
             {
                 Id = p.Id,
@@ -70,25 +71,6 @@ public class PatientService : IPatientService
         };
     }
 
-    public async Task<PatientDto?> GetBySupabaseUserIdAsync(string supabaseUserId)
-    {
-        var trimmed = supabaseUserId.Trim();
-        if (string.IsNullOrWhiteSpace(trimmed)) return null;
-
-        return await _db.Patients
-            .AsNoTracking()
-            .Where(p => p.SupabaseUserId == trimmed)
-            .Select(p => new PatientDto
-            {
-                Id = p.Id,
-                SupabaseUserId = p.SupabaseUserId,
-                Name = p.Name,
-                Email = p.Email,
-                CreatedAt = p.CreatedAt
-            })
-            .FirstOrDefaultAsync();
-    }
-
     public async Task<int> GetTotalScoreAsync(int patientId)
     {
         var responses = await _db.Responses
@@ -102,12 +84,17 @@ public class PatientService : IPatientService
             .Where(s => s.QuestionId != null && questionIds.Contains(s.QuestionId.Value))
             .ToListAsync();
 
-        var latestMeasurementResults = await _db.MeasurementResults
+        // Avoid EF Core GroupBy/First translation issues by grouping in-memory.
+        var measurementRows = await _db.MeasurementResults
             .AsNoTracking()
             .Where(r => r.PatientId == patientId)
-            .GroupBy(r => r.MeasurementId)
-            .Select(g => g.OrderByDescending(x => x.RegisteredAt).First())
+            .OrderByDescending(r => r.RegisteredAt)
             .ToListAsync();
+
+        var latestMeasurementResults = measurementRows
+            .GroupBy(r => r.MeasurementId)
+            .Select(g => g.First())
+            .ToList();
 
         var measurementIds = latestMeasurementResults.Select(r => r.MeasurementId).Distinct().ToList();
         var measurementSeverities = await _db.Severities

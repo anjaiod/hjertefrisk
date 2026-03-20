@@ -92,6 +92,7 @@ export function useAuthPage() {
 
           setUser({
             id: String(local.id),
+            supabaseUserId: user.id,
             name: local.name,
             email: local.email,
             role,
@@ -106,6 +107,7 @@ export function useAuthPage() {
 
           setUser({
             id: String(local.id),
+            supabaseUserId: user.id,
             name: local.name,
             email: local.email,
             role,
@@ -116,6 +118,7 @@ export function useAuthPage() {
           user.user_metadata?.fullName || user.email || "Bruker";
         setUser({
           id: user.id,
+          supabaseUserId: user.id,
           name: fallbackName,
           email: user.email ?? "",
           role,

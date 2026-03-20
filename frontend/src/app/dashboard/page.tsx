@@ -5,11 +5,10 @@ import { FeatureCardGrid } from "../../components/molecules/FeatureCardGrid";
 
 import type { LatestMeasurementResultDto, PatientDto, ToDoDto } from "@/types";
 import { unstable_noStore as noStore } from "next/cache";
+import { getApiBaseUrl } from "@/lib/apiClient";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
 type DashboardPageProps = {
   searchParams?:
@@ -28,7 +27,8 @@ function getSingleSearchParam(
 async function getSelectedPatient(
   patientId: string,
 ): Promise<PatientDto | null> {
-  const res = await fetch(`${API_URL}/api/patients`, { cache: "no-store" });
+  const apiBaseUrl = getApiBaseUrl();
+  const res = await fetch(`${apiBaseUrl}/api/patients`, { cache: "no-store" });
   if (!res.ok) return null;
 
   const patients: PatientDto[] = await res.json();
@@ -36,7 +36,8 @@ async function getSelectedPatient(
 }
 
 async function getTodosForPatient(patientId: string) {
-  const res = await fetch(`${API_URL}/api/todos`, { cache: "no-store" });
+  const apiBaseUrl = getApiBaseUrl();
+  const res = await fetch(`${apiBaseUrl}/api/todos`, { cache: "no-store" });
   if (!res.ok) return [] as { id: number; text: string; completed: boolean }[];
 
   const todos: ToDoDto[] = await res.json();
@@ -46,8 +47,9 @@ async function getTodosForPatient(patientId: string) {
 }
 
 async function getLatestMeasurementsForPatient(patientId: string) {
+  const apiBaseUrl = getApiBaseUrl();
   const res = await fetch(
-    `${API_URL}/api/patients/${encodeURIComponent(patientId)}/latest-measurements`,
+    `${apiBaseUrl}/api/patients/${encodeURIComponent(patientId)}/latest-measurements`,
     { cache: "no-store" },
   );
 
@@ -77,7 +79,7 @@ export default async function DashboardPage({
           { id: 4, text: "Logge vekt", completed: false },
         ];
 
-  const patientName = selectedPatient?.name ?? "Ola Nordmann";
+  const patientName = selectedPatient?.name;
 
   const latestMeasurements =
     typeof patientId === "string" && patientId.trim() !== ""

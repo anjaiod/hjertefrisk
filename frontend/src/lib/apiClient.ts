@@ -1,4 +1,21 @@
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+function getPublicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL?.trim() || "http://localhost:5000";
+}
+
+function getInternalApiBaseUrl(): string | undefined {
+  const value = process.env.API_URL_INTERNAL?.trim();
+  return value ? value : undefined;
+}
+
+export function getApiBaseUrl(): string {
+  // Browser requests must use a host-reachable URL (ex: http://localhost:5000).
+  // Server-side rendering inside Docker must use the service hostname (ex: http://backend:8080).
+  const publicBaseUrl = getPublicApiBaseUrl();
+  if (typeof window === "undefined") {
+    return getInternalApiBaseUrl() ?? publicBaseUrl;
+  }
+  return publicBaseUrl;
+}
 
 export class ApiClientError extends Error {
   status: number;
@@ -34,7 +51,7 @@ async function request<TResponse = void>(
   path: string,
   options: RequestOptions = {},
 ): Promise<TResponse> {
-  const requestUrl = `${apiBaseUrl}${path}`;
+  const requestUrl = `${getApiBaseUrl()}${path}`;
 
   const response = await fetch(requestUrl, {
     method: options.method ?? "GET",
@@ -54,8 +71,13 @@ async function request<TResponse = void>(
       message = fallbackMessage;
     } else {
       try {
-        const parsed = JSON.parse(message) as { title?: string; detail?: string };
-        const details = [parsed.title, parsed.detail].filter(Boolean).join(" - ");
+        const parsed = JSON.parse(message) as {
+          title?: string;
+          detail?: string;
+        };
+        const details = [parsed.title, parsed.detail]
+          .filter(Boolean)
+          .join(" - ");
         if (details) {
           message = details;
         }

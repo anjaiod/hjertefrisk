@@ -1,5 +1,5 @@
 export function PatientProfile({
-  name = "Ola Nordmann",
+  name,
   age,
   gender,
   height = null,

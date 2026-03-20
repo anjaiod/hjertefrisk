@@ -19,6 +19,7 @@ export type UserRole = "pasient" | "personell";
 
 export interface User {
   id: string;
+  supabaseUserId: string;
   name: string;
   email: string;
   role: UserRole;
@@ -94,6 +95,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
         setUser({
           id: String(local.id),
+          supabaseUserId: supabaseUser.id,
           name: local.name,
           email: local.email,
           role,
@@ -110,6 +112,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       setUser({
         id: String(local.id),
+        supabaseUserId: supabaseUser.id,
         name: local.name,
         email: local.email,
         role,
@@ -118,6 +121,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // Fallback hvis backend-oppslag feiler (f.eks. bruker finnes ikke lokalt enda)
       setUser({
         id: supabaseUser.id,
+        supabaseUserId: supabaseUser.id,
         name: fallbackName,
         email: supabaseUser.email ?? "",
         role,
