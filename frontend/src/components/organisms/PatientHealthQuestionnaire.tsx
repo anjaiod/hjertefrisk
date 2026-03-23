@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, ReactElement } from "react";
+import { useRouter } from "next/navigation";
 import { ApiClientError, apiClient } from "@/lib/apiClient";
 import { useUser } from "@/context/UserContext";
 import type {
@@ -15,6 +16,7 @@ import QuestionRadio from "../molecules/QuestionRadio";
 import QuestionNumber from "../molecules/QuestionNumber";
 import QuestionTextArea from "../molecules/QuestionTextArea";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
+import QuestionnaireSummary from "../molecules/QuestionnaireSummary";
 
 interface QuestionOption {
   questionOptionId: number;
@@ -46,6 +48,7 @@ interface Question {
 }
 
 export default function PatientHealthQuestionnaire() {
+  const router = useRouter();
   const { user: localUser, isAuthReady } = useUser();
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -61,6 +64,7 @@ export default function PatientHealthQuestionnaire() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -258,7 +262,7 @@ export default function PatientHealthQuestionnaire() {
       if (measurementPayload.length > 0) {
         await apiClient.post("/api/MeasurementResults/bulk", measurementPayload);
       }
-      setSubmitSuccess("Skjema sendt inn!");
+      router.push("/pasientDashboard");
     } catch (err) {
       setSubmitError("Kunne ikke lagre svarene.");
       console.error(err);
@@ -482,24 +486,41 @@ export default function PatientHealthQuestionnaire() {
           <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
             Helseskjema
           </h1>
-          {submitError && (
+          {submitError && !showSummary && (
             <p className="text-red-500 mb-4 text-center">{submitError}</p>
           )}
           {submitSuccess && (
             <p className="text-green-700 mb-4 text-center">{submitSuccess}</p>
           )}
-          <QuestionWizard
-            currentStep={currentStep}
-            totalSteps={questionElements.length}
-            onSkip={handleSkip}
-            onPrevious={handlePrevious}
-            onSubmit={handleSubmit}
-            isSubmitting={isSubmitting}
-            categories={categories}
-            questionCategories={questionCategories}
-          >
-            {questionElements[currentStep]}
-          </QuestionWizard>
+          {showSummary ? (
+            <QuestionnaireSummary
+              questions={visibleQuestions}
+              answers={answers}
+              onBack={() => setShowSummary(false)}
+              onSubmit={handleSubmit}
+              isSubmitting={isSubmitting}
+              submitError={submitError}
+            />
+          ) : (
+            <QuestionWizard
+              currentStep={currentStep}
+              totalSteps={questionElements.length}
+              onSkip={handleSkip}
+              onPrevious={handlePrevious}
+              onSubmit={() => setShowSummary(true)}
+              submitLabel="Se oppsummering"
+              categories={categories}
+              questionCategories={questionCategories}
+              onCategoryClick={(categoryIndex) => {
+                const firstStep = questionCategories.findIndex(
+                  (c) => c === categoryIndex,
+                );
+                if (firstStep !== -1) setCurrentStep(firstStep);
+              }}
+            >
+              {questionElements[currentStep]}
+            </QuestionWizard>
+          )}
         </div>
       </main>
     </div>
