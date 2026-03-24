@@ -27,6 +27,8 @@ using backend.src.Application.Personnel.Interfaces;
 using backend.src.Application.Personnel.Services;
 using backend.src.Application.QuestionDependencies.Interfaces;
 using backend.src.Application.QuestionDependencies.Services;
+using backend.src.Application.MeasurementResults.Interfaces;
+using backend.src.Application.MeasurementResults.Services;
 
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -57,7 +59,9 @@ var rawConnectionString = builder.Configuration.GetConnectionString("Default")
 var connectionString = NormalizePostgresConnectionString(rawConnectionString);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(
+        connectionString,
+        npgsqlOptions => npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
 
 // Application services / repositories
 builder.Services.AddScoped<ILanguageService, LanguageService>();
@@ -75,6 +79,7 @@ builder.Services.AddScoped<IToDoService, ToDoService>();
 builder.Services.AddScoped<IResponseService, ResponseService>();
 builder.Services.AddScoped<IPersonnelService, PersonnelService>();
 builder.Services.AddScoped<IQuestionDependencyService, QuestionDependencyService>();
+builder.Services.AddScoped<IMeasurementResultService, MeasurementResultService>();
 
 // Optional but recommended for API documentation
 builder.Services.AddEndpointsApiExplorer();
@@ -89,7 +94,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+var httpsPort = app.Configuration["ASPNETCORE_HTTPS_PORT"] ?? app.Configuration["HTTPS_PORT"];
+if (!string.IsNullOrWhiteSpace(httpsPort))
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors(CorsPolicyName);
 
 app.MapControllers();

@@ -1,9 +1,14 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { useUser } from "@/context/UserContext";
+
 type NavItem = {
   label: string;
   href?: string;
   //onClick?: () => void;
   active?: boolean;
-  icon: React.ReactNode;
+  icon: ReactNode;
 };
 
 function Item({ item }: { item: NavItem }) {
@@ -38,28 +43,15 @@ export function PatientSidebarNav({
   patientName?: string;
   activePath?: string;
 }) {
+  const { user } = useUser();
+  const resolvedPatientName =
+    user?.role === "pasient" ? user.name : patientName;
+
   const items: NavItem[] = [
     {
-      // should become a pop-up?
-      label: "Varslinger",
-      //onClick: () => setNotificationsOpen(true),
-      icon: (
-        <svg
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M15 17h5l-1.4-1.4A2 2 0 0118 14.17V11a6 6 0 10-12 0v3.17c0 .53-.21 1.04-.6 1.43L4 17h5m6 0a3 3 0 11-6 0"
-          />
-        </svg>
-      ),
-    },
-    {
       label: "Innboks",
+      href: "/pasientDashboard/pasientInnboks",
+      active: activePath === "/pasientDashboard/pasientInnboks",
       //onClick: () => setInboxOpen(true),
       icon: (
         <svg
@@ -149,7 +141,7 @@ export function PatientSidebarNav({
     <aside className="sticky top-0 hidden h-screen w-72 flex-col border-r border-brand-sky/30 bg-gradient-to-b from-white to-brand-mist/10 p-6 md:flex">
       <div className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm">
         <div className="space-y-0.5">
-          <p className="font-bold text-brand-navy">{patientName}</p>
+          <p className="font-bold text-brand-navy">{resolvedPatientName}</p>
           <p className="text-sm text-slate-600">Innlogget som pasient</p>
         </div>
       </div>

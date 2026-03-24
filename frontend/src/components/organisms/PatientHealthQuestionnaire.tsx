@@ -1,6 +1,15 @@
 "use client";
 
 import { useState, useEffect, ReactElement } from "react";
+import { ApiClientError, apiClient } from "@/lib/apiClient";
+import { useUser } from "@/context/UserContext";
+import type {
+  CreateMeasurementResultDto,
+  CreateResponseDto,
+  PatientDto,
+  QueryQuestionWithDetailsDto,
+  QueryWithQuestionsDto,
+} from "@/types";
 import QuestionWizard from "../molecules/QuestionWizard";
 import QuestionRadio from "../molecules/QuestionRadio";
 import QuestionNumber from "../molecules/QuestionNumber";
@@ -17,12 +26,16 @@ interface QuestionOption {
 interface QuestionDependency {
   parentQuestionId: number;
   childQuestionId: number;
+  triggerOptionId?: number | null;
+  triggerOptionValue?: string | null;
   triggerTextValue: string | null;
   operator: string;
 }
 
 interface Question {
   questionId: number;
+  categoryId?: number | null;
+  categoryName?: string | null;
   fallbackText: string;
   questionType: string;
   isRequired: boolean;
@@ -32,52 +45,121 @@ interface Question {
   dependencies: QuestionDependency[];
 }
 
-const CATEGORY_NAMES = [
-  "Røyking",
-  "Fysisk aktivitet",
-  "Kosthold",
-  "Vekt",
-  "Søvn",
-  "Alkohol",
-  "Rusmidler",
-];
-
-// Hvilke questionId-er tilhører hvilken kategori (basert på displayOrder)
-function getCategoryIndex(displayOrder: number): number {
-  if (displayOrder <= 3) return 0; // Røyking
-  if (displayOrder <= 9) return 1; // Fysisk aktivitet
-  if (displayOrder <= 15) return 2; // Kosthold
-  if (displayOrder <= 18) return 3; // Vekt
-  if (displayOrder <= 27) return 4; // Søvn
-  if (displayOrder <= 37) return 5; // Alkohol
-  return 6; // Rusmidler
-}
-
 export default function PatientHealthQuestionnaire() {
+  const { user: localUser, isAuthReady } = useUser();
+
   const [currentStep, setCurrentStep] = useState(0);
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<QueryQuestionWithDetailsDto[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isQuestionsLoading, setIsQuestionsLoading] = useState(true);
+  const [questionsError, setQuestionsError] = useState<string | null>(null);
+
+  const [patientId, setPatientId] = useState<number | null>(null);
+  const [isPatientLoading, setIsPatientLoading] = useState(true);
+  const [patientError, setPatientError] = useState<string | null>(null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/query/by-name/Helseskjema`,
+        setQuestionsError(null);
+        const data = await apiClient.get<QueryWithQuestionsDto>(
+          "/api/Query/full/by-name/Helseskjema",
         );
-        if (!res.ok) throw new Error("Kunne ikke hente spørsmål");
-        const data = await res.json();
-        setQuestions(data.questions);
+        const patientQuestions = (data.questions ?? []).filter(
+          (question) =>
+            question.requiredRole == null ||
+            question.requiredRole.toLowerCase() === "patient",
+        );
+        setQuestions(patientQuestions);
       } catch (err) {
-        setError("Noe gikk galt ved henting av spørsmål.");
+        setQuestionsError("Noe gikk galt ved henting av spørsmål.");
         console.error(err);
       } finally {
-        setLoading(false);
+        setIsQuestionsLoading(false);
       }
     };
-    fetchQuestions();
+
+    void fetchQuestions();
   }, []);
+
+  useEffect(() => {
+    const resolvePatient = async () => {
+      setIsPatientLoading(true);
+      setPatientId(null);
+
+      if (!isAuthReady) {
+        return;
+      }
+
+      if (!localUser) {
+        setPatientId(null);
+        setPatientError("Du må være logget inn for å fylle ut skjemaet.");
+        setIsPatientLoading(false);
+        return;
+      }
+
+      if (localUser && localUser.role !== "pasient") {
+        setPatientError("Denne siden er kun for pasienter.");
+        setIsPatientLoading(false);
+        return;
+      }
+
+      // Prefer local numeric patient id from UserContext (already resolved via backend).
+      if (localUser?.role === "pasient") {
+        const parsedLocalId = Number.parseInt(localUser.id, 10);
+        if (Number.isFinite(parsedLocalId)) {
+          setPatientError(null);
+          setPatientId(parsedLocalId);
+          setIsPatientLoading(false);
+          return;
+        }
+      }
+
+      try {
+        setPatientError(null);
+        const patient = await apiClient.get<PatientDto>(
+          `/api/Patients/by-supabase/${encodeURIComponent(localUser.supabaseUserId)}`,
+        );
+        setPatientId(patient.id);
+      } catch (err) {
+        if (err instanceof ApiClientError && err.status === 404) {
+          try {
+            const created = await apiClient.post<PatientDto>("/api/Patients", {
+              supabaseUserId: localUser.supabaseUserId,
+              name: localUser.name,
+              email: localUser.email ?? "",
+            });
+
+            setPatientError(null);
+            setPatientId(created.id);
+            return;
+          } catch (createErr) {
+            setPatientId(null);
+            setPatientError("Fant ikke pasientprofil for innlogget bruker.");
+            console.error(createErr);
+          }
+        } else {
+          setPatientId(null);
+          if (err instanceof ApiClientError) {
+            setPatientError(
+              `Kunne ikke hente pasientprofil (${err.status}). Sjekk at backend kjører og at endpointet er oppdatert.`,
+            );
+          } else {
+            setPatientError("Kunne ikke hente pasientprofil.");
+          }
+          console.error(err);
+        }
+      } finally {
+        setIsPatientLoading(false);
+      }
+    };
+
+    void resolvePatient();
+  }, [isAuthReady, localUser]);
 
   const updateAnswer = (questionId: number, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -88,19 +170,112 @@ export default function PatientHealthQuestionnaire() {
   const handlePrevious = () => {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
-  const handleSubmit = () => {
-    console.log("Svar:", answers);
-    alert("Skjema sendt inn!");
+  const handleSubmit = async () => {
+    setSubmitError(null);
+    setSubmitSuccess(null);
+
+    if (!localUser) {
+      setSubmitError("Du må være logget inn for å sende inn skjemaet.");
+      return;
+    }
+
+    if (patientId == null) {
+      setSubmitError("Fant ikke pasientprofil for innlogget bruker.");
+      return;
+    }
+
+    const payload: CreateResponseDto[] = [];
+
+    for (const question of visibleQuestions) {
+      const rawValue = (answers[question.questionId] ?? "").trim();
+      if (!rawValue) {
+        continue;
+      }
+
+      const matchedOption = question.options.find(
+        (option) => option.optionValue === rawValue,
+      );
+
+      const basePayload: CreateResponseDto = {
+        patientId,
+        questionId: question.questionId,
+        selectedOptionId: matchedOption?.questionOptionId ?? null,
+      };
+
+      if (question.questionType === "number") {
+        const parsedValue = Number(rawValue.replace(",", "."));
+
+        if (Number.isFinite(parsedValue)) {
+          payload.push({
+            ...basePayload,
+            numberValue: parsedValue,
+          });
+          continue;
+        }
+      }
+
+      payload.push({
+        ...basePayload,
+        textValue: rawValue,
+      });
+    }
+
+    if (payload.length === 0) {
+      setSubmitError("Fyll inn minst ett svar før innsending.");
+      return;
+    }
+
+    const measurementPayload: CreateMeasurementResultDto[] = [];
+    for (const question of visibleQuestions) {
+      if (question.measurementId == null) continue;
+      if (question.questionType !== "number") continue;
+      const rawValue = (answers[question.questionId] ?? "").trim();
+      if (!rawValue) continue;
+      const parsedValue = Number(rawValue.replace(",", "."));
+      if (!Number.isFinite(parsedValue)) continue;
+      measurementPayload.push({
+        measurementId: question.measurementId,
+        patientId,
+        result: parsedValue,
+      });
+    }
+
+    const weightEntry = measurementPayload.find((m) => m.measurementId === 1);
+    const heightEntry = measurementPayload.find((m) => m.measurementId === 2);
+    if (weightEntry && heightEntry && heightEntry.result > 0) {
+      const heightM = heightEntry.result / 100;
+      const bmi = weightEntry.result / (heightM * heightM);
+      measurementPayload.push({
+        measurementId: 10,
+        patientId,
+        result: Math.round(bmi * 10) / 10,
+      });
+    }
+
+    try {
+      setIsSubmitting(true);
+      await apiClient.post("/api/Responses/bulk", payload);
+      if (measurementPayload.length > 0) {
+        await apiClient.post("/api/MeasurementResults/bulk", measurementPayload);
+      }
+      setSubmitSuccess("Skjema sendt inn!");
+    } catch (err) {
+      setSubmitError("Kunne ikke lagre svarene.");
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Finn ut om et spørsmål skal vises basert på dependencies
-  const shouldShowQuestion = (question: Question): boolean => {
+  const shouldShowQuestion = (
+    question: QueryQuestionWithDetailsDto,
+  ): boolean => {
     const isChild = questions.some((q) =>
       q.dependencies.some((d) => d.childQuestionId === question.questionId),
     );
     if (!isChild) return true;
 
-    // Finn alle parent-dependencies for dette spørsmålet
     const parentDeps = questions.flatMap((q) =>
       q.dependencies.filter((d) => d.childQuestionId === question.questionId),
     );
@@ -108,33 +283,72 @@ export default function PatientHealthQuestionnaire() {
     return parentDeps.some((dep) => {
       const parentAnswer = answers[dep.parentQuestionId];
       if (!parentAnswer) return false;
-      if (dep.operator === "=") return parentAnswer === dep.triggerTextValue;
-      if (dep.operator === "OR")
-        return (
-          parentAnswer === dep.triggerTextValue ||
-          parentAnswer.startsWith("nei")
+
+      if (dep.triggerOptionValue) {
+        return parentAnswer === dep.triggerOptionValue;
+      }
+
+      if (dep.triggerOptionId != null) {
+        const parentQuestion = questions.find(
+          (q) => q.questionId === dep.parentQuestionId,
         );
+        const triggerOption = parentQuestion?.options.find(
+          (o) => o.questionOptionId === dep.triggerOptionId,
+        );
+        return triggerOption
+          ? parentAnswer === triggerOption.optionValue
+          : false;
+      }
+
+      if (dep.operator === "=") return parentAnswer === dep.triggerTextValue;
+
       return false;
     });
   };
 
-  // Bygg den synlige spørsmålslisten dynamisk basert på svar
-  const visibleQuestions = questions.filter(shouldShowQuestion);
+  const visibleQuestions = questions
+    .filter((q) => q.requiredRole !== "clinician")
+    .filter(shouldShowQuestion);
 
-  const buildQuestionElement = (question: Question): ReactElement => {
+  // Bygg kategorier dynamisk fra spørsmålene
+  const categoryMap = new Map<number, string>();
+  visibleQuestions.forEach((q) => {
+    if (q.categoryId != null && q.categoryName) {
+      categoryMap.set(q.categoryId, q.categoryName);
+    }
+  });
+
+  const uniqueCategories = Array.from(categoryMap.entries()).map(
+    ([id, name]) => ({
+      id,
+      name,
+    }),
+  );
+
+  const questionCategories = visibleQuestions.map((q) =>
+    uniqueCategories.findIndex((c) => c.id === q.categoryId),
+  );
+
+  const categoryCounts = uniqueCategories.map(
+    (_, i) => questionCategories.filter((c) => c === i).length,
+  );
+
+  const categories = uniqueCategories.map((cat, i) => ({
+    name: cat.name,
+    count: categoryCounts[i],
+  }));
+
+  const buildQuestionElement = (
+    question: QueryQuestionWithDetailsDto,
+  ): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
 
-    // Determine placeholder based on question text or type
     const getPlaceholder = (): string | undefined => {
       const text = question.fallbackText.toLowerCase();
-
-      // Number fields
       if (text.includes("hvor høy")) return "170";
       if (text.includes("hvor mye veier")) return "70";
       if (text.includes("livvidde")) return "80";
-
-      // Text fields
       if (text.includes("hvor mye røyker"))
         return "F.eks. 10 sigaretter per dag";
       if (text.includes("vekten din endret"))
@@ -143,7 +357,6 @@ export default function PatientHealthQuestionnaire() {
         return "Beskriv dine fysiske begrensninger...";
       if (text.includes("barrierer") && text.includes("skriv"))
         return "Beskriv barrierer...";
-
       return undefined;
     };
 
@@ -163,10 +376,6 @@ export default function PatientHealthQuestionnaire() {
         return 3;
       return undefined;
     };
-
-    const placeholder = getPlaceholder();
-    const unit = getUnit();
-    const rows = getRows();
 
     if (question.questionType === "boolean") {
       return (
@@ -209,14 +418,13 @@ export default function PatientHealthQuestionnaire() {
           value={value}
           onChange={(val) => updateAnswer(question.questionId, val)}
           onAnswer={handleNext}
-          placeholder={placeholder}
-          unit={unit}
+          placeholder={getPlaceholder()}
+          unit={getUnit()}
           required={question.isRequired}
         />
       );
     }
 
-    // text / textarea
     return (
       <QuestionTextArea
         key={question.questionId}
@@ -225,25 +433,14 @@ export default function PatientHealthQuestionnaire() {
         value={value}
         onChange={(val) => updateAnswer(question.questionId, val)}
         onAnswer={handleNext}
-        placeholder={placeholder}
-        rows={rows}
+        placeholder={getPlaceholder()}
+        rows={getRows()}
         required={question.isRequired}
       />
     );
   };
 
   const questionElements = visibleQuestions.map(buildQuestionElement);
-  const questionCategories = visibleQuestions.map((q) =>
-    getCategoryIndex(q.displayOrder),
-  );
-
-  const categoryCounts = CATEGORY_NAMES.map(
-    (_, i) => questionCategories.filter((c) => c === i).length,
-  );
-  const categories = CATEGORY_NAMES.map((name, i) => ({
-    name,
-    count: categoryCounts[i],
-  }));
 
   useEffect(() => {
     if (currentStep >= visibleQuestions.length && visibleQuestions.length > 0) {
@@ -251,7 +448,10 @@ export default function PatientHealthQuestionnaire() {
     }
   }, [visibleQuestions.length, currentStep]);
 
-  if (loading) {
+  const isLoading = isQuestionsLoading || isPatientLoading;
+  const mainError = questionsError ?? patientError;
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-gray-500">Laster spørsmål...</p>
@@ -259,10 +459,18 @@ export default function PatientHealthQuestionnaire() {
     );
   }
 
-  if (error) {
+  if (mainError) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-500">{mainError}</p>
+      </div>
+    );
+  }
+
+  if (questionElements.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-500">Fant ingen spørsmål i skjemaet.</p>
       </div>
     );
   }
@@ -274,12 +482,19 @@ export default function PatientHealthQuestionnaire() {
           <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
             Helseskjema
           </h1>
+          {submitError && (
+            <p className="text-red-500 mb-4 text-center">{submitError}</p>
+          )}
+          {submitSuccess && (
+            <p className="text-green-700 mb-4 text-center">{submitSuccess}</p>
+          )}
           <QuestionWizard
             currentStep={currentStep}
             totalSteps={questionElements.length}
             onSkip={handleSkip}
             onPrevious={handlePrevious}
             onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
             categories={categories}
             questionCategories={questionCategories}
           >

@@ -30,9 +30,9 @@ public class MeasurementResult
     public int PatientId { get; set; }           // PK part, FK -> Patient
     public DateTime RegisteredAt { get; set; }   // PK part
     public decimal Result { get; set; }
-    public int RegisteredBy { get; set; }        // FK -> Personnel
+    public int? RegisteredBy { get; set; }       // FK -> Personnel (null if registered by patient)
 
     public Measurement Measurement { get; set; } = null!;
     public Patient Patient { get; set; } = null!;
-    public Personnel RegisteredByPersonnel { get; set; } = null!;
+    public Personnel? RegisteredByPersonnel { get; set; }
 }

@@ -1,7 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import { SearchBar } from "../atoms/SearchBar";
+import { useUser } from "@/context/UserContext";
+import { signOut } from "@/services/authService";
 
 function NavLink({
   href,
@@ -24,11 +27,29 @@ function NavLink({
 }
 
 export function BehandlerHeader() {
+  const { logout } = useUser();
+  const searchParams = useSearchParams();
+  const patientId = searchParams?.get("patientId");
+  const dashboardHref = patientId
+    ? `/dashboard?patientId=${encodeURIComponent(patientId)}`
+    : "/dashboard";
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch {
+      // ignore sign-out errors; still clear local state
+    } finally {
+      logout();
+      window.location.href = "/";
+    }
+  };
+
   return (
     <div className="flex items-center justify-between h-16 px-6 bg-white border-b border-slate-200">
       <nav className="flex items-center gap-1">
         <NavLink
-          href="/pasientoversikt"
+          href="/pasientvisning"
           label="Pasientliste"
           icon={
             <svg
@@ -89,11 +110,11 @@ export function BehandlerHeader() {
       </nav>
 
       <div className="flex items-center gap-3">
-        <SearchBar className="w-64" />
 
         <button
-          onClick={() => (window.location.href = "/dashboard")}
+          onClick={() => (window.location.href = dashboardHref)}
           className="bg-brand-navy hover:bg-brand-navy-light transition rounded-full w-10 h-10 flex items-center justify-center cursor-pointer"
+          aria-label="Hjem"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -108,6 +129,28 @@ export function BehandlerHeader() {
             <path d="M3 10.5L12 3l9 7.5" />
             <path d="M5 10v10h14V10" />
             <path d="M9 20v-6h6v6" />
+          </svg>
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="bg-brand-navy hover:bg-brand-navy-light transition rounded-full w-10 h-10 flex items-center justify-center cursor-pointer"
+          aria-label="Logg ut"
+          title="Logg ut"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="w-6 h-6"
+          >
+            <path d="M10 17l5-5-5-5" />
+            <path d="M15 12H3" />
+            <path d="M21 19V5a2 2 0 00-2-2h-6" />
           </svg>
         </button>
       </div>

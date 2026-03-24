@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Todo = { id: number; text: string; completed: boolean };
 
@@ -12,6 +12,10 @@ export function TodoList({
   todos?: Todo[];
 }) {
   const [todos, setTodos] = useState<Todo[]>(initialTodos);
+
+  useEffect(() => {
+    setTodos(initialTodos);
+  }, [initialTodos]);
 
   const toggleTodo = (id: number) => {
     setTodos(

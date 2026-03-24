@@ -10,6 +10,9 @@ public class QueryWithQuestionsDto
 public class QuestionWithDetailsDto
 {
     public int QuestionId { get; set; }
+    public int? CategoryId { get; set; }
+    public string? CategoryName { get; set; }
+    public int? MeasurementId { get; set; }
     public string FallbackText { get; set; } = "";
     public string QuestionType { get; set; } = "";
     public bool IsRequired { get; set; }
@@ -31,6 +34,8 @@ public class QuestionDependencyDto
 {
     public int ParentQuestionId { get; set; }
     public int ChildQuestionId { get; set; }
+    public int? TriggerOptionId { get; set; }
+    public string? TriggerOptionValue { get; set; }
     public string? TriggerTextValue { get; set; }
     public string Operator { get; set; } = "";
 }

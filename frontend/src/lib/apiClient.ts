@@ -1,4 +1,45 @@
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+function getPublicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL?.trim() || "http://localhost:5000";
+}
+
+function getInternalApiBaseUrl(): string | undefined {
+  const value = process.env.API_URL_INTERNAL?.trim();
+  return value ? value : undefined;
+}
+
+export function getApiBaseUrl(): string {
+  // Browser requests must use a host-reachable URL (ex: http://localhost:5000).
+  // Server-side rendering inside Docker must use the service hostname (ex: http://backend:8080).
+  const publicBaseUrl = getPublicApiBaseUrl();
+  if (typeof window === "undefined") {
+    return getInternalApiBaseUrl() ?? publicBaseUrl;
+  }
+  return publicBaseUrl;
+}
+
+export class ApiClientError extends Error {
+  status: number;
+  statusText: string;
+  path: string;
+  responseBody: string;
+
+  constructor(
+    message: string,
+    details: {
+      status: number;
+      statusText: string;
+      path: string;
+      responseBody: string;
+    },
+  ) {
+    super(message);
+    this.name = "ApiClientError";
+    this.status = details.status;
+    this.statusText = details.statusText;
+    this.path = details.path;
+    this.responseBody = details.responseBody;
+  }
+}
 
 type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -10,7 +51,9 @@ async function request<TResponse = void>(
   path: string,
   options: RequestOptions = {},
 ): Promise<TResponse> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const requestUrl = `${getApiBaseUrl()}${path}`;
+
+  const response = await fetch(requestUrl, {
     method: options.method ?? "GET",
     headers: {
       "Content-Type": "application/json",
@@ -21,7 +64,34 @@ async function request<TResponse = void>(
 
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(body || "Noe gikk galt ved kall til API-et.");
+    const fallbackMessage = `API-feil ${response.status} (${response.statusText}) for ${path}`;
+
+    let message = body.trim();
+    if (!message) {
+      message = fallbackMessage;
+    } else {
+      try {
+        const parsed = JSON.parse(message) as {
+          title?: string;
+          detail?: string;
+        };
+        const details = [parsed.title, parsed.detail]
+          .filter(Boolean)
+          .join(" - ");
+        if (details) {
+          message = details;
+        }
+      } catch {
+        // Response body may be plain text; keep original message in that case.
+      }
+    }
+
+    throw new ApiClientError(message, {
+      status: response.status,
+      statusText: response.statusText,
+      path,
+      responseBody: body,
+    });
   }
 
   if (response.status === 204) {
