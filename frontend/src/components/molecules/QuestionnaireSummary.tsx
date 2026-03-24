@@ -134,8 +134,36 @@ function buildSentence(
       ? "Ingen har vist bekymring for drikkingen din"
       : `Noen har vist bekymring for drikkingen din: ${optionLower}`;
 
-  // Fallback: use option text directly if it's descriptive enough
-  return optionText;
+  // Generic radio fallback: try to extract verb from common Norwegian question patterns
+  // "Hvor ofte [verb] du [...]?" → "Du [verb] [optionLower]"
+  const hvofteDuMatch = lower.match(/^hvor ofte (.+?)\s+du(.+)?$/);
+  if (hvofteDuMatch) {
+    const verb = hvofteDuMatch[1].trim();
+    const rest = (hvofteDuMatch[2] ?? "").replace(/\?$/, "").trim();
+    return rest
+      ? `Du ${verb} ${rest} ${optionLower}`
+      : `Du ${verb} ${optionLower}`;
+  }
+
+  // "Hvor [adj] [verb] du?" → "Du [verb] [optionLower]"
+  const hvordanDuMatch = lower.match(/^hvor\w*\s+(.+?)\s+du(.+)?$/);
+  if (hvordanDuMatch) {
+    const verb = hvordanDuMatch[1].trim();
+    const rest = (hvordanDuMatch[2] ?? "").replace(/\?$/, "").trim();
+    return rest
+      ? `Du ${verb} ${rest}: ${optionLower}`
+      : `Du ${verb}: ${optionLower}`;
+  }
+
+  // "Hva/Har/Er [verb] du?" patterns
+  const genericDuMatch = lower.match(/^(?:hva|har|er)\s+(.+?)\s+du(.+)?$/);
+  if (genericDuMatch) {
+    const stem = text.replace(/\?$/, "").trim();
+    return `${stem}: ${optionText}`;
+  }
+
+  // Last resort: question as label + option as answer
+  return `${text.replace(/\?$/, "")}: ${optionText}`;
 }
 
 export default function QuestionnaireSummary({
