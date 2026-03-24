@@ -9,6 +9,7 @@ public class Patient
     public DateTime CreatedAt { get; set; }
 
     public ICollection<Response> Responses { get; set; } = new List<Response>();
+    public ICollection<AnsweredQuery> AnsweredQueries { get; set; } = new List<AnsweredQuery>();
     public ICollection<PatientAccess> PatientAccesses { get; set; } = new List<PatientAccess>();
     public ICollection<ToDo> ToDos { get; set; } = new List<ToDo>();
     public ICollection<MeasurementResult> MeasurementResults { get; set; } = new List<MeasurementResult>();

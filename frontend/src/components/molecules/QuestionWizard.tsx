@@ -16,8 +16,10 @@ interface QuestionWizardProps {
   onPrevious: () => void;
   onSubmit: () => void;
   isSubmitting?: boolean;
+  submitLabel?: string;
   categories?: Category[];
   questionCategories?: number[];
+  onCategoryClick?: (categoryIndex: number) => void;
 }
 
 export default function QuestionWizard({
@@ -28,8 +30,10 @@ export default function QuestionWizard({
   onPrevious,
   onSubmit,
   isSubmitting = false,
+  submitLabel = "Send inn",
   categories,
   questionCategories,
+  onCategoryClick,
 }: QuestionWizardProps) {
   const isLastStep = currentStep === totalSteps - 1;
   const isFirstStep = currentStep === 0;
@@ -57,7 +61,7 @@ export default function QuestionWizard({
               disabled={isSubmitting}
               className="px-6 py-2 bg-brand-navy text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? "Sender..." : "Send inn"}
+              {isSubmitting ? "Sender..." : submitLabel}
             </button>
           ) : (
             <button
@@ -78,6 +82,7 @@ export default function QuestionWizard({
             categories={categories}
             currentStep={currentStep}
             questionCategories={questionCategories}
+            onCategoryClick={onCategoryClick}
           />
         </div>
       )}

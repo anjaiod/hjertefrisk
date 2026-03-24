@@ -9,12 +9,14 @@ interface CategorizedProgressBarProps {
   categories: Category[];
   currentStep: number;
   questionCategories: number[];
+  onCategoryClick?: (categoryIndex: number) => void;
 }
 
 export default function CategorizedProgressBar({
   categories,
   currentStep,
   questionCategories,
+  onCategoryClick,
 }: CategorizedProgressBarProps) {
   const totalSteps = questionCategories.length;
   // Ensure currentStep doesn't exceed bounds
@@ -43,9 +45,11 @@ export default function CategorizedProgressBar({
           const isActive = index === currentCategoryIndex;
 
           return (
-            <div
+            <button
               key={index}
-              className="flex-1 relative"
+              type="button"
+              onClick={() => onCategoryClick?.(index)}
+              className="flex-1 relative text-left"
               style={{ flexBasis: `${(category.count / totalSteps) * 100}%` }}
             >
               {/* Background */}
@@ -53,14 +57,12 @@ export default function CategorizedProgressBar({
                 {/* Progress */}
                 <div
                   className="bg-brand-mint h-3 rounded-full transition-all duration-300"
-                  style={{
-                    width: `${progressPercent}%`,
-                  }}
+                  style={{ width: `${progressPercent}%` }}
                 />
               </div>
               {/* Category Label */}
               <div
-                className={`text-xs mt-1 text-center ${
+                className={`text-xs mt-1 text-center hover:underline cursor-pointer ${
                   isActive
                     ? "font-semibold text-gray-800"
                     : "font-normal text-gray-600"
@@ -68,7 +70,7 @@ export default function CategorizedProgressBar({
               >
                 {category.name}
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

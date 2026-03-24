@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.src.Infrastructure.Data;
@@ -11,9 +12,11 @@ using backend.src.Infrastructure.Data;
 namespace api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260324075906_AddAnsweredQuery")]
+    partial class AddAnsweredQuery
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -77,6 +80,62 @@ namespace api.Migrations
                     b.HasKey("Code");
 
                     b.ToTable("Language");
+                });
+
+            modelBuilder.Entity("backend.src.Domain.Models.Measure", b =>
+                {
+                    b.Property<int>("MeasureId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("MeasureId"));
+
+                    b.Property<string>("FallbackText")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Operator")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RequiredOption")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RequiredText")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("RequiredValue")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("MeasureId");
+
+                    b.HasIndex("QuestionId");
+
+                    b.HasIndex("RequiredOption");
+
+                    b.ToTable("Measures");
+                });
+
+            modelBuilder.Entity("backend.src.Domain.Models.MeasureText", b =>
+                {
+                    b.Property<int>("MeasureId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("LanguageCode")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("MeasureId", "LanguageCode");
+
+                    b.HasIndex("LanguageCode");
+
+                    b.ToTable("MeasureTexts");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.Measurement", b =>
@@ -220,128 +279,6 @@ namespace api.Migrations
                     b.ToTable("PatientAccesses");
                 });
 
-            modelBuilder.Entity("backend.src.Domain.Models.PatientMeasure", b =>
-                {
-                    b.Property<int>("PatientMeasureId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PatientMeasureId"));
-
-                    b.Property<int?>("CategoryId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("FallbackText")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsExclusive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Operator")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Priority")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("QuestionId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("RequiredOption")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("RequiredText")
-                        .HasColumnType("text");
-
-                    b.Property<decimal?>("RequiredValue")
-                        .HasColumnType("numeric");
-
-                    b.Property<int>("ScoreThreshold")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("TriggerType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("PatientMeasureId");
-
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("QuestionId");
-
-                    b.HasIndex("RequiredOption");
-
-                    b.ToTable("PatientMeasures");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.PatientMeasureResult", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("CategoryId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("CategoryScore")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("GeneratedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("PatientId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("PatientMeasureId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("QueryId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int?>("TriggerQuestionId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("PatientId");
-
-                    b.HasIndex("PatientMeasureId");
-
-                    b.HasIndex("QueryId");
-
-                    b.HasIndex("TriggerQuestionId");
-
-                    b.ToTable("PatientMeasureResults");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.PatientMeasureText", b =>
-                {
-                    b.Property<int>("PatientMeasureId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("LanguageCode")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Text")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("PatientMeasureId", "LanguageCode");
-
-                    b.HasIndex("LanguageCode");
-
-                    b.ToTable("PatientMeasureTexts");
-                });
-
             modelBuilder.Entity("backend.src.Domain.Models.Personnel", b =>
                 {
                     b.Property<int>("Id")
@@ -376,133 +313,6 @@ namespace api.Migrations
                         .IsUnique();
 
                     b.ToTable("Personnel");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.PersonnelMeasure", b =>
-                {
-                    b.Property<int>("PersonnelMeasureId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PersonnelMeasureId"));
-
-                    b.Property<int?>("CategoryId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("FallbackText")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsExclusive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Operator")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Priority")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("QuestionId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("RequiredOption")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("RequiredText")
-                        .HasColumnType("text");
-
-                    b.Property<decimal?>("RequiredValue")
-                        .HasColumnType("numeric");
-
-                    b.Property<int>("ScoreThreshold")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("TriggerType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("PersonnelMeasureId");
-
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("QuestionId");
-
-                    b.HasIndex("RequiredOption");
-
-                    b.ToTable("PersonnelMeasures");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.PersonnelMeasureResult", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("CategoryId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("CategoryScore")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("GeneratedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("PatientId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("PersonnelId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("PersonnelMeasureId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("QueryId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int?>("TriggerQuestionId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("PatientId");
-
-                    b.HasIndex("PersonnelId");
-
-                    b.HasIndex("PersonnelMeasureId");
-
-                    b.HasIndex("QueryId");
-
-                    b.HasIndex("TriggerQuestionId");
-
-                    b.ToTable("PersonnelMeasureResults");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.PersonnelMeasureText", b =>
-                {
-                    b.Property<int>("PersonnelMeasureId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("LanguageCode")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Text")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("PersonnelMeasureId", "LanguageCode");
-
-                    b.HasIndex("LanguageCode");
-
-                    b.ToTable("PersonnelMeasureTexts");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.Query", b =>
@@ -928,181 +738,6 @@ namespace api.Migrations
                     b.Navigation("Personnel");
                 });
 
-            modelBuilder.Entity("backend.src.Domain.Models.PatientMeasure", b =>
-                {
-                    b.HasOne("backend.src.Domain.Models.Category", "Category")
-                        .WithMany("PatientMeasures")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("backend.src.Domain.Models.Question", "Question")
-                        .WithMany("PatientMeasures")
-                        .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("backend.src.Domain.Models.QuestionOption", "RequiredOptionNavigation")
-                        .WithMany()
-                        .HasForeignKey("RequiredOption")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Category");
-
-                    b.Navigation("Question");
-
-                    b.Navigation("RequiredOptionNavigation");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.PatientMeasureResult", b =>
-                {
-                    b.HasOne("backend.src.Domain.Models.Category", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("backend.src.Domain.Models.Patient", "Patient")
-                        .WithMany("PatientMeasureResults")
-                        .HasForeignKey("PatientId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.src.Domain.Models.PatientMeasure", "Measure")
-                        .WithMany()
-                        .HasForeignKey("PatientMeasureId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.src.Domain.Models.Query", "Query")
-                        .WithMany()
-                        .HasForeignKey("QueryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.src.Domain.Models.Question", "TriggerQuestion")
-                        .WithMany()
-                        .HasForeignKey("TriggerQuestionId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Category");
-
-                    b.Navigation("Measure");
-
-                    b.Navigation("Patient");
-
-                    b.Navigation("Query");
-
-                    b.Navigation("TriggerQuestion");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.PatientMeasureText", b =>
-                {
-                    b.HasOne("backend.src.Domain.Models.Language", "Language")
-                        .WithMany("PatientMeasureTexts")
-                        .HasForeignKey("LanguageCode")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.src.Domain.Models.PatientMeasure", "Measure")
-                        .WithMany("Texts")
-                        .HasForeignKey("PatientMeasureId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Language");
-
-                    b.Navigation("Measure");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.PersonnelMeasure", b =>
-                {
-                    b.HasOne("backend.src.Domain.Models.Category", "Category")
-                        .WithMany("PersonnelMeasures")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("backend.src.Domain.Models.Question", "Question")
-                        .WithMany("PersonnelMeasures")
-                        .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("backend.src.Domain.Models.QuestionOption", "RequiredOptionNavigation")
-                        .WithMany()
-                        .HasForeignKey("RequiredOption")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Category");
-
-                    b.Navigation("Question");
-
-                    b.Navigation("RequiredOptionNavigation");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.PersonnelMeasureResult", b =>
-                {
-                    b.HasOne("backend.src.Domain.Models.Category", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("backend.src.Domain.Models.Patient", "Patient")
-                        .WithMany("PersonnelMeasureResults")
-                        .HasForeignKey("PatientId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.src.Domain.Models.Personnel", "Personnel")
-                        .WithMany("PersonnelMeasureResults")
-                        .HasForeignKey("PersonnelId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("backend.src.Domain.Models.PersonnelMeasure", "Measure")
-                        .WithMany()
-                        .HasForeignKey("PersonnelMeasureId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.src.Domain.Models.Query", "Query")
-                        .WithMany()
-                        .HasForeignKey("QueryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.src.Domain.Models.Question", "TriggerQuestion")
-                        .WithMany()
-                        .HasForeignKey("TriggerQuestionId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Category");
-
-                    b.Navigation("Measure");
-
-                    b.Navigation("Patient");
-
-                    b.Navigation("Personnel");
-
-                    b.Navigation("Query");
-
-                    b.Navigation("TriggerQuestion");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.PersonnelMeasureText", b =>
-                {
-                    b.HasOne("backend.src.Domain.Models.Language", "Language")
-                        .WithMany("PersonnelMeasureTexts")
-                        .HasForeignKey("LanguageCode")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.src.Domain.Models.PersonnelMeasure", "Measure")
-                        .WithMany("Texts")
-                        .HasForeignKey("PersonnelMeasureId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Language");
-
-                    b.Navigation("Measure");
-                });
-
             modelBuilder.Entity("backend.src.Domain.Models.QueryQuestion", b =>
                 {
                     b.HasOne("backend.src.Domain.Models.Query", "Query")
@@ -1296,24 +931,23 @@ namespace api.Migrations
                 {
                     b.Navigation("Measurements");
 
-                    b.Navigation("PatientMeasures");
-
-                    b.Navigation("PersonnelMeasures");
-
                     b.Navigation("Questions");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.Language", b =>
                 {
+                    b.Navigation("MeasureTexts");
+
                     b.Navigation("MeasurementTexts");
 
                     b.Navigation("OptionTexts");
 
-                    b.Navigation("PatientMeasureTexts");
-
-                    b.Navigation("PersonnelMeasureTexts");
-
                     b.Navigation("QuestionTexts");
+                });
+
+            modelBuilder.Entity("backend.src.Domain.Models.Measure", b =>
+                {
+                    b.Navigation("Texts");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.Measurement", b =>
@@ -1333,34 +967,18 @@ namespace api.Migrations
 
                     b.Navigation("PatientAccesses");
 
-                    b.Navigation("PatientMeasureResults");
-
-                    b.Navigation("PersonnelMeasureResults");
-
                     b.Navigation("Responses");
 
                     b.Navigation("ToDos");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.PatientMeasure", b =>
-                {
-                    b.Navigation("Texts");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.Personnel", b =>
                 {
                     b.Navigation("PatientAccesses");
 
-                    b.Navigation("PersonnelMeasureResults");
-
                     b.Navigation("RegisteredMeasurementResults");
 
                     b.Navigation("ToDos");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.PersonnelMeasure", b =>
-                {
-                    b.Navigation("Texts");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.Query", b =>
@@ -1376,13 +994,11 @@ namespace api.Migrations
                 {
                     b.Navigation("ChildDependencies");
 
+                    b.Navigation("Measures");
+
                     b.Navigation("Options");
 
                     b.Navigation("ParentDependencies");
-
-                    b.Navigation("PatientMeasures");
-
-                    b.Navigation("PersonnelMeasures");
 
                     b.Navigation("QueryQuestions");
 
