@@ -798,43 +798,6 @@ namespace api.Migrations
                     b.Navigation("Patient");
                 });
 
-            modelBuilder.Entity("backend.src.Domain.Models.Measure", b =>
-                {
-                    b.HasOne("backend.src.Domain.Models.Question", "Question")
-                        .WithMany("Measures")
-                        .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.src.Domain.Models.QuestionOption", "RequiredOptionNavigation")
-                        .WithMany()
-                        .HasForeignKey("RequiredOption")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Question");
-
-                    b.Navigation("RequiredOptionNavigation");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.MeasureText", b =>
-                {
-                    b.HasOne("backend.src.Domain.Models.Language", "Language")
-                        .WithMany("MeasureTexts")
-                        .HasForeignKey("LanguageCode")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.src.Domain.Models.Measure", "Measure")
-                        .WithMany("Texts")
-                        .HasForeignKey("MeasureId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Language");
-
-                    b.Navigation("Measure");
-                });
-
             modelBuilder.Entity("backend.src.Domain.Models.Measurement", b =>
                 {
                     b.HasOne("backend.src.Domain.Models.Category", "Category")

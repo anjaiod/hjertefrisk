@@ -12,7 +12,7 @@ using backend.src.Infrastructure.Data;
 namespace api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260324095902_SplitMeasureDefinitions")]
+    [Migration("20260324103407_SplitMeasureDefinitions")]
     partial class SplitMeasureDefinitions
     {
         /// <inheritdoc />
@@ -24,6 +24,29 @@ namespace api.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("backend.src.Domain.Models.AnsweredQuery", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PatientId");
+
+                    b.ToTable("AnsweredQueries");
+                });
 
             modelBuilder.Entity("backend.src.Domain.Models.Category", b =>
                 {
@@ -656,6 +679,9 @@ namespace api.Migrations
 
             modelBuilder.Entity("backend.src.Domain.Models.Response", b =>
                 {
+                    b.Property<int>("AnsweredQueryId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("PatientId")
                         .HasColumnType("integer");
 
@@ -676,7 +702,9 @@ namespace api.Migrations
                     b.Property<string>("TextValue")
                         .HasColumnType("text");
 
-                    b.HasKey("PatientId", "QuestionId");
+                    b.HasKey("AnsweredQueryId", "PatientId", "QuestionId");
+
+                    b.HasIndex("PatientId");
 
                     b.HasIndex("QuestionId");
 
@@ -760,6 +788,17 @@ namespace api.Migrations
                     b.HasIndex("PersonnelId");
 
                     b.ToTable("ToDos");
+                });
+
+            modelBuilder.Entity("backend.src.Domain.Models.AnsweredQuery", b =>
+                {
+                    b.HasOne("backend.src.Domain.Models.Patient", "Patient")
+                        .WithMany("AnsweredQueries")
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.Measurement", b =>
@@ -1140,6 +1179,12 @@ namespace api.Migrations
 
             modelBuilder.Entity("backend.src.Domain.Models.Response", b =>
                 {
+                    b.HasOne("backend.src.Domain.Models.AnsweredQuery", "AnsweredQuery")
+                        .WithMany("Responses")
+                        .HasForeignKey("AnsweredQueryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("backend.src.Domain.Models.Patient", "Patient")
                         .WithMany("Responses")
                         .HasForeignKey("PatientId")
@@ -1156,6 +1201,8 @@ namespace api.Migrations
                         .WithMany()
                         .HasForeignKey("SelectedOptionId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("AnsweredQuery");
 
                     b.Navigation("Patient");
 
@@ -1206,6 +1253,11 @@ namespace api.Migrations
                     b.Navigation("Personnel");
                 });
 
+            modelBuilder.Entity("backend.src.Domain.Models.AnsweredQuery", b =>
+                {
+                    b.Navigation("Responses");
+                });
+
             modelBuilder.Entity("backend.src.Domain.Models.Category", b =>
                 {
                     b.Navigation("Measurements");
@@ -1241,6 +1293,8 @@ namespace api.Migrations
 
             modelBuilder.Entity("backend.src.Domain.Models.Patient", b =>
                 {
+                    b.Navigation("AnsweredQueries");
+
                     b.Navigation("MeasurementResults");
 
                     b.Navigation("PatientAccesses");
