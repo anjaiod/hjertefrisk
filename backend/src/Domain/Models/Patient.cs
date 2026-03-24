@@ -12,4 +12,6 @@ public class Patient
     public ICollection<PatientAccess> PatientAccesses { get; set; } = new List<PatientAccess>();
     public ICollection<ToDo> ToDos { get; set; } = new List<ToDo>();
     public ICollection<MeasurementResult> MeasurementResults { get; set; } = new List<MeasurementResult>();
+    public ICollection<PatientMeasureResult> PatientMeasureResults { get; set; } = new List<PatientMeasureResult>();
+    public ICollection<PersonnelMeasureResult> PersonnelMeasureResults { get; set; } = new List<PersonnelMeasureResult>();
 }

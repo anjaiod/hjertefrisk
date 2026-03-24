@@ -71,7 +71,9 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 builder.Services.AddScoped<IQuestionService, QuestionService>();
 builder.Services.AddScoped<IQuestionOptionService, QuestionOptionService>();
-builder.Services.AddScoped<IMeasureService, MeasureService>();
+builder.Services.AddScoped<IPatientMeasureService, PatientMeasureService>();
+builder.Services.AddScoped<IPersonnelMeasureService, PersonnelMeasureService>();
+builder.Services.AddScoped<IMeasureEvaluationService, MeasureEvaluationService>();
 builder.Services.AddScoped<ISeverityService, SeverityService>();
 builder.Services.AddScoped<IMeasurementService, MeasurementService>();
 builder.Services.AddScoped<IPatientService, PatientService>();
