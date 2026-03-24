@@ -2,6 +2,7 @@ using backend.src.Application.MeasurementResults.DTOs;
 using backend.src.Application.MeasurementResults.Interfaces;
 using backend.src.Domain.Models;
 using backend.src.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace backend.src.Application.MeasurementResults.Services;
 
@@ -44,5 +45,25 @@ public class MeasurementResultService : IMeasurementResultService
             RegisteredBy = r.RegisteredBy,
             RegisteredAt = r.RegisteredAt,
         });
+    }
+
+    public async Task<IEnumerable<MeasurementResultDto>> GetLatestForPatientAsync(int patientId)
+    {
+        var all = await _db.MeasurementResults
+            .AsNoTracking()
+            .Where(r => r.PatientId == patientId)
+            .ToListAsync();
+
+        return all
+            .GroupBy(r => r.MeasurementId)
+            .Select(g => g.OrderByDescending(r => r.RegisteredAt).First())
+            .Select(r => new MeasurementResultDto
+            {
+                MeasurementId = r.MeasurementId,
+                PatientId = r.PatientId,
+                Result = r.Result,
+                RegisteredBy = r.RegisteredBy,
+                RegisteredAt = DateTime.SpecifyKind(r.RegisteredAt, DateTimeKind.Utc),
+            });
     }
 }
