@@ -83,8 +83,6 @@ public class MeasureEvaluationService : IMeasureEvaluationService
         EvaluateCategoryMeasures(patientCategoryMeasures, categoryScores, languageCode, generatedAt, patientResults);
         EvaluateCategoryMeasures(personnelCategoryMeasures, categoryScores, languageCode, generatedAt, personnelResults);
 
-        await PersistResultsAsync(dto, generatedAt, patientResults, personnelResults);
-
         return new MeasureEvaluationResultDto
         {
             PatientMeasures = patientResults,
@@ -451,3 +449,4 @@ public class MeasureEvaluationService : IMeasureEvaluationService
     private static string? NormalizeLanguage(string? languageCode)
         => string.IsNullOrWhiteSpace(languageCode) ? null : languageCode.Trim();
 }
+
