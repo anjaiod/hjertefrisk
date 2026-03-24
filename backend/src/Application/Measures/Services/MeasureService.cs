@@ -40,7 +40,7 @@ public class PatientMeasureService : IPatientMeasureService
             RequiredOption = dto.RequiredOption,
             RequiredText = MeasureValidation.Sanitize(dto.RequiredText),
             RequiredValue = dto.RequiredValue,
-            Operator = (dto.Operator ?? string.Empty).Trim(),
+            Operator = MeasureValidation.NormalizeOperator(dto),
             FallbackText = dto.FallbackText.Trim()
         };
 
@@ -83,7 +83,7 @@ public class PersonnelMeasureService : IPersonnelMeasureService
             RequiredOption = dto.RequiredOption,
             RequiredText = MeasureValidation.Sanitize(dto.RequiredText),
             RequiredValue = dto.RequiredValue,
-            Operator = (dto.Operator ?? string.Empty).Trim(),
+            Operator = MeasureValidation.NormalizeOperator(dto),
             FallbackText = dto.FallbackText.Trim()
         };
 
@@ -119,6 +119,15 @@ internal static class MeasureValidation
         }
     }
 
+    public static string? NormalizeOperator(BaseCreateMeasureDto dto)
+    {
+        if (dto.TriggerType == MeasureTriggerType.Question)
+        {
+            return (dto.Operator ?? string.Empty).Trim();
+        }
+
+        return null;
+    }
     public static string? Sanitize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
 
@@ -188,3 +197,5 @@ internal static class MeasureMapper
         FallbackText = measure.FallbackText
     };
 }
+
+
