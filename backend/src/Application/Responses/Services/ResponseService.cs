@@ -21,6 +21,7 @@ public class ResponseService : IResponseService
             .AsNoTracking()
             .Select(r => new ResponseDto
             {
+                AnsweredQueryId = r.AnsweredQueryId,
                 PatientId = r.PatientId,
                 QuestionId = r.QuestionId,
                 SelectedOptionId = r.SelectedOptionId,
@@ -33,8 +34,13 @@ public class ResponseService : IResponseService
 
     public async Task<ResponseDto> CreateAsync(CreateResponseDto dto)
     {
+        var answeredQuery = new AnsweredQuery { PatientId = dto.PatientId };
+        _db.AnsweredQueries.Add(answeredQuery);
+        await _db.SaveChangesAsync();
+
         var entity = new Response
         {
+            AnsweredQueryId = answeredQuery.Id,
             PatientId = dto.PatientId,
             QuestionId = dto.QuestionId,
             SelectedOptionId = dto.SelectedOptionId,
@@ -47,6 +53,7 @@ public class ResponseService : IResponseService
 
         return new ResponseDto
         {
+            AnsweredQueryId = entity.AnsweredQueryId,
             PatientId = entity.PatientId,
             QuestionId = entity.QuestionId,
             SelectedOptionId = entity.SelectedOptionId,
@@ -58,73 +65,39 @@ public class ResponseService : IResponseService
 
     public async Task<IEnumerable<ResponseDto>> UpsertManyAsync(IEnumerable<CreateResponseDto> dtos)
     {
-        var incoming = dtos
-            .Select(dto => new CreateResponseDto
-            {
-                PatientId = dto.PatientId,
-                QuestionId = dto.QuestionId,
-                SelectedOptionId = dto.SelectedOptionId,
-                TextValue = string.IsNullOrWhiteSpace(dto.TextValue) ? null : dto.TextValue.Trim(),
-                NumberValue = dto.NumberValue
-            })
-            .ToList();
-
+        var incoming = dtos.ToList();
         if (incoming.Count == 0)
-        {
             return Array.Empty<ResponseDto>();
-        }
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        var patientIds = incoming.Select(x => x.PatientId).Distinct().ToList();
-        var questionIds = incoming.Select(x => x.QuestionId).Distinct().ToList();
+        var answeredQuery = new AnsweredQuery { PatientId = incoming[0].PatientId };
+        _db.AnsweredQueries.Add(answeredQuery);
+        await _db.SaveChangesAsync();
 
-        var existingResponses = await _db.Responses
-            .Where(r => patientIds.Contains(r.PatientId) && questionIds.Contains(r.QuestionId))
-            .ToListAsync();
-
-        var existingByKey = existingResponses.ToDictionary(
-            response => (response.PatientId, response.QuestionId));
-
-        foreach (var dto in incoming)
+        var entities = incoming.Select(dto => new Response
         {
-            var key = (dto.PatientId, dto.QuestionId);
+            AnsweredQueryId = answeredQuery.Id,
+            PatientId = dto.PatientId,
+            QuestionId = dto.QuestionId,
+            SelectedOptionId = dto.SelectedOptionId,
+            TextValue = string.IsNullOrWhiteSpace(dto.TextValue) ? null : dto.TextValue.Trim(),
+            NumberValue = dto.NumberValue
+        }).ToList();
 
-            if (existingByKey.TryGetValue(key, out var existing))
-            {
-                existing.SelectedOptionId = dto.SelectedOptionId;
-                existing.TextValue = dto.TextValue;
-                existing.NumberValue = dto.NumberValue;
-                continue;
-            }
-
-            var created = new Response
-            {
-                PatientId = dto.PatientId,
-                QuestionId = dto.QuestionId,
-                SelectedOptionId = dto.SelectedOptionId,
-                TextValue = dto.TextValue,
-                NumberValue = dto.NumberValue
-            };
-
-            _db.Responses.Add(created);
-            existingByKey[key] = created;
-        }
-
+        _db.Responses.AddRange(entities);
         await _db.SaveChangesAsync();
         await transaction.CommitAsync();
 
-        return incoming
-            .Select(dto => existingByKey[(dto.PatientId, dto.QuestionId)])
-            .Select(entity => new ResponseDto
-            {
-                PatientId = entity.PatientId,
-                QuestionId = entity.QuestionId,
-                SelectedOptionId = entity.SelectedOptionId,
-                TextValue = entity.TextValue,
-                NumberValue = entity.NumberValue,
-                CreatedAt = entity.CreatedAt
-            })
-            .ToList();
+        return entities.Select(r => new ResponseDto
+        {
+            AnsweredQueryId = r.AnsweredQueryId,
+            PatientId = r.PatientId,
+            QuestionId = r.QuestionId,
+            SelectedOptionId = r.SelectedOptionId,
+            TextValue = r.TextValue,
+            NumberValue = r.NumberValue,
+            CreatedAt = r.CreatedAt
+        });
     }
 }

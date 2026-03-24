@@ -2,6 +2,7 @@ namespace backend.src.Application.Responses.DTOs;
 
 public class ResponseDto
 {
+    public int AnsweredQueryId { get; set; }
     public int PatientId { get; set; }
     public int QuestionId { get; set; }
     public int? SelectedOptionId { get; set; }

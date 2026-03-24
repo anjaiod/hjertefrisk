@@ -18,6 +18,7 @@ public class AppDbContext : DbContext
     public DbSet<QuestionOption> QuestionOptions => Set<QuestionOption>();
     public DbSet<OptionText> OptionTexts => Set<OptionText>();
     public DbSet<Response> Responses => Set<Response>();
+    public DbSet<AnsweredQuery> AnsweredQueries => Set<AnsweredQuery>();
     public DbSet<QuestionDependency> QuestionDependencies => Set<QuestionDependency>();
     public DbSet<PatientAccess> PatientAccesses => Set<PatientAccess>();
     public DbSet<ToDo> ToDos => Set<ToDo>();
@@ -43,7 +44,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<MeasurementText>().HasKey(x => new { x.MeasurementId, x.LanguageCode });
 
         modelBuilder.Entity<QueryQuestion>().HasKey(x => new { x.QueryId, x.QuestionId });
-        modelBuilder.Entity<Response>().HasKey(x => new { x.PatientId, x.QuestionId });
+        modelBuilder.Entity<Response>().HasKey(x => new { x.AnsweredQueryId, x.PatientId, x.QuestionId });
         modelBuilder.Entity<PatientAccess>().HasKey(x => new { x.PatientId, x.PersonnelId });
         modelBuilder.Entity<MeasurementResult>().HasKey(x => new { x.MeasurementId, x.PatientId, x.RegisteredAt });
 
@@ -111,6 +112,10 @@ public class AppDbContext : DbContext
             .Property(x => x.CreatedAt)
             .HasDefaultValueSql("NOW()");
 
+        modelBuilder.Entity<AnsweredQuery>()
+            .Property(x => x.CreatedAt)
+            .HasDefaultValueSql("NOW()");
+
         // -------------------------
         // RELATIONSHIPS
         // -------------------------
@@ -154,11 +159,22 @@ public class AppDbContext : DbContext
             .WithMany(q => q.Options)
             .HasForeignKey(x => x.QuestionId);
 
+        // AnsweredQuery
+        modelBuilder.Entity<AnsweredQuery>()
+            .HasOne(x => x.Patient)
+            .WithMany(p => p.AnsweredQueries)
+            .HasForeignKey(x => x.PatientId);
+
         // Response
         modelBuilder.Entity<Response>()
             .HasOne(x => x.Patient)
             .WithMany(p => p.Responses)
             .HasForeignKey(x => x.PatientId);
+
+        modelBuilder.Entity<Response>()
+            .HasOne(x => x.AnsweredQuery)
+            .WithMany(aq => aq.Responses)
+            .HasForeignKey(x => x.AnsweredQueryId);
 
         // Category
         modelBuilder.Entity<Question>()
