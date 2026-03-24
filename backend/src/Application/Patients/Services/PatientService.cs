@@ -132,7 +132,7 @@ public class PatientService : IPatientService
 
     public async Task<IEnumerable<LatestMeasurementResultDto>> GetLatestMeasurementsAsync(int patientId)
     {
-        // We only need height (1) + weight (2) for the dashboard.
+        // We only need weight (1) + height (2) for the dashboard.
         // Avoid GroupBy translation issues by grouping in-memory.
         var rows = await _db.MeasurementResults
             .AsNoTracking()
