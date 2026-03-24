@@ -239,7 +239,6 @@ namespace api.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("Operator")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Priority")
@@ -397,7 +396,6 @@ namespace api.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("Operator")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Priority")

@@ -12,7 +12,7 @@ public class PatientMeasure
     public int? RequiredOption { get; set; }
     public string? RequiredText { get; set; }
     public decimal? RequiredValue { get; set; }
-    public string Operator { get; set; } = "";
+    public string? Operator { get; set; }
     public string FallbackText { get; set; } = "";
 
     public Question? Question { get; set; }
@@ -33,7 +33,7 @@ public class PersonnelMeasure
     public int? RequiredOption { get; set; }
     public string? RequiredText { get; set; }
     public decimal? RequiredValue { get; set; }
-    public string Operator { get; set; } = "";
+    public string? Operator { get; set; }
     public string FallbackText { get; set; } = "";
 
     public Question? Question { get; set; }
