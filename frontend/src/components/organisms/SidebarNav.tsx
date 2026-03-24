@@ -1,8 +1,13 @@
+"use client";
+import { useUser } from "@/context/UserContext";
+import type { ReactNode } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+
 type NavItem = {
   label: string;
   href: string;
   active?: boolean;
-  icon: React.ReactNode;
+  icon: ReactNode;
 };
 
 function Item({ item }: { item: NavItem }) {
@@ -24,7 +29,7 @@ function Item({ item }: { item: NavItem }) {
 
 export function SidebarNav({
   clinicName = "Poliklinikk LUP",
-  userName = "Lege Legesen",
+  userName,
   profileImage,
   activePath = "/",
 }: {
@@ -33,11 +38,27 @@ export function SidebarNav({
   profileImage?: string;
   activePath?: string;
 }) {
+  const { user } = useUser();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentPath = activePath === "/" ? (pathname ?? "/") : activePath;
+
+  const patientId = searchParams?.get("patientId");
+  const hasSelectedPatient = Boolean(patientId && patientId.trim() !== "");
+  const withPatientId = (href: string) => {
+    if (!patientId) return href;
+    const join = href.includes("?") ? "&" : "?";
+    return `${href}${join}patientId=${encodeURIComponent(patientId)}`;
+  };
+
+  const isActive = (href: string) =>
+    currentPath === href || currentPath.startsWith(`${href}/`);
+
   const primaryItems: NavItem[] = [
     {
       label: "Varslinger",
-      href: "/varslinger",
-      active: activePath === "/varslinger",
+      href: withPatientId("/dashboard/varslinger"),
+      active: isActive("/dashboard/varslinger"),
       icon: (
         <svg
           fill="none"
@@ -58,8 +79,8 @@ export function SidebarNav({
   const secondaryItems: NavItem[] = [
     {
       label: "Journalnotat",
-      href: "/journalnotat",
-      active: activePath === "/journalnotat",
+      href: withPatientId("/dashboard/journalnotat"),
+      active: isActive("/dashboard/journalnotat"),
       icon: (
         <svg
           fill="none"
@@ -77,8 +98,8 @@ export function SidebarNav({
     },
     {
       label: "Hjertefrisk",
-      href: "/hjertefrisk",
-      active: activePath === "/hjertefrisk",
+      href: withPatientId("/dashboard/behandlerSkjema"),
+      active: isActive("/dashboard/behandlerSkjema"),
       icon: (
         <svg
           fill="none"
@@ -96,8 +117,8 @@ export function SidebarNav({
     },
     {
       label: "Vitalia",
-      href: "/dashboard/vitalia",
-      active: activePath === "/dashboard/vitalia",
+      href: withPatientId("/dashboard/vitalia"),
+      active: isActive("/dashboard/vitalia"),
       icon: (
         <svg
           fill="none"
@@ -115,8 +136,8 @@ export function SidebarNav({
     },
     {
       label: "Lab",
-      href: "/dashboard/blodprover",
-      active: activePath === "/dashboard/blodprover",
+      href: withPatientId("/dashboard/lab"),
+      active: isActive("/dashboard/lab"),
       icon: (
         <svg
           fill="none"
@@ -135,7 +156,7 @@ export function SidebarNav({
   ];
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-72 flex-col border-r border-brand-sky/30 bg-gradient-to-b from-white to-brand-mist/10 p-6 md:flex">
+    <aside className="sticky top-0 hidden h-screen w-72 flex-col border-r border-brand-sky/30 bg-linear-to-b from-white to-brand-mist/10 p-6 md:flex">
       <div className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm">
         <img
           src={
@@ -146,22 +167,28 @@ export function SidebarNav({
           className="h-14 w-14 rounded-full border-2 border-brand-sky bg-brand-mist object-cover"
         />
         <div className="space-y-0.5">
-          <p className="font-bold text-brand-navy">{userName}</p>
+          <p className="font-bold text-brand-navy">
+            {user?.name ?? userName ?? "Bruker"}
+          </p>
           <p className="text-sm text-slate-600">{clinicName}</p>
         </div>
       </div>
 
-      <div className="my-6 h-px bg-gradient-to-r from-transparent via-brand-sky to-transparent" />
+      {hasSelectedPatient ? (
+        <>
+          <div className="my-6 h-px bg-linear-to-r from-transparent via-brand-sky to-transparent" />
 
-      <nav className="flex flex-col space-y-2">
-        {primaryItems.map((item) => (
-          <Item key={item.href} item={item} />
-        ))}
+          <nav className="flex flex-col space-y-2">
+            {primaryItems.map((item) => (
+              <Item key={item.href} item={item} />
+            ))}
 
-        {secondaryItems.map((item) => (
-          <Item key={item.href} item={item} />
-        ))}
-      </nav>
+            {secondaryItems.map((item) => (
+              <Item key={item.href} item={item} />
+            ))}
+          </nav>
+        </>
+      ) : null}
     </aside>
   );
 }

@@ -8,4 +8,5 @@ public interface IPatientService
     Task<PatientDto?> GetBySupabaseUserIdAsync(string supabaseUserId);
     Task<PatientDto> CreateAsync(CreatePatientDto dto);
     Task<int> GetTotalScoreAsync(int patientId);
+    Task<IEnumerable<LatestMeasurementResultDto>> GetLatestMeasurementsAsync(int patientId);
 }

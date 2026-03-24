@@ -1,12 +1,14 @@
 "use client";
 
 import { ReactElement, useEffect, useState } from "react";
-import { SidebarNav } from "./SidebarNav";
 import CollapsibleSection from "../molecules/CollapsibleSection";
 import QuestionRadio from "../molecules/QuestionRadio";
 import QuestionNumber from "../molecules/QuestionNumber";
 import QuestionTextArea from "../molecules/QuestionTextArea";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
+import { apiClient } from "@/lib/apiClient";
+import { useUser } from "@/context/UserContext";
+import type { CreateMeasurementResultDto, CreateResponseDto, QueryWithQuestionsDto } from "@/types";
 
 interface QuestionOption {
   questionOptionId: number;
@@ -18,39 +20,24 @@ interface QuestionOption {
 interface QuestionDependency {
   parentQuestionId: number;
   childQuestionId: number;
+  triggerOptionValue?: string | null;
   triggerTextValue: string | null;
   operator: string;
+  triggerOptionId?: number | null;
 }
 
 interface Question {
   questionId: number;
+  categoryId?: number | null;
+  categoryName?: string | null;
+  measurementId?: number | null;
   fallbackText: string;
   questionType: string;
   isRequired: boolean;
-  requiredRole: string | null;
+  requiredRole?: string | null;
   displayOrder: number;
   options: QuestionOption[];
   dependencies: QuestionDependency[];
-}
-
-const CATEGORY_NAMES = [
-  "Røyking",
-  "Fysisk aktivitet",
-  "Kosthold",
-  "Overvekt",
-  "Søvn",
-  "Alkoholbruk",
-  "Rusmiddelbruk",
-];
-
-function getCategoryIndex(displayOrder: number): number {
-  if (displayOrder <= 3) return 0;
-  if (displayOrder <= 9) return 1;
-  if (displayOrder <= 15) return 2;
-  if (displayOrder <= 18) return 3;
-  if (displayOrder <= 27) return 4;
-  if (displayOrder <= 37) return 5;
-  return 6;
 }
 
 function toPatientPerspective(text: string): string {
@@ -72,21 +59,28 @@ function toPatientPerspective(text: string): string {
     );
 }
 
-export default function HealthQuestionnaire() {
+interface HealthQuestionnaireProps {
+  patientId: number | null;
+}
+
+export default function HealthQuestionnaire({ patientId }: HealthQuestionnaireProps) {
+  const { user } = useUser();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const [formKey, setFormKey] = useState(0);
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/query/by-name/Helseskjema`,
+        const data = await apiClient.get<QueryWithQuestionsDto>(
+          "/api/Query/full/by-name/Helseskjema",
         );
-        if (!response.ok) throw new Error("Kunne ikke hente spørsmål");
-        const data = await response.json();
-        setQuestions(data.questions ?? []);
+        setQuestions((data.questions ?? []) as unknown as Question[]);
       } catch (err) {
         setError("Noe gikk galt ved henting av spørsmål.");
         console.error(err);
@@ -95,7 +89,7 @@ export default function HealthQuestionnaire() {
       }
     };
 
-    fetchQuestions();
+    void fetchQuestions();
   }, []);
 
   const updateAnswer = (questionId: number, value: string) => {
@@ -116,15 +110,34 @@ export default function HealthQuestionnaire() {
     return parentDeps.some((dependency) => {
       const parentAnswer = answers[dependency.parentQuestionId];
       if (!parentAnswer) return false;
+
+      if (dependency.triggerOptionValue) {
+        return parentAnswer === dependency.triggerOptionValue;
+      }
+
+      if (dependency.triggerOptionId != null) {
+        const parentQuestion = questions.find(
+          (q) => q.questionId === dependency.parentQuestionId,
+        );
+        const triggerOption = parentQuestion?.options.find(
+          (o) => o.questionOptionId === dependency.triggerOptionId,
+        );
+        return triggerOption
+          ? parentAnswer === triggerOption.optionValue
+          : false;
+      }
+
       if (dependency.operator === "=") {
         return parentAnswer === dependency.triggerTextValue;
       }
+
       if (dependency.operator === "OR") {
         return (
           parentAnswer === dependency.triggerTextValue ||
-          parentAnswer.startsWith("nei")
+          parentAnswer.startsWith("ja")
         );
       }
+
       return false;
     });
   };
@@ -136,16 +149,7 @@ export default function HealthQuestionnaire() {
     if (text.includes("hvor høy")) return "170";
     if (text.includes("hvor mye veier")) return "70";
     if (text.includes("livvidde")) return "80";
-    if (text.includes("hvor mye røyker")) return "F.eks. 10 sigaretter per dag";
-    if (text.includes("vekten din endret")) {
-      return "F.eks. økt 5 kg siste 6 måneder";
-    }
-    if (text.includes("begrensninger") && text.includes("skriv")) {
-      return "Beskriv dine fysiske begrensninger...";
-    }
-    if (text.includes("barrierer") && text.includes("skriv")) {
-      return "Beskriv barrierer...";
-    }
+    if (text.includes("fyll inn")) return "Skriv tall";
     return undefined;
   };
 
@@ -154,6 +158,12 @@ export default function HealthQuestionnaire() {
     if (text.includes("hvor høy")) return "cm";
     if (text.includes("hvor mye veier")) return "kg";
     if (text.includes("livvidde")) return "cm";
+    if (text.includes("blodtrykk")) return "mmHg";
+    if (text.includes("hba1c")) return "mmol/mol";
+    if (text.includes("fastende")) return "mmol/L";
+    if (text.includes("kolesterol")) return "mmol/L";
+    if (text.includes("triglyserider")) return "mmol/L";
+
     return undefined;
   };
 
@@ -229,21 +239,127 @@ export default function HealthQuestionnaire() {
     );
   };
 
-  const groupedQuestions = CATEGORY_NAMES.map((categoryName, index) => ({
-    categoryName,
-    questions: visibleQuestions.filter(
-      (question) => getCategoryIndex(question.displayOrder) === index,
-    ),
-  })).filter((category) => category.questions.length > 0);
+  const groupedQuestions = Array.from(
+    visibleQuestions
+      .reduce((groups, question) => {
+        const categoryName = question.categoryName?.trim() || "Uten kategori";
+        const categoryKey =
+          question.categoryId != null
+            ? `category-${question.categoryId}`
+            : `category-name-${categoryName.toLowerCase()}`;
 
-  const handleSubmit = (event: React.FormEvent) => {
+        const existingGroup = groups.get(categoryKey);
+        if (existingGroup) {
+          existingGroup.questions.push(question);
+          return groups;
+        }
+
+        groups.set(categoryKey, {
+          categoryKey,
+          categoryName,
+          questions: [question],
+        });
+        return groups;
+      }, new Map<string, { categoryKey: string; categoryName: string; questions: Question[] }>())
+      .values(),
+  );
+
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    console.log("Form data:", answers);
+    setSubmitError(null);
+    setSubmitSuccess(null);
+
+    if (patientId == null) {
+      setSubmitError("Ingen pasient er valgt. Gå tilbake og velg en pasient.");
+      return;
+    }
+
+    const payload: CreateResponseDto[] = [];
+
+    for (const question of visibleQuestions) {
+      const rawValue = (answers[question.questionId] ?? "").trim();
+      if (!rawValue) continue;
+
+      const matchedOption = question.options.find(
+        (option) => option.optionValue === rawValue,
+      );
+
+      const base: CreateResponseDto = {
+        patientId,
+        questionId: question.questionId,
+        selectedOptionId: matchedOption?.questionOptionId ?? null,
+      };
+
+      if (question.questionType === "number") {
+        const parsedValue = Number(rawValue.replace(",", "."));
+        if (Number.isFinite(parsedValue)) {
+          payload.push({ ...base, numberValue: parsedValue });
+          continue;
+        }
+      }
+
+      payload.push({ ...base, textValue: rawValue });
+    }
+
+    if (payload.length === 0) {
+      setSubmitError("Fyll inn minst ett svar før innsending.");
+      return;
+    }
+
+    const personnelId = user ? parseInt(user.id, 10) : null;
+
+    const measurementPayload: CreateMeasurementResultDto[] = [];
+    for (const question of visibleQuestions) {
+      if (question.measurementId == null) continue;
+      if (question.questionType !== "number") continue;
+      const rawValue = (answers[question.questionId] ?? "").trim();
+      if (!rawValue) continue;
+      const parsedValue = Number(rawValue.replace(",", "."));
+      if (!Number.isFinite(parsedValue)) continue;
+      if (personnelId == null || !Number.isFinite(personnelId)) continue;
+      measurementPayload.push({
+        measurementId: question.measurementId,
+        patientId,
+        result: parsedValue,
+        registeredBy: personnelId,
+      });
+    }
+
+    if (personnelId != null && Number.isFinite(personnelId)) {
+      const heightEntry = measurementPayload.find((m) => m.measurementId === 2);
+      const weightEntry = measurementPayload.find((m) => m.measurementId === 1);
+      if (heightEntry && weightEntry && heightEntry.result > 0) {
+        const heightM = heightEntry.result / 100;
+        const bmi = weightEntry.result / (heightM * heightM);
+        measurementPayload.push({
+          measurementId: 10,
+          patientId,
+          result: Math.round(bmi * 10) / 10,
+          registeredBy: personnelId,
+        });
+      }
+    }
+
+    try {
+      setIsSubmitting(true);
+      await apiClient.post("/api/Responses/bulk", payload);
+      if (measurementPayload.length > 0) {
+        await apiClient.post("/api/MeasurementResults/bulk", measurementPayload);
+      }
+      setAnswers({});
+      setFormKey((k) => k + 1);
+      setSubmitSuccess("Skjema sendt inn!");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      setSubmitError("Kunne ikke lagre svarene.");
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="flex">
-      <SidebarNav activePath="/behandler_skjema" />
       <main className="flex-1 bg-slate-50">
         <form
           onSubmit={handleSubmit}
@@ -253,8 +369,16 @@ export default function HealthQuestionnaire() {
             Helseskjema - Levevaner og Målinger
           </h1>
 
+          {patientId == null && (
+            <p className="text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-4 py-3">
+              Ingen pasient er valgt. Gå tilbake og velg en pasient.
+            </p>
+          )}
+
           {loading && <p className="text-gray-500">Laster spørsmål...</p>}
           {error && <p className="text-red-500">{error}</p>}
+          {submitError && <p className="text-red-500">{submitError}</p>}
+          {submitSuccess && <p className="text-green-700">{submitSuccess}</p>}
 
           {!loading && !error && groupedQuestions.length === 0 && (
             <p className="text-gray-500">Fant ingen spørsmål i skjemaet.</p>
@@ -264,7 +388,7 @@ export default function HealthQuestionnaire() {
             !error &&
             groupedQuestions.map((group, index) => (
               <CollapsibleSection
-                key={group.categoryName}
+                key={`${formKey}-${group.categoryKey}`}
                 title={group.categoryName}
                 defaultOpen={index === 0}
               >
@@ -283,9 +407,10 @@ export default function HealthQuestionnaire() {
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-brand-navy text-white rounded-md hover:opacity-90"
+              disabled={isSubmitting || patientId == null}
+              className="px-6 py-2 bg-brand-navy text-white rounded-md hover:opacity-90 disabled:opacity-50"
             >
-              Send inn
+              {isSubmitting ? "Sender inn..." : "Send inn"}
             </button>
           </div>
         </form>

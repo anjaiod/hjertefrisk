@@ -32,11 +32,12 @@ public class PatientService : IPatientService
 
     public async Task<PatientDto?> GetBySupabaseUserIdAsync(string supabaseUserId)
     {
-        var trimmedUserId = supabaseUserId.Trim();
+        var trimmed = supabaseUserId.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed)) return null;
 
         return await _db.Patients
             .AsNoTracking()
-            .Where(p => p.SupabaseUserId == trimmedUserId)
+            .Where(p => p.SupabaseUserId == trimmed)
             .Select(p => new PatientDto
             {
                 Id = p.Id,
@@ -83,12 +84,17 @@ public class PatientService : IPatientService
             .Where(s => s.QuestionId != null && questionIds.Contains(s.QuestionId.Value))
             .ToListAsync();
 
-        var latestMeasurementResults = await _db.MeasurementResults
+        // Avoid EF Core GroupBy/First translation issues by grouping in-memory.
+        var measurementRows = await _db.MeasurementResults
             .AsNoTracking()
             .Where(r => r.PatientId == patientId)
-            .GroupBy(r => r.MeasurementId)
-            .Select(g => g.OrderByDescending(x => x.RegisteredAt).First())
+            .OrderByDescending(r => r.RegisteredAt)
             .ToListAsync();
+
+        var latestMeasurementResults = measurementRows
+            .GroupBy(r => r.MeasurementId)
+            .Select(g => g.First())
+            .ToList();
 
         var measurementIds = latestMeasurementResults.Select(r => r.MeasurementId).Distinct().ToList();
         var measurementSeverities = await _db.Severities
@@ -122,6 +128,28 @@ public class PatientService : IPatientService
         }
 
         return totalScore;
+    }
+
+    public async Task<IEnumerable<LatestMeasurementResultDto>> GetLatestMeasurementsAsync(int patientId)
+    {
+        // We only need height (1) + weight (2) for the dashboard.
+        // Avoid GroupBy translation issues by grouping in-memory.
+        var rows = await _db.MeasurementResults
+            .AsNoTracking()
+            .Where(r => r.PatientId == patientId && (r.MeasurementId == 1 || r.MeasurementId == 2))
+            .OrderByDescending(r => r.RegisteredAt)
+            .ToListAsync();
+
+        return rows
+            .GroupBy(r => r.MeasurementId)
+            .Select(g => g.First())
+            .Select(r => new LatestMeasurementResultDto
+            {
+                MeasurementId = r.MeasurementId,
+                Result = r.Result,
+                RegisteredAt = r.RegisteredAt
+            })
+            .ToList();
     }
 
     private static bool IsSeverityMatch(Severity severity, int? optionId, string? textValue, decimal? numberValue)

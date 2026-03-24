@@ -25,15 +25,22 @@ const btnClass =
 
 type ModalType = "todo" | "varsling" | null;
 
-export default function PatientRow({ id, name, lastVisited, riskLevel }: PatientRowProps) {
+export default function PatientRow({
+  id,
+  name,
+  lastVisited,
+  riskLevel,
+}: PatientRowProps) {
   const [openModal, setOpenModal] = useState<ModalType>(null);
   const router = useRouter();
+
+  const dashboardHref = `/dashboard?patientId=${encodeURIComponent(id)}`;
 
   return (
     <>
       <tr
         className="border-t border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
-        onClick={() => router.push(`/dashboard`)}
+        onClick={() => router.push(dashboardHref)}
       >
         <td className="px-6 py-4">
           <span className="text-brand-sky font-medium hover:underline">
@@ -65,7 +72,7 @@ export default function PatientRow({ id, name, lastVisited, riskLevel }: Patient
             <Button
               variant="primary"
               className={btnClass}
-              onClick={() => router.push(`/dashboard`)}
+              onClick={() => router.push(dashboardHref)}
             >
               Presentasjon
             </Button>
@@ -73,7 +80,11 @@ export default function PatientRow({ id, name, lastVisited, riskLevel }: Patient
         </td>
       </tr>
       {openModal === "todo" && (
-        <TodoModal patientId={id} patientName={name} onClose={() => setOpenModal(null)} />
+        <TodoModal
+          patientId={id}
+          patientName={name}
+          onClose={() => setOpenModal(null)}
+        />
       )}
       {openModal === "varsling" && (
         <VarslingModal patientName={name} onClose={() => setOpenModal(null)} />

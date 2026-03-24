@@ -2,6 +2,7 @@ namespace backend.src.Domain.Models;
 
 public class QuestionDependency
 {
+    public int Id { get; set; } // PK, surrogate key for EF Core
     public int ParentQueryId { get; set; }        // PK part, FK -> Query
     public int ParentQuestionId { get; set; }     // PK part, FK -> Question
     public int ChildQueryId { get; set; }         // PK part, FK -> Query

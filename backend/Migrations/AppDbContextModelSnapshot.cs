@@ -149,7 +149,7 @@ namespace api.Migrations
                     b.Property<DateTime>("RegisteredAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("RegisteredBy")
+                    b.Property<int?>("RegisteredBy")
                         .HasColumnType("integer");
 
                     b.Property<decimal>("Result")
@@ -342,6 +342,9 @@ namespace api.Migrations
                     b.Property<bool>("IsRequired")
                         .HasColumnType("boolean");
 
+                    b.Property<int?>("MeasurementId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("QuestionType")
                         .IsRequired()
                         .HasColumnType("text");
@@ -353,16 +356,18 @@ namespace api.Migrations
 
                     b.HasIndex("CategoryId");
 
+                    b.HasIndex("MeasurementId");
+
                     b.ToTable("Questions");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.QuestionDependency", b =>
                 {
-                    b.Property<int>("ParentQueryId")
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    b.Property<int>("ParentQuestionId")
-                        .HasColumnType("integer");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("ChildQueryId")
                         .HasColumnType("integer");
@@ -374,6 +379,12 @@ namespace api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("ParentQueryId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ParentQuestionId")
+                        .HasColumnType("integer");
+
                     b.Property<decimal?>("TriggerNumberValue")
                         .HasColumnType("numeric");
 
@@ -383,7 +394,7 @@ namespace api.Migrations
                     b.Property<string>("TriggerTextValue")
                         .HasColumnType("text");
 
-                    b.HasKey("ParentQueryId", "ParentQuestionId", "ChildQueryId", "ChildQuestionId");
+                    b.HasKey("Id");
 
                     b.HasIndex("ChildQueryId");
 
@@ -392,6 +403,9 @@ namespace api.Migrations
                     b.HasIndex("ParentQuestionId");
 
                     b.HasIndex("TriggerOptionId");
+
+                    b.HasIndex("ParentQueryId", "ParentQuestionId", "ChildQueryId", "ChildQuestionId", "TriggerOptionId")
+                        .IsUnique();
 
                     b.ToTable("QuestionDependencies");
                 });
@@ -616,8 +630,7 @@ namespace api.Migrations
                     b.HasOne("backend.src.Domain.Models.Personnel", "RegisteredByPersonnel")
                         .WithMany("RegisteredMeasurementResults")
                         .HasForeignKey("RegisteredBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Measurement");
 
@@ -709,7 +722,14 @@ namespace api.Migrations
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("backend.src.Domain.Models.Measurement", "Measurement")
+                        .WithMany()
+                        .HasForeignKey("MeasurementId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Category");
+
+                    b.Navigation("Measurement");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.QuestionDependency", b =>

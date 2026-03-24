@@ -5,7 +5,7 @@ namespace backend.src.Infrastructure.Data;
 
 public class AppDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) {}
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<Language> Language => Set<Language>();
     public DbSet<Category> Categories => Set<Category>();
@@ -47,13 +47,18 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<PatientAccess>().HasKey(x => new { x.PatientId, x.PersonnelId });
         modelBuilder.Entity<MeasurementResult>().HasKey(x => new { x.MeasurementId, x.PatientId, x.RegisteredAt });
 
-        modelBuilder.Entity<QuestionDependency>().HasKey(x => new
-        {
-            x.ParentQueryId,
-            x.ParentQuestionId,
-            x.ChildQueryId,
-            x.ChildQuestionId
-        });
+        modelBuilder.Entity<QuestionDependency>().HasKey(x => x.Id);
+
+        modelBuilder.Entity<QuestionDependency>()
+            .HasIndex(x => new
+            {
+                x.ParentQueryId,
+                x.ParentQuestionId,
+                x.ChildQueryId,
+                x.ChildQuestionId,
+                x.TriggerOptionId
+            })
+            .IsUnique();
 
         // -------------------------
         // UNIQUE INDEXES
@@ -177,7 +182,7 @@ public class AppDbContext : DbContext
             .HasOne(x => x.SelectedOption)
             .WithMany()
             .HasForeignKey(x => x.SelectedOptionId)
-            .OnDelete(DeleteBehavior.Restrict); 
+            .OnDelete(DeleteBehavior.Restrict);
 
         // QuestionDependency (multiple FKs to same tables)
         modelBuilder.Entity<QuestionDependency>()
@@ -231,6 +236,13 @@ public class AppDbContext : DbContext
             .HasOne(x => x.Personnel)
             .WithMany(p => p.ToDos)
             .HasForeignKey(x => x.PersonnelId);
+
+        // Question -> Measurement (optional)
+        modelBuilder.Entity<Question>()
+            .HasOne(x => x.Measurement)
+            .WithMany()
+            .HasForeignKey(x => x.MeasurementId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // Measure + MeasureText
         modelBuilder.Entity<Measure>()
@@ -300,6 +312,7 @@ public class AppDbContext : DbContext
             .HasOne(x => x.RegisteredByPersonnel)
             .WithMany(p => p.RegisteredMeasurementResults)
             .HasForeignKey(x => x.RegisteredBy)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

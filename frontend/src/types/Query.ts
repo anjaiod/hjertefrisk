@@ -15,6 +15,8 @@ export type QueryQuestionOptionDto = {
 };
 
 export type QueryQuestionDependencyDto = {
+  triggerOptionId: null;
+  triggerOptionValue: unknown;
   parentQuestionId: number;
   childQuestionId: number;
   triggerTextValue?: string | null;
@@ -25,6 +27,7 @@ export type QueryQuestionWithDetailsDto = {
   questionId: number;
   categoryId?: number | null;
   categoryName?: string | null;
+  measurementId?: number | null;
   fallbackText: string;
   questionType: string;
   isRequired: boolean;
