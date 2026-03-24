@@ -15,6 +15,13 @@ public class MeasurementResultsController : ControllerBase
         _service = service;
     }
 
+    [HttpGet("patient/{patientId}")]
+    public async Task<IActionResult> GetLatestForPatient(int patientId)
+    {
+        var results = await _service.GetLatestForPatientAsync(patientId);
+        return Ok(results);
+    }
+
     [HttpPost("bulk")]
     public async Task<IActionResult> UpsertBulk([FromBody] List<CreateMeasurementResultDto> dtos)
     {
