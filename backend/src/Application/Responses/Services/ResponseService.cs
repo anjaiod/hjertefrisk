@@ -69,7 +69,8 @@ public class ResponseService : IResponseService
         if (incoming.Count == 0)
             return Array.Empty<ResponseDto>();
 
-        // Create one AnsweredQuery per bulk submission
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+
         var answeredQuery = new AnsweredQuery { PatientId = incoming[0].PatientId };
         _db.AnsweredQueries.Add(answeredQuery);
         await _db.SaveChangesAsync();
@@ -86,6 +87,7 @@ public class ResponseService : IResponseService
 
         _db.Responses.AddRange(entities);
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
 
         return entities.Select(r => new ResponseDto
         {
