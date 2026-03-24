@@ -22,18 +22,21 @@ export function FeatureCardGrid() {
         title="Oppdater målinger"
         description="Trykk for å se og endre pasientens målinger"
         iconBgColor="bg-brand-sage/20"
+        onClick={() => router.push(withPatientId("/dashboard/maalinger"))}
       />
       <FeatureCard
         icon="🖥️"
         title="Teamvisning"
         description="Trykk for å se en utvidet pasientvisning"
         iconBgColor="bg-brand-navy/15"
+        onClick={() => router.push(withPatientId("/dashboard/teamvisning"))}
       />
       <FeatureCard
         icon="📋"
         title="Tiltak"
         description="Trykk for å se anbefalte tiltak for pasienten"
         iconBgColor="bg-brand-sky/35"
+        onClick={() => router.push(withPatientId("/dashboard/tiltak"))}
       />
     </div>
   );
