@@ -7,4 +7,6 @@ public class Category
 
     public ICollection<Question> Questions { get; set; } = new List<Question>();
     public ICollection<Measurement> Measurements { get; set; } = new List<Measurement>();
+    public ICollection<PatientMeasure> PatientMeasures { get; set; } = new List<PatientMeasure>();
+    public ICollection<PersonnelMeasure> PersonnelMeasures { get; set; } = new List<PersonnelMeasure>();
 }

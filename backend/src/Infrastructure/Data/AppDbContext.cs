@@ -22,12 +22,16 @@ public class AppDbContext : DbContext
     public DbSet<QuestionDependency> QuestionDependencies => Set<QuestionDependency>();
     public DbSet<PatientAccess> PatientAccesses => Set<PatientAccess>();
     public DbSet<ToDo> ToDos => Set<ToDo>();
-    public DbSet<Measure> Measures => Set<Measure>();
+    public DbSet<PatientMeasure> PatientMeasures => Set<PatientMeasure>();
+    public DbSet<PersonnelMeasure> PersonnelMeasures => Set<PersonnelMeasure>();
     public DbSet<Severity> Severities => Set<Severity>();
-    public DbSet<MeasureText> MeasureTexts => Set<MeasureText>();
+    public DbSet<PatientMeasureText> PatientMeasureTexts => Set<PatientMeasureText>();
+    public DbSet<PersonnelMeasureText> PersonnelMeasureTexts => Set<PersonnelMeasureText>();
     public DbSet<Measurement> Measurements => Set<Measurement>();
     public DbSet<MeasurementText> MeasurementTexts => Set<MeasurementText>();
     public DbSet<MeasurementResult> MeasurementResults => Set<MeasurementResult>();
+    public DbSet<PatientMeasureResult> PatientMeasureResults => Set<PatientMeasureResult>();
+    public DbSet<PersonnelMeasureResult> PersonnelMeasureResults => Set<PersonnelMeasureResult>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,7 +44,8 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<QuestionText>().HasKey(x => new { x.QuestionId, x.LanguageCode });
         modelBuilder.Entity<OptionText>().HasKey(x => new { x.QuestionOptionId, x.LanguageCode });
-        modelBuilder.Entity<MeasureText>().HasKey(x => new { x.MeasureId, x.LanguageCode });
+        modelBuilder.Entity<PatientMeasureText>().HasKey(x => new { x.PatientMeasureId, x.LanguageCode });
+        modelBuilder.Entity<PersonnelMeasureText>().HasKey(x => new { x.PersonnelMeasureId, x.LanguageCode });
         modelBuilder.Entity<MeasurementText>().HasKey(x => new { x.MeasurementId, x.LanguageCode });
 
         modelBuilder.Entity<QueryQuestion>().HasKey(x => new { x.QueryId, x.QuestionId });
@@ -94,8 +99,13 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<QuestionText>().Property(x => x.Text).HasColumnType("text");
 
         // If you want these as text too:
-        modelBuilder.Entity<Measure>().Property(x => x.FallbackText).HasColumnType("text");
+        modelBuilder.Entity<PatientMeasure>().Property(x => x.FallbackText).HasColumnType("text");
+        modelBuilder.Entity<PatientMeasure>().Property(x => x.Title).HasColumnType("text");
+        modelBuilder.Entity<PersonnelMeasure>().Property(x => x.FallbackText).HasColumnType("text");
+        modelBuilder.Entity<PersonnelMeasure>().Property(x => x.Title).HasColumnType("text");
         modelBuilder.Entity<Measurement>().Property(x => x.FallbackText).HasColumnType("text");
+        modelBuilder.Entity<PatientMeasureText>().Property(x => x.Title).HasColumnType("text");
+        modelBuilder.Entity<PersonnelMeasureText>().Property(x => x.Title).HasColumnType("text");
 
         // -------------------------
         // DEFAULTS
@@ -260,17 +270,71 @@ public class AppDbContext : DbContext
             .HasForeignKey(x => x.MeasurementId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // Measure + MeasureText
-        modelBuilder.Entity<Measure>()
-            .HasOne(x => x.Question)
-            .WithMany(q => q.Measures)
-            .HasForeignKey(x => x.QuestionId);
+        // PatientMeasure + PatientMeasureText
+        modelBuilder.Entity<PatientMeasure>()
+            .Property(x => x.TriggerType)
+            .HasConversion<string>();
 
-        modelBuilder.Entity<Measure>()
+        modelBuilder.Entity<PatientMeasure>()
+            .HasOne(x => x.Question)
+            .WithMany(q => q.PatientMeasures)
+            .HasForeignKey(x => x.QuestionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PatientMeasure>()
+            .HasOne(x => x.Category)
+            .WithMany(c => c.PatientMeasures)
+            .HasForeignKey(x => x.CategoryId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PatientMeasure>()
             .HasOne(x => x.RequiredOptionNavigation)
             .WithMany()
             .HasForeignKey(x => x.RequiredOption)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PatientMeasureText>()
+            .HasOne(x => x.Measure)
+            .WithMany(m => m.Texts)
+            .HasForeignKey(x => x.PatientMeasureId);
+
+        modelBuilder.Entity<PatientMeasureText>()
+            .HasOne(x => x.Language)
+            .WithMany(l => l.PatientMeasureTexts)
+            .HasForeignKey(x => x.LanguageCode);
+
+        // PersonnelMeasure + PersonnelMeasureText
+        modelBuilder.Entity<PersonnelMeasure>()
+            .Property(x => x.TriggerType)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<PersonnelMeasure>()
+            .HasOne(x => x.Question)
+            .WithMany(q => q.PersonnelMeasures)
+            .HasForeignKey(x => x.QuestionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PersonnelMeasure>()
+            .HasOne(x => x.Category)
+            .WithMany(c => c.PersonnelMeasures)
+            .HasForeignKey(x => x.CategoryId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PersonnelMeasure>()
+            .HasOne(x => x.RequiredOptionNavigation)
+            .WithMany()
+            .HasForeignKey(x => x.RequiredOption)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PersonnelMeasureText>()
+            .HasOne(x => x.Measure)
+            .WithMany(m => m.Texts)
+            .HasForeignKey(x => x.PersonnelMeasureId);
+
+        modelBuilder.Entity<PersonnelMeasureText>()
+            .HasOne(x => x.Language)
+            .WithMany(l => l.PersonnelMeasureTexts)
+            .HasForeignKey(x => x.LanguageCode);
 
         // Severity
         modelBuilder.Entity<Severity>()
@@ -292,16 +356,6 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(x => x.RequiredOption)
             .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<MeasureText>()
-            .HasOne(x => x.Measure)
-            .WithMany(m => m.Texts)
-            .HasForeignKey(x => x.MeasureId);
-
-        modelBuilder.Entity<MeasureText>()
-            .HasOne(x => x.Language)
-            .WithMany(l => l.MeasureTexts)
-            .HasForeignKey(x => x.LanguageCode);
 
         // Measurement + MeasurementText + MeasurementResult
         modelBuilder.Entity<MeasurementText>()
@@ -330,5 +384,80 @@ public class AppDbContext : DbContext
             .HasForeignKey(x => x.RegisteredBy)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Measure results
+        modelBuilder.Entity<PatientMeasureResult>()
+            .Property(x => x.Source)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<PatientMeasureResult>()
+            .HasOne(x => x.Measure)
+            .WithMany()
+            .HasForeignKey(x => x.PatientMeasureId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PatientMeasureResult>()
+            .HasOne(x => x.Patient)
+            .WithMany(p => p.PatientMeasureResults)
+            .HasForeignKey(x => x.PatientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PatientMeasureResult>()
+            .HasOne(x => x.Query)
+            .WithMany()
+            .HasForeignKey(x => x.QueryId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PatientMeasureResult>()
+            .HasOne(x => x.Category)
+            .WithMany()
+            .HasForeignKey(x => x.CategoryId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<PatientMeasureResult>()
+            .HasOne(x => x.TriggerQuestion)
+            .WithMany()
+            .HasForeignKey(x => x.TriggerQuestionId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<PersonnelMeasureResult>()
+            .Property(x => x.Source)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<PersonnelMeasureResult>()
+            .HasOne(x => x.Measure)
+            .WithMany()
+            .HasForeignKey(x => x.PersonnelMeasureId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PersonnelMeasureResult>()
+            .HasOne(x => x.Patient)
+            .WithMany(p => p.PersonnelMeasureResults)
+            .HasForeignKey(x => x.PatientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PersonnelMeasureResult>()
+            .HasOne(x => x.Personnel)
+            .WithMany(p => p.PersonnelMeasureResults)
+            .HasForeignKey(x => x.PersonnelId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<PersonnelMeasureResult>()
+            .HasOne(x => x.Query)
+            .WithMany()
+            .HasForeignKey(x => x.QueryId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PersonnelMeasureResult>()
+            .HasOne(x => x.Category)
+            .WithMany()
+            .HasForeignKey(x => x.CategoryId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<PersonnelMeasureResult>()
+            .HasOne(x => x.TriggerQuestion)
+            .WithMany()
+            .HasForeignKey(x => x.TriggerQuestionId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

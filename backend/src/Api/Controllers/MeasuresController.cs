@@ -8,24 +8,66 @@ namespace backend.src.Api.Controllers;
 [Route("api/[controller]")]
 public class MeasuresController : ControllerBase
 {
-    private readonly IMeasureService _service;
+    private readonly IPatientMeasureService _patientMeasures;
+    private readonly IPersonnelMeasureService _personnelMeasures;
+    private readonly IMeasureEvaluationService _evaluationService;
 
-    public MeasuresController(IMeasureService service)
+    public MeasuresController(
+        IPatientMeasureService patientMeasures,
+        IPersonnelMeasureService personnelMeasures,
+        IMeasureEvaluationService evaluationService)
     {
-        _service = service;
+        _patientMeasures = patientMeasures;
+        _personnelMeasures = personnelMeasures;
+        _evaluationService = evaluationService;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetAll()
+    [HttpGet("patient")]
+    public async Task<IActionResult> GetPatientMeasures()
     {
-        var items = await _service.GetAllAsync();
+        var items = await _patientMeasures.GetAllAsync();
         return Ok(items);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateMeasureDto dto)
+    [HttpPost("patient")]
+    public async Task<IActionResult> CreatePatientMeasure([FromBody] CreatePatientMeasureDto dto)
     {
-        var created = await _service.CreateAsync(dto);
-        return Created(string.Empty, created);
+        try
+        {
+            var created = await _patientMeasures.CreateAsync(dto);
+            return Created(string.Empty, created);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("personnel")]
+    public async Task<IActionResult> GetPersonnelMeasures()
+    {
+        var items = await _personnelMeasures.GetAllAsync();
+        return Ok(items);
+    }
+
+    [HttpPost("personnel")]
+    public async Task<IActionResult> CreatePersonnelMeasure([FromBody] CreatePersonnelMeasureDto dto)
+    {
+        try
+        {
+            var created = await _personnelMeasures.CreateAsync(dto);
+            return Created(string.Empty, created);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("evaluate")]
+    public async Task<IActionResult> Evaluate([FromBody] EvaluateMeasuresDto dto)
+    {
+        var result = await _evaluationService.EvaluateAsync(dto);
+        return Ok(result);
     }
 }
