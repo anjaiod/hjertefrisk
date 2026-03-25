@@ -160,6 +160,8 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     TriggerQuestionId = group.Key,
                     CategoryScore = categoryScore,
                     Text = ResolvePatientText(measure, languageCode),
+                    Title = ResolvePatientTitle(measure, languageCode),
+                    ResourceUrl = measure.ResourceUrl,
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
                     IsExclusive = measure.IsExclusive,
@@ -204,6 +206,7 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     TriggerQuestionId = group.Key,
                     CategoryScore = categoryScore,
                     Text = ResolvePersonnelText(measure, languageCode),
+                    ResourceUrl = measure.ResourceUrl,
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
                     IsExclusive = measure.IsExclusive,
@@ -243,6 +246,8 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     TriggerQuestionId = null,
                     CategoryScore = categoryScore,
                     Text = ResolvePatientText(measure, languageCode),
+                    Title = ResolvePatientTitle(measure, languageCode),
+                    ResourceUrl = measure.ResourceUrl,
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
                     IsExclusive = measure.IsExclusive,
@@ -287,6 +292,7 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     TriggerQuestionId = null,
                     CategoryScore = categoryScore,
                     Text = ResolvePersonnelText(measure, languageCode),
+                    ResourceUrl = measure.ResourceUrl,
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
                     IsExclusive = measure.IsExclusive,
@@ -430,6 +436,20 @@ public class MeasureEvaluationService : IMeasureEvaluationService
         }
 
         return measure.FallbackText;
+    }
+
+    private static string? ResolvePatientTitle(PatientMeasure measure, string? languageCode)
+    {
+        if (!string.IsNullOrWhiteSpace(languageCode))
+        {
+            var localized = measure.Texts.FirstOrDefault(t => t.LanguageCode.Equals(languageCode, StringComparison.OrdinalIgnoreCase));
+            if (localized != null && !string.IsNullOrWhiteSpace(localized.Title))
+            {
+                return localized.Title;
+            }
+        }
+
+        return measure.Title;
     }
 
     private static string ResolvePersonnelText(PersonnelMeasure measure, string? languageCode)

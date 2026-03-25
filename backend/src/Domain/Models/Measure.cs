@@ -14,6 +14,7 @@ public class PatientMeasure
     public decimal? RequiredValue { get; set; }
     public string? Operator { get; set; }
     public string FallbackText { get; set; } = "";
+    public string? Title { get; set; }
 
     public string? ResourceUrl { get; set; }
 
@@ -51,6 +52,7 @@ public class PatientMeasureText
     public int PatientMeasureId { get; set; }
     public string LanguageCode { get; set; } = "";
     public string Text { get; set; } = "";
+    public string? Title { get; set; }
 
     public PatientMeasure Measure { get; set; } = null!;
     public Language Language { get; set; } = null!;

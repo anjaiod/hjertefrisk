@@ -100,8 +100,10 @@ public class AppDbContext : DbContext
 
         // If you want these as text too:
         modelBuilder.Entity<PatientMeasure>().Property(x => x.FallbackText).HasColumnType("text");
+        modelBuilder.Entity<PatientMeasure>().Property(x => x.Title).HasColumnType("text");
         modelBuilder.Entity<PersonnelMeasure>().Property(x => x.FallbackText).HasColumnType("text");
         modelBuilder.Entity<Measurement>().Property(x => x.FallbackText).HasColumnType("text");
+        modelBuilder.Entity<PatientMeasureText>().Property(x => x.Title).HasColumnType("text");
 
         // -------------------------
         // DEFAULTS

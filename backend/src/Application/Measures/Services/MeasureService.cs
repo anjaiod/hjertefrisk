@@ -41,7 +41,9 @@ public class PatientMeasureService : IPatientMeasureService
             RequiredText = MeasureValidation.Sanitize(dto.RequiredText),
             RequiredValue = dto.RequiredValue,
             Operator = MeasureValidation.NormalizeOperator(dto),
-            FallbackText = dto.FallbackText.Trim()
+            FallbackText = dto.FallbackText.Trim(),
+            Title = MeasureValidation.Sanitize(dto.Title),
+            ResourceUrl = MeasureValidation.Sanitize(dto.ResourceUrl)
         };
 
         _db.PatientMeasures.Add(entity);
@@ -84,7 +86,8 @@ public class PersonnelMeasureService : IPersonnelMeasureService
             RequiredText = MeasureValidation.Sanitize(dto.RequiredText),
             RequiredValue = dto.RequiredValue,
             Operator = MeasureValidation.NormalizeOperator(dto),
-            FallbackText = dto.FallbackText.Trim()
+            FallbackText = dto.FallbackText.Trim(),
+            ResourceUrl = MeasureValidation.Sanitize(dto.ResourceUrl)
         };
 
         _db.PersonnelMeasures.Add(entity);
@@ -146,7 +149,9 @@ internal static class MeasureMapper
         RequiredText = measure.RequiredText,
         RequiredValue = measure.RequiredValue,
         Operator = measure.Operator,
-        FallbackText = measure.FallbackText
+        FallbackText = measure.FallbackText,
+        Title = measure.Title,
+        ResourceUrl = measure.ResourceUrl
     };
 
     public static readonly Expression<Func<PersonnelMeasure, PersonnelMeasureDto>> ToPersonnelDto = measure => new PersonnelMeasureDto
@@ -162,7 +167,8 @@ internal static class MeasureMapper
         RequiredText = measure.RequiredText,
         RequiredValue = measure.RequiredValue,
         Operator = measure.Operator,
-        FallbackText = measure.FallbackText
+        FallbackText = measure.FallbackText,
+        ResourceUrl = measure.ResourceUrl
     };
 
     public static PatientMeasureDto FromEntity(PatientMeasure measure) => new PatientMeasureDto
@@ -178,7 +184,9 @@ internal static class MeasureMapper
         RequiredText = measure.RequiredText,
         RequiredValue = measure.RequiredValue,
         Operator = measure.Operator,
-        FallbackText = measure.FallbackText
+        FallbackText = measure.FallbackText,
+        Title = measure.Title,
+        ResourceUrl = measure.ResourceUrl
     };
 
     public static PersonnelMeasureDto FromEntity(PersonnelMeasure measure) => new PersonnelMeasureDto
@@ -194,7 +202,8 @@ internal static class MeasureMapper
         RequiredText = measure.RequiredText,
         RequiredValue = measure.RequiredValue,
         Operator = measure.Operator,
-        FallbackText = measure.FallbackText
+        FallbackText = measure.FallbackText,
+        ResourceUrl = measure.ResourceUrl
     };
 }
 

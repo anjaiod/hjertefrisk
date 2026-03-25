@@ -24,6 +24,12 @@ public abstract class BaseCreateMeasureDto
     [StringLength(20, MinimumLength = 1)]
     public string? Operator { get; set; }
 
+    [StringLength(250, MinimumLength = 1)]
+    public string? Title { get; set; }
+
+    [StringLength(1000)]
+    public string? ResourceUrl { get; set; }
+
     [Required]
     [StringLength(1000, MinimumLength = 1)]
     public required string FallbackText { get; set; }

@@ -10,6 +10,8 @@ public class PatientMeasureResultDto
     public int? TriggerQuestionId { get; set; }
     public int CategoryScore { get; set; }
     public string Text { get; set; } = string.Empty;
+    public string? Title { get; set; }
+    public string? ResourceUrl { get; set; }
     public DateTime GeneratedAt { get; set; }
     public int ScoreThreshold { get; set; }
     public bool IsExclusive { get; set; }
@@ -24,6 +26,7 @@ public class PersonnelMeasureResultDto
     public int? TriggerQuestionId { get; set; }
     public int CategoryScore { get; set; }
     public string Text { get; set; } = string.Empty;
+    public string? ResourceUrl { get; set; }
     public DateTime GeneratedAt { get; set; }
     public int ScoreThreshold { get; set; }
     public bool IsExclusive { get; set; }

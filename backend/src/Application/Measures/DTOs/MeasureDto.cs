@@ -16,6 +16,8 @@ public class PatientMeasureDto
     public decimal? RequiredValue { get; set; }
     public string? Operator { get; set; }
     public string FallbackText { get; set; } = "";
+    public string? Title { get; set; }
+    public string? ResourceUrl { get; set; }
 }
 
 public class PersonnelMeasureDto
@@ -32,4 +34,5 @@ public class PersonnelMeasureDto
     public decimal? RequiredValue { get; set; }
     public string? Operator { get; set; }
     public string FallbackText { get; set; } = "";
+    public string? ResourceUrl { get; set; }
 }
