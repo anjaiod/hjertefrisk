@@ -206,6 +206,7 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     TriggerQuestionId = group.Key,
                     CategoryScore = categoryScore,
                     Text = ResolvePersonnelText(measure, languageCode),
+                    Title = ResolvePersonnelTitle(measure, languageCode),
                     ResourceUrl = measure.ResourceUrl,
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
@@ -292,6 +293,7 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     TriggerQuestionId = null,
                     CategoryScore = categoryScore,
                     Text = ResolvePersonnelText(measure, languageCode),
+                    Title = ResolvePersonnelTitle(measure, languageCode),
                     ResourceUrl = measure.ResourceUrl,
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
@@ -464,6 +466,20 @@ public class MeasureEvaluationService : IMeasureEvaluationService
         }
 
         return measure.FallbackText;
+    }
+
+    private static string? ResolvePersonnelTitle(PersonnelMeasure measure, string? languageCode)
+    {
+        if (!string.IsNullOrWhiteSpace(languageCode))
+        {
+            var localized = measure.Texts.FirstOrDefault(t => t.LanguageCode.Equals(languageCode, StringComparison.OrdinalIgnoreCase));
+            if (localized != null && !string.IsNullOrWhiteSpace(localized.Title))
+            {
+                return localized.Title;
+            }
+        }
+
+        return measure.Title;
     }
 
     private static string? NormalizeLanguage(string? languageCode)

@@ -87,6 +87,7 @@ public class PersonnelMeasureService : IPersonnelMeasureService
             RequiredValue = dto.RequiredValue,
             Operator = MeasureValidation.NormalizeOperator(dto),
             FallbackText = dto.FallbackText.Trim(),
+            Title = MeasureValidation.Sanitize(dto.Title),
             ResourceUrl = MeasureValidation.Sanitize(dto.ResourceUrl)
         };
 
@@ -168,6 +169,7 @@ internal static class MeasureMapper
         RequiredValue = measure.RequiredValue,
         Operator = measure.Operator,
         FallbackText = measure.FallbackText,
+        Title = measure.Title,
         ResourceUrl = measure.ResourceUrl
     };
 
@@ -203,6 +205,7 @@ internal static class MeasureMapper
         RequiredValue = measure.RequiredValue,
         Operator = measure.Operator,
         FallbackText = measure.FallbackText,
+        Title = measure.Title,
         ResourceUrl = measure.ResourceUrl
     };
 }

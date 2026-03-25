@@ -102,8 +102,10 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<PatientMeasure>().Property(x => x.FallbackText).HasColumnType("text");
         modelBuilder.Entity<PatientMeasure>().Property(x => x.Title).HasColumnType("text");
         modelBuilder.Entity<PersonnelMeasure>().Property(x => x.FallbackText).HasColumnType("text");
+        modelBuilder.Entity<PersonnelMeasure>().Property(x => x.Title).HasColumnType("text");
         modelBuilder.Entity<Measurement>().Property(x => x.FallbackText).HasColumnType("text");
         modelBuilder.Entity<PatientMeasureText>().Property(x => x.Title).HasColumnType("text");
+        modelBuilder.Entity<PersonnelMeasureText>().Property(x => x.Title).HasColumnType("text");
 
         // -------------------------
         // DEFAULTS
