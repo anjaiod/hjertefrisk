@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { PatientSidebarNav } from "../../../components/organisms/PatientSidebarNav";
 import { PatientHeader } from "../../../components/organisms/PatientHeader";
 import { Button } from "../../../components/atoms/Button";
@@ -14,17 +14,11 @@ export default function Page() {
 
   const { user: localUser } = useUser();
 
-  const [tab, setTab] = useState<"ny" | "historikk">("ny");
-
   const openId = searchParams.get("open");
 
-  const patientId = localUser ? Number.parseInt(localUser.id, 10) : null;
+  const [tab, setTab] = useState<"ny" | "historikk">(openId ? "historikk" : "ny");
 
-  useEffect(() => {
-    if (openId) {
-      setTab("historikk");
-    }
-  }, [openId]);
+  const patientId = localUser ? Number.parseInt(localUser.id, 10) : null;
 
   return (
     <div className="flex">
