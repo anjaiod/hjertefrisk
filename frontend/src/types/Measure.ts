@@ -4,6 +4,8 @@ export type CreateMeasureDto = {
   requiredText?: string | null;
   requiredValue?: number | null;
   operator: string;
+  title?: string | null;
+  resourceUrl?: string | null;
   fallbackText: string;
 };
 
@@ -14,5 +16,7 @@ export type MeasureDto = {
   requiredText?: string | null;
   requiredValue?: number | null;
   operator: string;
+  title?: string | null;
+  resourceUrl?: string | null;
   fallbackText: string;
 };
