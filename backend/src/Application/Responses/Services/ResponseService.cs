@@ -109,6 +109,7 @@ public class ResponseService : IResponseService
             .OrderByDescending(aq => aq.CreatedAt)
             .Include(aq => aq.Responses)
                 .ThenInclude(r => r.Question)
+                    .ThenInclude(q => q.QueryQuestions)
             .Include(aq => aq.Responses)
                 .ThenInclude(r => r.SelectedOption)
             .ToListAsync();
@@ -117,13 +118,15 @@ public class ResponseService : IResponseService
         {
             Id = aq.Id,
             CreatedAt = DateTime.SpecifyKind(aq.CreatedAt, DateTimeKind.Utc),
-            Responses = aq.Responses.Select(r => new ResponseHistoryItemDto
-            {
-                QuestionId = r.QuestionId,
-                QuestionText = r.Question.FallbackText,
-                AnswerText = r.SelectedOption?.FallbackText ?? r.TextValue,
-                NumberValue = r.NumberValue,
-            }).ToList()
+            Responses = aq.Responses
+                .OrderBy(r => r.Question.QueryQuestions.FirstOrDefault()?.DisplayOrder ?? r.QuestionId)
+                .Select(r => new ResponseHistoryItemDto
+                {
+                    QuestionId = r.QuestionId,
+                    QuestionText = r.Question.FallbackText,
+                    AnswerText = r.SelectedOption?.FallbackText ?? r.TextValue,
+                    NumberValue = r.NumberValue,
+                }).ToList()
         });
     }
 }
