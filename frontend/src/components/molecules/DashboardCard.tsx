@@ -3,14 +3,21 @@ import { Button } from "../atoms/Button";
 type DashboardCardProps = {
   text: string;
   onClick?: () => void;
+  className?: string;
 };
 
-export function DashboardCard({ text, onClick }: DashboardCardProps) {
+export function DashboardCard({
+  text,
+  onClick,
+  className,
+}: DashboardCardProps) {
   return (
-    <div className="bg-white rounded-2xl shadow-md p-8">
-      <Button onClick={onClick} variant="confirm" className="w-full">
-        {text}
-      </Button>
-    </div>
+    <Button
+      onClick={onClick}
+      variant="confirm"
+      className={`w-full h-full rounded-2xl text-lg ${className ?? ""}`}
+    >
+      {text}
+    </Button>
   );
 }
