@@ -16,27 +16,59 @@ interface AnsweredQueryHistory {
   responses: ResponseHistoryItem[];
 }
 
-export default function QuestionnaireHistory({ patientId }: { patientId: number }) {
+export default function QuestionnaireHistory({
+  patientId,
+  initialOpenId,
+}: {
+  patientId: number;
+  initialOpenId?: number | null;
+}) {
   const [history, setHistory] = useState<AnsweredQueryHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   useEffect(() => {
+    if (!patientId) return;
+
+    setLoading(true);
+
     apiClient
-      .get<AnsweredQueryHistory[]>(`/api/Responses/patient/${patientId}/history`)
+      .get<AnsweredQueryHistory[]>(
+        `/api/Responses/patient/${patientId}/history`,
+      )
       .then((data) => {
         setHistory(data);
-        if (data.length > 0) setExpandedId(data[0].id);
-      })
-      .catch(() => setError("Kunne ikke laste historikk"))
-      .finally(() => setLoading(false));
-  }, [patientId]);
+        if (data.length > 0) {
+          if (initialOpenId != null) {
+            const found = data.find((h) => h.id === initialOpenId);
 
-  if (loading) return <p className="text-slate-500 text-sm">Laster historikk...</p>;
+            if (found) {
+              setExpandedId(found.id);
+              return;
+            }
+          }
+          setExpandedId(data[0].id);
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        setError("Kunne ikke laste historikk");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [patientId, initialOpenId]);
+
+  if (loading)
+    return <p className="text-slate-500 text-sm">Laster historikk...</p>;
   if (error) return <p className="text-red-500 text-sm">{error}</p>;
   if (history.length === 0)
-    return <p className="text-slate-500 text-sm">Ingen tidligere besvarelser funnet.</p>;
+    return (
+      <p className="text-slate-500 text-sm">
+        Ingen tidligere besvarelser funnet.
+      </p>
+    );
 
   return (
     <div className="space-y-3">
@@ -50,7 +82,10 @@ export default function QuestionnaireHistory({ patientId }: { patientId: number 
           minute: "2-digit",
         });
         return (
-          <div key={entry.id} className="rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div
+            key={entry.id}
+            className="rounded-lg border border-slate-200 bg-white shadow-sm"
+          >
             <button
               className="flex w-full items-center justify-between px-5 py-4 text-left"
               onClick={() => setExpandedId(isOpen ? null : entry.id)}
@@ -62,11 +97,16 @@ export default function QuestionnaireHistory({ patientId }: { patientId: number 
               <div className="border-t border-slate-100 px-5 py-4 space-y-2">
                 {entry.responses.map((r) => {
                   const answer =
-                    r.answerText ?? (r.numberValue != null ? String(r.numberValue) : "–");
+                    r.answerText ??
+                    (r.numberValue != null ? String(r.numberValue) : "–");
                   return (
                     <div key={r.questionId} className="flex flex-col">
-                      <span className="text-xs text-slate-500">{r.questionText}</span>
-                      <span className="text-sm font-medium text-slate-800">{answer}</span>
+                      <span className="text-xs text-slate-500">
+                        {r.questionText}
+                      </span>
+                      <span className="text-sm font-medium text-slate-800">
+                        {answer}
+                      </span>
                     </div>
                   );
                 })}

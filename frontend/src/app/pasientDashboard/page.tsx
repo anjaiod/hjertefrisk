@@ -17,6 +17,7 @@ export default function PatientDashboardPage() {
   const router = useRouter();
   const { user, isAuthReady } = useUser();
 
+  const [patientId, setPatientId] = useState<number | null>(null);
   const [height, setHeight] = useState<number | null>(null);
   const [weight, setWeight] = useState<number | null>(null);
 
@@ -38,7 +39,7 @@ export default function PatientDashboardPage() {
                 email: string;
               }>(`/api/Patients/by-supabase/${user.id}`)
             ).id;
-
+        setPatientId(localPatientId);
         const latest = await apiClient.get<LatestMeasurementResultDto[]>(
           `/api/patients/${encodeURIComponent(String(localPatientId))}/latest-measurements`,
         );
@@ -98,7 +99,13 @@ export default function PatientDashboardPage() {
             </div>
 
             <div className="grid grid-cols-3 gap-6 items-stretch">
-              <QuestionnaireList />
+              {patientId ? (
+                <QuestionnaireList patientId={patientId} />
+              ) : (
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 col-span-2 text-sm text-slate-500">
+                  Laster spørreskjema...
+                </div>
+              )}
 
               <div className="flex flex-col gap-6 h-full">
                 <DashboardCard
