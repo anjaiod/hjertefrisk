@@ -15,6 +15,8 @@ public class PatientMeasure
     public string? Operator { get; set; }
     public string FallbackText { get; set; } = "";
 
+    public string? ResourceUrl { get; set; }
+
     public Question? Question { get; set; }
     public Category? Category { get; set; }
     public QuestionOption? RequiredOptionNavigation { get; set; }
@@ -35,6 +37,8 @@ public class PersonnelMeasure
     public decimal? RequiredValue { get; set; }
     public string? Operator { get; set; }
     public string FallbackText { get; set; } = "";
+
+    public string? ResourceUrl { get; set; }
 
     public Question? Question { get; set; }
     public Category? Category { get; set; }
