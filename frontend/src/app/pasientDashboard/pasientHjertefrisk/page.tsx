@@ -16,7 +16,9 @@ export default function Page() {
 
   const openId = searchParams.get("open");
 
-  const [tab, setTab] = useState<"ny" | "historikk">(openId ? "historikk" : "ny");
+  const [tab, setTab] = useState<"ny" | "historikk">(
+    openId ? "historikk" : "ny",
+  );
 
   const patientId = localUser ? Number.parseInt(localUser.id, 10) : null;
 
