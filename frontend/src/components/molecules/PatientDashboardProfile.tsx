@@ -16,7 +16,7 @@ export function PatientDashboardProfile({
   const info = [
     hasHeight ? `${height} cm` : null,
     hasWeight ? `${weight} kg` : null,
-    typeof bmi === "number" ? bmi.toFixed(1) : null,
+    typeof bmi === "number" ? `BMI: ${bmi.toFixed(1)}` : null,
   ].filter(Boolean);
 
   return (
