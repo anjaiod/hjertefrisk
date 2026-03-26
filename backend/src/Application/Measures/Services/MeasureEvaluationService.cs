@@ -35,10 +35,33 @@ public class MeasureEvaluationService : IMeasureEvaluationService
             .Include(q => q.Severities)
             .ToListAsync();
 
-        var responses = await _db.Responses
+        // Fetch answered queries for this patient, newest first, to support fallback logic:
+        // if the latest answered query is missing responses for some questions, we fall back
+        // to the most recent earlier query that does have an answer for each question.
+        var answeredQueryOrder = await _db.AnsweredQueries
+            .AsNoTracking()
+            .Where(aq => aq.PatientId == dto.PatientId)
+            .OrderByDescending(aq => aq.CreatedAt)
+            .Select(aq => aq.Id)
+            .ToListAsync();
+
+        var allResponses = await _db.Responses
             .AsNoTracking()
             .Where(r => r.PatientId == dto.PatientId && questionIds.Contains(r.QuestionId))
-            .ToDictionaryAsync(r => r.QuestionId);
+            .ToListAsync();
+
+        var orderLookup = answeredQueryOrder
+            .Select((id, index) => (id, index))
+            .ToDictionary(x => x.id, x => x.index);
+
+        // For each question, pick the response from the most recent answered query.
+        var responses = allResponses
+            .GroupBy(r => r.QuestionId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderBy(r => orderLookup.GetValueOrDefault(r.AnsweredQueryId, int.MaxValue))
+                       .First()
+            );
 
         var patientQuestionMeasures = await _db.PatientMeasures
             .AsNoTracking()
@@ -70,7 +93,13 @@ public class MeasureEvaluationService : IMeasureEvaluationService
             .Where(m => m.TriggerType == MeasureTriggerType.Category && m.CategoryId.HasValue && categoryIds.Contains(m.CategoryId.Value))
             .ToListAsync();
 
-        var categoryScores = CalculateCategoryScores(questions, responses);
+        // Categories the patient has actually answered at least one question in.
+        var answeredCategoryIds = questions
+            .Where(q => q.CategoryId.HasValue && responses.ContainsKey(q.QuestionId))
+            .Select(q => q.CategoryId!.Value)
+            .ToHashSet();
+
+        var categoryScores = CalculateCategoryScores(questions, responses, answeredCategoryIds);
         var languageCode = NormalizeLanguage(dto.LanguageCode);
         var generatedAt = DateTime.UtcNow;
 
@@ -80,45 +109,41 @@ public class MeasureEvaluationService : IMeasureEvaluationService
         EvaluateQuestionMeasures(patientQuestionMeasures, responses, categoryScores, languageCode, generatedAt, patientResults);
         EvaluateQuestionMeasures(personnelQuestionMeasures, responses, categoryScores, languageCode, generatedAt, personnelResults);
 
-        EvaluateCategoryMeasures(patientCategoryMeasures, categoryScores, languageCode, generatedAt, patientResults);
-        EvaluateCategoryMeasures(personnelCategoryMeasures, categoryScores, languageCode, generatedAt, personnelResults);
+        EvaluateCategoryMeasures(patientCategoryMeasures, categoryScores, answeredCategoryIds, languageCode, generatedAt, patientResults);
+        EvaluateCategoryMeasures(personnelCategoryMeasures, categoryScores, answeredCategoryIds, languageCode, generatedAt, personnelResults);
 
         return new MeasureEvaluationResultDto
         {
             PatientMeasures = patientResults,
-            PersonnelMeasures = personnelResults
+            PersonnelMeasures = personnelResults,
+            CategoryScores = categoryScores
         };
     }
 
     private static Dictionary<int, int> CalculateCategoryScores(
         IEnumerable<Question> questions,
-        IReadOnlyDictionary<int, Response> responses)
+        IReadOnlyDictionary<int, Response> responses,
+        IReadOnlySet<int> answeredCategoryIds)
     {
-        var categoryScores = new Dictionary<int, int>();
+        // Seed all answered categories with 0 so the frontend always gets a score
+        // for every category the patient has actually responded to.
+        var categoryScores = answeredCategoryIds.ToDictionary(id => id, _ => 0);
 
         foreach (var question in questions)
         {
             if (!question.CategoryId.HasValue)
-            {
                 continue;
-            }
 
             if (!responses.TryGetValue(question.QuestionId, out var response) || response == null)
-            {
                 continue;
-            }
 
             foreach (var severity in question.Severities)
             {
                 if (!MatchesRule(severity.RequiredOption, severity.RequiredText, severity.RequiredValue, severity.Operator, response))
-                {
                     continue;
-                }
 
                 var categoryId = question.CategoryId.Value;
-                categoryScores[categoryId] = categoryScores.TryGetValue(categoryId, out var current)
-                    ? current + severity.Score
-                    : severity.Score;
+                categoryScores[categoryId] = categoryScores.GetValueOrDefault(categoryId) + severity.Score;
             }
         }
 
@@ -220,6 +245,7 @@ public class MeasureEvaluationService : IMeasureEvaluationService
     private static void EvaluateCategoryMeasures(
         IEnumerable<PatientMeasure> measures,
         IReadOnlyDictionary<int, int> categoryScores,
+        IReadOnlySet<int> answeredCategoryIds,
         string? languageCode,
         DateTime generatedAt,
         ICollection<PatientMeasureResultDto> results)
@@ -228,6 +254,9 @@ public class MeasureEvaluationService : IMeasureEvaluationService
 
         foreach (var group in grouped)
         {
+            if (!answeredCategoryIds.Contains(group.Key))
+                continue;
+
             var categoryScore = categoryScores.GetValueOrDefault(group.Key);
 
             foreach (var measure in group
@@ -266,6 +295,7 @@ public class MeasureEvaluationService : IMeasureEvaluationService
     private static void EvaluateCategoryMeasures(
         IEnumerable<PersonnelMeasure> measures,
         IReadOnlyDictionary<int, int> categoryScores,
+        IReadOnlySet<int> answeredCategoryIds,
         string? languageCode,
         DateTime generatedAt,
         ICollection<PersonnelMeasureResultDto> results)
@@ -274,6 +304,9 @@ public class MeasureEvaluationService : IMeasureEvaluationService
 
         foreach (var group in grouped)
         {
+            if (!answeredCategoryIds.Contains(group.Key))
+                continue;
+
             var categoryScore = categoryScores.GetValueOrDefault(group.Key);
 
             foreach (var measure in group
