@@ -51,6 +51,7 @@ export default function PatientHealthQuestionnaire() {
   const router = useRouter();
   const { user: localUser, isAuthReady } = useUser();
 
+  const [showIntro, setShowIntro] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
   const [questions, setQuestions] = useState<QueryQuestionWithDetailsDto[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -475,6 +476,62 @@ export default function PatientHealthQuestionnaire() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-gray-500">Fant ingen spørsmål i skjemaet.</p>
+      </div>
+    );
+  }
+
+  if (showIntro) {
+    return (
+      <div className="flex">
+        <main className="flex-1 bg-slate-50 p-8">
+          <div className="max-w-2xl mx-auto">
+            <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">
+              Hjertefrisk helseskjema
+            </h1>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                Om skjemaet
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Dette skjemaet brukes til å kartlegge din helse og livsstil som
+                en del av Hjertefrisk-programmet. Svarene dine hjelper
+                helsepersonellet å følge opp din helseutvikling.
+              </p>
+              <ul className="space-y-2 text-gray-600 mb-4">
+                <li className="flex items-start gap-2">
+                  <span className="text-brand-navy font-bold mt-0.5">•</span>
+                  Skjemaet tar ca. 5–10 minutter å fylle ut
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-brand-navy font-bold mt-0.5">•</span>
+                  Svarene lagres og er synlige for ditt behandlingsteam
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-brand-navy font-bold mt-0.5">•</span>
+                  Du kan navigere frem og tilbake mellom spørsmålene, og du kan trykke &quot;Hopp over&quot; på spørsmål du er usikker på, eller ikke ønsker å svare på.
+                </li>
+              </ul>
+              <p className="text-sm text-gray-500">
+                Svarene dine behandles konfidensielt i henhold til
+                gjeldende personvernregler.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowIntro(false)}
+                className="px-6 py-3 bg-brand-navy text-white rounded-xl font-medium hover:bg-brand-navy/90 transition"
+              >
+                Start skjema
+              </button>
+              <button
+                onClick={() => router.back()}
+                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition"
+              >
+                Avbryt
+              </button>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
