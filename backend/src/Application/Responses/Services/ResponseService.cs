@@ -100,4 +100,33 @@ public class ResponseService : IResponseService
             CreatedAt = r.CreatedAt
         });
     }
+
+    public async Task<IEnumerable<AnsweredQueryHistoryDto>> GetHistoryForPatientAsync(int patientId)
+    {
+        var queries = await _db.AnsweredQueries
+            .AsNoTracking()
+            .Where(aq => aq.PatientId == patientId)
+            .OrderByDescending(aq => aq.CreatedAt)
+            .Include(aq => aq.Responses)
+                .ThenInclude(r => r.Question)
+                    .ThenInclude(q => q.QueryQuestions)
+            .Include(aq => aq.Responses)
+                .ThenInclude(r => r.SelectedOption)
+            .ToListAsync();
+
+        return queries.Select(aq => new AnsweredQueryHistoryDto
+        {
+            Id = aq.Id,
+            CreatedAt = DateTime.SpecifyKind(aq.CreatedAt, DateTimeKind.Utc),
+            Responses = aq.Responses
+                .OrderBy(r => r.Question.QueryQuestions.FirstOrDefault()?.DisplayOrder ?? r.QuestionId)
+                .Select(r => new ResponseHistoryItemDto
+                {
+                    QuestionId = r.QuestionId,
+                    QuestionText = r.Question.FallbackText,
+                    AnswerText = r.SelectedOption?.FallbackText ?? r.TextValue,
+                    NumberValue = r.NumberValue,
+                }).ToList()
+        });
+    }
 }

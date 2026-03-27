@@ -1,6 +1,6 @@
 "use client";
 
-import { PatientProfile } from "../../components/molecules/PatientProfile";
+import { PatientDashboardProfile } from "../../components/molecules/PatientDashboardProfile";
 import { PatientSidebarNav } from "../../components/organisms/PatientSidebarNav";
 import { CalendarCard } from "../../components/molecules/CalendarCard";
 import { ActivityList } from "../../components/molecules/ActivityList";
@@ -17,6 +17,7 @@ export default function PatientDashboardPage() {
   const router = useRouter();
   const { user, isAuthReady } = useUser();
 
+  const [patientId, setPatientId] = useState<number | null>(null);
   const [height, setHeight] = useState<number | null>(null);
   const [weight, setWeight] = useState<number | null>(null);
 
@@ -38,7 +39,7 @@ export default function PatientDashboardPage() {
                 email: string;
               }>(`/api/Patients/by-supabase/${user.id}`)
             ).id;
-
+        setPatientId(localPatientId);
         const latest = await apiClient.get<LatestMeasurementResultDto[]>(
           `/api/patients/${encodeURIComponent(String(localPatientId))}/latest-measurements`,
         );
@@ -86,24 +87,29 @@ export default function PatientDashboardPage() {
 
         <main className="flex-1 bg-slate-50 p-8">
           <div className="max-w-7xl mx-auto flex flex-col gap-8">
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8">
-              <PatientProfile
-                name={user?.name ?? undefined}
-                height={height}
-                weight={weight}
-              />
-            </div>
+            <PatientDashboardProfile
+              name={user?.name}
+              height={height}
+              weight={weight}
+            />
 
             <div className="grid grid-cols-[320px_1fr] gap-6">
               <CalendarCard activityDate={activityDate} />
               <ActivityList activities={activities} />
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
-              <QuestionnaireList />
+            <div className="grid grid-cols-3 gap-6 items-stretch">
+              {patientId ? (
+                <QuestionnaireList patientId={patientId} />
+              ) : (
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 col-span-2 text-sm text-slate-500">
+                  Laster spørreskjema...
+                </div>
+              )}
 
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-6 h-full">
                 <DashboardCard
+                  className="flex-1"
                   text="Trykk her for å gå til din risikoside"
                   onClick={() =>
                     router.push("/pasientDashboard/pasientRisikoside")
@@ -111,6 +117,7 @@ export default function PatientDashboardPage() {
                 />
 
                 <DashboardCard
+                  className="flex-1"
                   text="Trykk her for å gå til tiltak"
                   onClick={() =>
                     router.push("/pasientDashboard/pasientTiltakside")
