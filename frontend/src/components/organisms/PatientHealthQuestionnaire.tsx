@@ -18,35 +18,6 @@ import QuestionTextArea from "../molecules/QuestionTextArea";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
 import QuestionnaireSummary from "../molecules/QuestionnaireSummary";
 
-interface QuestionOption {
-  questionOptionId: number;
-  fallbackText: string;
-  optionValue: string;
-  displayOrder: number;
-}
-
-interface QuestionDependency {
-  parentQuestionId: number;
-  childQuestionId: number;
-  triggerOptionId?: number | null;
-  triggerOptionValue?: string | null;
-  triggerTextValue: string | null;
-  operator: string;
-}
-
-interface Question {
-  questionId: number;
-  categoryId?: number | null;
-  categoryName?: string | null;
-  fallbackText: string;
-  questionType: string;
-  isRequired: boolean;
-  requiredRole: string | null;
-  displayOrder: number;
-  options: QuestionOption[];
-  dependencies: QuestionDependency[];
-}
-
 export default function PatientHealthQuestionnaire() {
   const router = useRouter();
   const { user: localUser, isAuthReady } = useUser();
@@ -324,14 +295,14 @@ export default function PatientHealthQuestionnaire() {
   });
 
   const uniqueCategories = Array.from(categoryMap.entries()).map(
-    ([id, name]) => ({
-      id,
+    ([categoryId, name]) => ({
+      categoryId,
       name,
     }),
   );
 
   const questionCategories = visibleQuestions.map((q) =>
-    uniqueCategories.findIndex((c) => c.id === q.categoryId),
+    uniqueCategories.findIndex((c) => c.categoryId === q.categoryId),
   );
 
   const categoryCounts = uniqueCategories.map(
@@ -339,7 +310,10 @@ export default function PatientHealthQuestionnaire() {
   );
 
   const categories = uniqueCategories.map((cat, i) => ({
-    name: cat.name,
+    category: {
+      categoryId: cat.categoryId,
+      name: cat.name,
+    },
     count: categoryCounts[i],
   }));
 

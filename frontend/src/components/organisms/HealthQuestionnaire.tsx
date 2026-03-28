@@ -8,37 +8,12 @@ import QuestionTextArea from "../molecules/QuestionTextArea";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
 import { apiClient } from "@/lib/apiClient";
 import { useUser } from "@/context/UserContext";
-import type { CreateMeasurementResultDto, CreateResponseDto, QueryWithQuestionsDto } from "@/types";
-
-interface QuestionOption {
-  questionOptionId: number;
-  fallbackText: string;
-  optionValue: string;
-  displayOrder: number;
-}
-
-interface QuestionDependency {
-  parentQuestionId: number;
-  childQuestionId: number;
-  triggerOptionValue?: string | null;
-  triggerTextValue: string | null;
-  operator: string;
-  triggerOptionId?: number | null;
-}
-
-interface Question {
-  questionId: number;
-  categoryId?: number | null;
-  categoryName?: string | null;
-  measurementId?: number | null;
-  fallbackText: string;
-  questionType: string;
-  isRequired: boolean;
-  requiredRole?: string | null;
-  displayOrder: number;
-  options: QuestionOption[];
-  dependencies: QuestionDependency[];
-}
+import type {
+  CreateMeasurementResultDto,
+  CreateResponseDto,
+  QueryQuestionWithDetailsDto,
+  QueryWithQuestionsDto,
+} from "@/types";
 
 function toPatientPerspective(text: string): string {
   return text
@@ -65,7 +40,7 @@ interface HealthQuestionnaireProps {
 
 export default function HealthQuestionnaire({ patientId }: HealthQuestionnaireProps) {
   const { user } = useUser();
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<QueryQuestionWithDetailsDto[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +55,7 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
         const data = await apiClient.get<QueryWithQuestionsDto>(
           "/api/Query/full/by-name/Helseskjema",
         );
-        setQuestions((data.questions ?? []) as unknown as Question[]);
+        setQuestions(data.questions ?? []);
       } catch (err) {
         setError("Noe gikk galt ved henting av spørsmål.");
         console.error(err);
@@ -96,7 +71,7 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  const shouldShowQuestion = (question: Question): boolean => {
+  const shouldShowQuestion = (question: QueryQuestionWithDetailsDto): boolean => {
     const isChild = questions.some((q) =>
       q.dependencies.some((d) => d.childQuestionId === question.questionId),
     );
@@ -144,7 +119,9 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
 
   const visibleQuestions = questions.filter(shouldShowQuestion);
 
-  const getPlaceholder = (question: Question): string | undefined => {
+  const getPlaceholder = (
+    question: QueryQuestionWithDetailsDto,
+  ): string | undefined => {
     const text = question.fallbackText.toLowerCase();
     if (text.includes("hvor høy")) return "170";
     if (text.includes("hvor mye veier")) return "70";
@@ -153,7 +130,7 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
     return undefined;
   };
 
-  const getUnit = (question: Question): string | undefined => {
+  const getUnit = (question: QueryQuestionWithDetailsDto): string | undefined => {
     const text = question.fallbackText.toLowerCase();
     if (text.includes("hvor høy")) return "cm";
     if (text.includes("hvor mye veier")) return "kg";
@@ -167,7 +144,7 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
     return undefined;
   };
 
-  const getRows = (question: Question): number | undefined => {
+  const getRows = (question: QueryQuestionWithDetailsDto): number | undefined => {
     const text = question.fallbackText.toLowerCase();
     if (text.includes("hvor mye røyker")) return 2;
     if (text.includes("vekten din endret")) return 2;
@@ -175,7 +152,7 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
     return undefined;
   };
 
-  const renderQuestion = (question: Question): ReactElement => {
+  const renderQuestion = (question: QueryQuestionWithDetailsDto): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
     const questionText = toPatientPerspective(question.fallbackText);
@@ -260,7 +237,11 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
           questions: [question],
         });
         return groups;
-      }, new Map<string, { categoryKey: string; categoryName: string; questions: Question[] }>())
+      }, new Map<string, {
+        categoryKey: string;
+        categoryName: string;
+        questions: QueryQuestionWithDetailsDto[];
+      }>())
       .values(),
   );
 
