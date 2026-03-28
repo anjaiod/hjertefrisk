@@ -35,12 +35,9 @@ public class ResponseService : IResponseService
     public async Task<ResponseDto> CreateAsync(CreateResponseDto dto)
     {
         var answeredQuery = new AnsweredQuery { PatientId = dto.PatientId };
-        _db.AnsweredQueries.Add(answeredQuery);
-        await _db.SaveChangesAsync();
-
         var entity = new Response
         {
-            AnsweredQueryId = answeredQuery.Id,
+            AnsweredQuery = answeredQuery,
             PatientId = dto.PatientId,
             QuestionId = dto.QuestionId,
             SelectedOptionId = dto.SelectedOptionId,
@@ -69,16 +66,23 @@ public class ResponseService : IResponseService
         if (incoming.Count == 0)
             return Array.Empty<ResponseDto>();
 
+        var patientId = incoming[0].PatientId;
+        if (incoming.Any(x => x.PatientId != patientId))
+            throw new ArgumentException("All responses in one bulk request must belong to the same patient.");
+
+        var normalized = incoming
+            .GroupBy(x => x.QuestionId)
+            .Select(g => g.Last())
+            .ToList();
+
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        var answeredQuery = new AnsweredQuery { PatientId = incoming[0].PatientId };
-        _db.AnsweredQueries.Add(answeredQuery);
-        await _db.SaveChangesAsync();
+        var answeredQuery = new AnsweredQuery { PatientId = patientId };
 
-        var entities = incoming.Select(dto => new Response
+        var entities = normalized.Select(dto => new Response
         {
-            AnsweredQueryId = answeredQuery.Id,
-            PatientId = dto.PatientId,
+            AnsweredQuery = answeredQuery,
+            PatientId = patientId,
             QuestionId = dto.QuestionId,
             SelectedOptionId = dto.SelectedOptionId,
             TextValue = string.IsNullOrWhiteSpace(dto.TextValue) ? null : dto.TextValue.Trim(),
