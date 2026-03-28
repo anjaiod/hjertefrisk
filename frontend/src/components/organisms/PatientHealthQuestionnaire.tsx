@@ -324,14 +324,14 @@ export default function PatientHealthQuestionnaire() {
   });
 
   const uniqueCategories = Array.from(categoryMap.entries()).map(
-    ([id, name]) => ({
-      id,
+    ([categoryId, name]) => ({
+      categoryId,
       name,
     }),
   );
 
   const questionCategories = visibleQuestions.map((q) =>
-    uniqueCategories.findIndex((c) => c.id === q.categoryId),
+    uniqueCategories.findIndex((c) => c.categoryId === q.categoryId),
   );
 
   const categoryCounts = uniqueCategories.map(
@@ -339,7 +339,10 @@ export default function PatientHealthQuestionnaire() {
   );
 
   const categories = uniqueCategories.map((cat, i) => ({
-    name: cat.name,
+    category: {
+      categoryId: cat.categoryId,
+      name: cat.name,
+    },
     count: categoryCounts[i],
   }));
 

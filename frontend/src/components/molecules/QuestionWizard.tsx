@@ -1,12 +1,8 @@
 "use client";
 
 import { ReactNode } from "react";
+import type { CategoryWithCount } from "@/types";
 import CategorizedProgressBar from "./CategorizedProgressBar";
-
-interface Category {
-  name: string;
-  count: number;
-}
 
 interface QuestionWizardProps {
   children: ReactNode;
@@ -17,7 +13,7 @@ interface QuestionWizardProps {
   onSubmit: () => void;
   isSubmitting?: boolean;
   submitLabel?: string;
-  categories?: Category[];
+  categories?: CategoryWithCount[];
   questionCategories?: number[];
   onCategoryClick?: (categoryIndex: number) => void;
 }

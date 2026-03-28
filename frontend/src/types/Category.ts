@@ -6,3 +6,8 @@ export type CategoryDto = {
   categoryId: number;
   name: string;
 };
+
+export type CategoryWithCount = {
+  category: CategoryDto;
+  count: number;
+};
