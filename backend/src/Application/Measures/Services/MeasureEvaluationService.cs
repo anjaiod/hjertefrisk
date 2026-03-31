@@ -11,13 +11,16 @@ public class MeasureEvaluationService : IMeasureEvaluationService
 {
     private readonly AppDbContext _db;
     private readonly SleepEvaluationService _sleepEvaluationService;
+    private readonly KroppsDataEvaluationService _kroppsDataEvaluationService;
 
-    private const int SleepCategoryId = 10;
+    private const int SleepCategoryId      = 10;
+    private const int KroppsDataCategoryId = 9;
 
     public MeasureEvaluationService(AppDbContext db)
     {
         _db = db;
         _sleepEvaluationService = new SleepEvaluationService();
+        _kroppsDataEvaluationService = new KroppsDataEvaluationService(db);
     }
 
     public async Task<MeasureEvaluationResultDto> EvaluateAsync(EvaluateMeasuresDto dto)
@@ -150,6 +153,38 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     ScoreThreshold   = measure.ScoreThreshold,
                     IsExclusive      = measure.IsExclusive,
                     Priority         = measure.Priority
+                });
+            }
+        }
+
+        if (answeredCategoryIds.Contains(KroppsDataCategoryId))
+        {
+            var kroppsDataTitles = await _kroppsDataEvaluationService.EvaluatePatientTitlesAsync(dto.PatientId, responses);
+            var kroppsDataMeasures = await _db.PatientMeasures
+                .AsNoTracking()
+                .Include(m => m.Texts)
+                .Where(m => m.TriggerType == MeasureTriggerType.Custom
+                         && m.CategoryId == KroppsDataCategoryId
+                         && m.Title != null
+                         && kroppsDataTitles.Contains(m.Title))
+                .ToListAsync();
+
+            foreach (var measure in kroppsDataMeasures)
+            {
+                patientResults.Add(new PatientMeasureResultDto
+                {
+                    PatientMeasureId  = measure.PatientMeasureId,
+                    Source            = MeasureResultSource.CategoryScore,
+                    CategoryId        = measure.CategoryId,
+                    TriggerQuestionId = null,
+                    CategoryScore     = categoryScores.GetValueOrDefault(KroppsDataCategoryId),
+                    Text              = ResolvePatientText(measure, languageCode),
+                    Title             = ResolvePatientTitle(measure, languageCode),
+                    ResourceUrl       = measure.ResourceUrl,
+                    GeneratedAt       = generatedAt,
+                    ScoreThreshold    = measure.ScoreThreshold,
+                    IsExclusive       = measure.IsExclusive,
+                    Priority          = measure.Priority
                 });
             }
         }

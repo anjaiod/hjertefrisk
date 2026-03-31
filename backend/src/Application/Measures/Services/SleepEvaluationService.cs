@@ -50,17 +50,20 @@ public class SleepEvaluationService
         int dagtidScore   = DagtidIds.Sum(id      => GetScore(questionMap, responses, id));
         bool hasDifferensial = DifferensialIds.Any(id => GetScore(questionMap, responses, id) >= 1);
 
-        bool nattligFlag = nattligScore >= 2;
-        bool dagtidFlag  = dagtidScore  >= 2;
+        bool nattligFlag  = nattligScore >= 2;
+        bool dagtidFlag   = dagtidScore  >= 2;
+        bool insomniFlag  = nattligFlag && dagtidFlag; // utslag på spm 1-10
 
-        // Nattlig + dagtid both flagged = subterskel or full insomni
-        if (nattligFlag && dagtidFlag)
-            return new[] { "Betydelige søvnvansker" };
+        // Høy: utslag på både spm 1-10 og differensialdiagnose
+        if (insomniFlag && hasDifferensial)
+            return ["Betydelige søvnvansker"];
 
-        if (hasDifferensial)
-            return new[] { "Noen søvnproblemer" };
+        // Middels: utslag på enten spm 1-10 eller differensialdiagnose
+        if (insomniFlag || hasDifferensial)
+            return ["Noen søvnproblemer"];
 
-        return new[] { "God søvn" };
+        // Lav: ingen flagg
+        return ["God søvn"];
     }
 
     /// <summary>
