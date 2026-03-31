@@ -58,6 +58,15 @@ function tagVariantFromCategoryScore(
   return "low";
 }
 
+function sleepTagVariant(measures: PatientMeasureResult[]): TagVariant | null {
+  if (measures.length === 0) return null;
+  const titles = measures.map((m) => m.title ?? "");
+  if (titles.some((t) => t === "Betydelige søvnvansker")) return "high";
+  if (titles.some((t) => t === "Noen søvnproblemer")) return "medium";
+  if (titles.some((t) => t === "God søvn")) return "low";
+  return null;
+}
+
 function tagTextFromVariant(variant: TagVariant): string {
   if (variant === "high") return "Høy";
   if (variant === "medium") return "Middels";
@@ -155,8 +164,10 @@ export default function PasientTiltakside() {
                   categories.map((cat) => {
                     const isSelected = selectedCategoryId === cat.categoryId;
                     const score = categoryScores[cat.categoryId];
-                    const variant =
-                      score !== undefined
+                    const isSleep = cat.name.toLowerCase().trim() === "søvn";
+                    const variant = isSleep
+                      ? sleepTagVariant(measuresByCategory[cat.categoryId] ?? [])
+                      : score !== undefined
                         ? tagVariantFromCategoryScore(cat.name, score)
                         : null;
 

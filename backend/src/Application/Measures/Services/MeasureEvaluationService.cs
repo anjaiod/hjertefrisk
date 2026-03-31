@@ -10,10 +10,14 @@ namespace backend.src.Application.Measures.Services;
 public class MeasureEvaluationService : IMeasureEvaluationService
 {
     private readonly AppDbContext _db;
+    private readonly SleepEvaluationService _sleepEvaluationService;
+
+    private const int SleepCategoryId = 10;
 
     public MeasureEvaluationService(AppDbContext db)
     {
         _db = db;
+        _sleepEvaluationService = new SleepEvaluationService();
     }
 
     public async Task<MeasureEvaluationResultDto> EvaluateAsync(EvaluateMeasuresDto dto)
@@ -111,6 +115,39 @@ public class MeasureEvaluationService : IMeasureEvaluationService
 
         EvaluateCategoryMeasures(patientCategoryMeasures, categoryScores, answeredCategoryIds, languageCode, generatedAt, patientResults);
         EvaluateCategoryMeasures(personnelCategoryMeasures, categoryScores, answeredCategoryIds, languageCode, generatedAt, personnelResults);
+
+        // Custom evaluations for categories with specialized scoring logic
+        if (answeredCategoryIds.Contains(SleepCategoryId))
+        {
+            var sleepTitles = _sleepEvaluationService.EvaluatePatientTitles(questions, responses);
+            var sleepPatientMeasures = await _db.PatientMeasures
+                .AsNoTracking()
+                .Include(m => m.Texts)
+                .Where(m => m.TriggerType == MeasureTriggerType.Custom
+                         && m.CategoryId == SleepCategoryId
+                         && m.Title != null
+                         && sleepTitles.Contains(m.Title))
+                .ToListAsync();
+
+            foreach (var measure in sleepPatientMeasures)
+            {
+                patientResults.Add(new PatientMeasureResultDto
+                {
+                    PatientMeasureId = measure.PatientMeasureId,
+                    Source           = MeasureResultSource.CategoryScore,
+                    CategoryId       = measure.CategoryId,
+                    TriggerQuestionId = null,
+                    CategoryScore    = categoryScores.GetValueOrDefault(SleepCategoryId),
+                    Text             = ResolvePatientText(measure, languageCode),
+                    Title            = ResolvePatientTitle(measure, languageCode),
+                    ResourceUrl      = measure.ResourceUrl,
+                    GeneratedAt      = generatedAt,
+                    ScoreThreshold   = measure.ScoreThreshold,
+                    IsExclusive      = measure.IsExclusive,
+                    Priority         = measure.Priority
+                });
+            }
+        }
 
         return new MeasureEvaluationResultDto
         {
