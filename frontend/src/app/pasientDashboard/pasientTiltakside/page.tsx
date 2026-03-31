@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PatientSidebarNav } from "../../../components/organisms/PatientSidebarNav";
 import { PatientHeader } from "../../../components/organisms/PatientHeader";
 import { Tag } from "../../../components/atoms/Tag";
@@ -75,11 +76,21 @@ function tagTextFromVariant(variant: TagVariant): string {
 
 export default function PasientTiltakside() {
   const { user, isAuthReady } = useUser();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [categories, setCategories] = useState<CategoryDto[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
-    null,
-  );
+
+  const selectedCategoryId = searchParams.get("kategori")
+    ? Number(searchParams.get("kategori"))
+    : (categories[0]?.categoryId ?? null);
+
+  function setSelectedCategoryId(id: number | null) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (id === null) params.delete("kategori");
+    else params.set("kategori", String(id));
+    router.replace(`?${params.toString()}`);
+  }
   const [measuresByCategory, setMeasuresByCategory] = useState<
     Record<number, PatientMeasureResult[]>
   >({});
@@ -97,7 +108,6 @@ export default function PasientTiltakside() {
         ]);
 
         setCategories(cats);
-        if (cats.length > 0) setSelectedCategoryId(cats[0].categoryId);
 
         const isNumericId = /^\d+$/.test(user!.id);
         const patientId = isNumericId
@@ -140,7 +150,9 @@ export default function PasientTiltakside() {
     (c) => c.categoryId === selectedCategoryId,
   );
   const selectedMeasures = selectedCategoryId
-    ? (measuresByCategory[selectedCategoryId] ?? [])
+    ? [...(measuresByCategory[selectedCategoryId] ?? [])].sort(
+        (a, b) => a.priority - b.priority,
+      )
     : [];
 
   return (
@@ -201,28 +213,9 @@ export default function PasientTiltakside() {
             {selectedCategory && (
               <div className="flex-1 flex flex-col gap-4">
                 <div>
-                  <button
-                    onClick={() => setSelectedCategoryId(null)}
-                    className="flex items-center gap-1 text-brand-navy font-bold text-2xl mb-1 hover:opacity-70 transition-opacity"
-                  >
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
+                  <h2 className="text-brand-navy font-bold text-2xl mb-1">
                     {selectedCategory.name}
-                  </button>
-                  <p className="text-slate-500 text-sm">
-                    Tiltak for {selectedCategory.name.toLowerCase()}
-                  </p>
+                  </h2>
                 </div>
 
                 {selectedMeasures.length === 0 ? (

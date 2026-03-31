@@ -97,13 +97,18 @@ public class MeasureEvaluationService : IMeasureEvaluationService
             .Where(m => m.TriggerType == MeasureTriggerType.Category && m.CategoryId.HasValue && categoryIds.Contains(m.CategoryId.Value))
             .ToListAsync();
 
+        var dependencies = await _db.QuestionDependencies
+            .AsNoTracking()
+            .Where(d => d.ParentQueryId == dto.QueryId && d.ChildQueryId == dto.QueryId)
+            .ToListAsync();
+
         // Categories the patient has actually answered at least one question in.
         var answeredCategoryIds = questions
             .Where(q => q.CategoryId.HasValue && responses.ContainsKey(q.QuestionId))
             .Select(q => q.CategoryId!.Value)
             .ToHashSet();
 
-        var categoryScores = CalculateCategoryScores(questions, responses, answeredCategoryIds);
+        var categoryScores = CalculateCategoryScores(questions, responses, answeredCategoryIds, dependencies);
         var languageCode = NormalizeLanguage(dto.LanguageCode);
         var generatedAt = DateTime.UtcNow;
 
@@ -160,7 +165,8 @@ public class MeasureEvaluationService : IMeasureEvaluationService
     private static Dictionary<int, int> CalculateCategoryScores(
         IEnumerable<Question> questions,
         IReadOnlyDictionary<int, Response> responses,
-        IReadOnlySet<int> answeredCategoryIds)
+        IReadOnlySet<int> answeredCategoryIds,
+        IReadOnlyList<QuestionDependency> dependencies)
     {
         // Seed all answered categories with 0 so the frontend always gets a score
         // for every category the patient has actually responded to.
@@ -174,6 +180,12 @@ public class MeasureEvaluationService : IMeasureEvaluationService
             if (!responses.TryGetValue(question.QuestionId, out var response) || response == null)
                 continue;
 
+            // Skip scoring for questions that are hidden by unmet dependencies.
+            // This prevents old fallback responses from inflating the score when
+            // a conditional question was not shown in the most recent submission.
+            if (!IsQuestionVisible(question.QuestionId, dependencies, responses))
+                continue;
+
             foreach (var severity in question.Severities)
             {
                 if (!MatchesRule(severity.RequiredOption, severity.RequiredText, severity.RequiredValue, severity.Operator, response))
@@ -185,6 +197,30 @@ public class MeasureEvaluationService : IMeasureEvaluationService
         }
 
         return categoryScores;
+    }
+
+    private static bool IsQuestionVisible(
+        int questionId,
+        IReadOnlyList<QuestionDependency> dependencies,
+        IReadOnlyDictionary<int, Response> responses)
+    {
+        var questionDeps = dependencies.Where(d => d.ChildQuestionId == questionId).ToList();
+        if (questionDeps.Count == 0) return true;
+
+        // Group by parent question. All parent groups must be satisfied (AND across parents).
+        // Within a parent group, at least one condition must match (OR within group).
+        foreach (var group in questionDeps.GroupBy(d => d.ParentQuestionId))
+        {
+            if (!responses.TryGetValue(group.Key, out var parentResponse) || parentResponse == null)
+                return false;
+
+            bool anyMatch = group.Any(dep =>
+                MatchesRule(dep.TriggerOptionId, dep.TriggerTextValue, dep.TriggerNumberValue, dep.Operator, parentResponse));
+
+            if (!anyMatch) return false;
+        }
+
+        return true;
     }
 
     private static void EvaluateQuestionMeasures(
@@ -297,8 +333,8 @@ public class MeasureEvaluationService : IMeasureEvaluationService
             var categoryScore = categoryScores.GetValueOrDefault(group.Key);
 
             foreach (var measure in group
-                .OrderByDescending(m => m.ScoreThreshold)
-                .ThenByDescending(m => m.Priority))
+                .OrderByDescending(m => m.Priority)
+                .ThenByDescending(m => m.ScoreThreshold))
             {
                 if (categoryScore < measure.ScoreThreshold)
                 {
@@ -347,8 +383,8 @@ public class MeasureEvaluationService : IMeasureEvaluationService
             var categoryScore = categoryScores.GetValueOrDefault(group.Key);
 
             foreach (var measure in group
-                .OrderByDescending(m => m.ScoreThreshold)
-                .ThenByDescending(m => m.Priority))
+                .OrderByDescending(m => m.Priority)
+                .ThenByDescending(m => m.ScoreThreshold))
             {
                 if (categoryScore < measure.ScoreThreshold)
                 {
