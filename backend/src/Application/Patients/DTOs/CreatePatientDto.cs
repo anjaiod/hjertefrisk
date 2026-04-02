@@ -16,4 +16,7 @@ public class CreatePatientDto
     [EmailAddress]
     [StringLength(320, MinimumLength = 3)]
     public required string Email { get; set; }
+
+    [StringLength(20)]
+    public string? Gender { get; set; }
 }
