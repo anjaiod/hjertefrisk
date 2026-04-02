@@ -34,6 +34,53 @@ function toPatientPerspective(text: string): string {
     );
 }
 
+const HWB_MEASUREMENT_IDS = new Set([1, 2, 10]);
+
+function groupIntoRows(
+  questions: QueryQuestionWithDetailsDto[],
+): QueryQuestionWithDetailsDto[][] {
+  const hwbIds = new Set(
+    questions
+      .filter(
+        (q) =>
+          q.measurementId != null && HWB_MEASUREMENT_IDS.has(q.measurementId),
+      )
+      .map((q) => q.questionId),
+  );
+  const bpIds = new Set(
+    questions
+      .filter((q) => {
+        const text = q.fallbackText.toLowerCase();
+        return text.includes("systolisk") || text.includes("diastolisk");
+      })
+      .map((q) => q.questionId),
+  );
+
+  const rows: QueryQuestionWithDetailsDto[][] = [];
+  let hwbRow: QueryQuestionWithDetailsDto[] | null = null;
+  let bpRow: QueryQuestionWithDetailsDto[] | null = null;
+
+  for (const q of questions) {
+    if (hwbIds.has(q.questionId)) {
+      if (!hwbRow) {
+        hwbRow = [];
+        rows.push(hwbRow);
+      }
+      hwbRow.push(q);
+    } else if (bpIds.has(q.questionId)) {
+      if (!bpRow) {
+        bpRow = [];
+        rows.push(bpRow);
+      }
+      bpRow.push(q);
+    } else {
+      rows.push([q]);
+    }
+  }
+
+  return rows;
+}
+
 interface HurtigSkjemaProps {
   patientId: number | null;
 }
@@ -86,15 +133,18 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
     const height = Number(heightRaw.replace(",", "."));
     const weight = Number(weightRaw.replace(",", "."));
 
-    if (!Number.isFinite(height) || !Number.isFinite(weight) || height <= 0) return;
+    if (!Number.isFinite(height) || !Number.isFinite(weight) || height <= 0)
+      return;
 
     const heightM = height / 100;
     const bmi = Math.round((weight / (heightM * heightM)) * 10) / 10;
 
     setAnswers((prev) => ({ ...prev, [bmiQuestion.questionId]: String(bmi) }));
-  }, [answers[heightQuestion?.questionId ?? -1], answers[weightQuestion?.questionId ?? -1]]);
+  }, [answers, bmiQuestion, heightQuestion, weightQuestion]);
 
-  const shouldShowQuestion = (question: QueryQuestionWithDetailsDto): boolean => {
+  const shouldShowQuestion = (
+    question: QueryQuestionWithDetailsDto,
+  ): boolean => {
     const isChild = questions.some((q) =>
       q.dependencies.some((d) => d.childQuestionId === question.questionId),
     );
@@ -153,7 +203,9 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
     return undefined;
   };
 
-  const getUnit = (question: QueryQuestionWithDetailsDto): string | undefined => {
+  const getUnit = (
+    question: QueryQuestionWithDetailsDto,
+  ): string | undefined => {
     const text = question.fallbackText.toLowerCase();
     if (text.includes("hvor høy")) return "cm";
     if (text.includes("hvor mye veier")) return "kg";
@@ -166,7 +218,9 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
     return undefined;
   };
 
-  const getRows = (question: QueryQuestionWithDetailsDto): number | undefined => {
+  const getRows = (
+    question: QueryQuestionWithDetailsDto,
+  ): number | undefined => {
     const text = question.fallbackText.toLowerCase();
     if (text.includes("hvor mye røyker")) return 2;
     if (text.includes("vekten din endret")) return 2;
@@ -174,7 +228,9 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
     return undefined;
   };
 
-  const renderQuestion = (question: QueryQuestionWithDetailsDto): ReactElement => {
+  const renderQuestion = (
+    question: QueryQuestionWithDetailsDto,
+  ): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
     const questionText = toPatientPerspective(question.fallbackText);
@@ -184,7 +240,9 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
         <div key={question.questionId} className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             {questionText}
-            {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            {question.isRequired && (
+              <span className="text-red-500 ml-1">*</span>
+            )}
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -195,7 +253,9 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
               className="w-32 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-700 cursor-not-allowed"
             />
             <span className="text-sm text-gray-600">kg/m²</span>
-            <span className="text-xs text-gray-400 italic">Beregnes automatisk</span>
+            <span className="text-xs text-gray-400 italic">
+              Beregnes automatisk
+            </span>
           </div>
         </div>
       );
@@ -262,30 +322,36 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
 
   const groupedQuestions = Array.from(
     visibleQuestions
-      .reduce((groups, question) => {
-        const categoryName = question.categoryName?.trim() || "Uten kategori";
-        const categoryKey =
-          question.categoryId != null
-            ? `category-${question.categoryId}`
-            : `category-name-${categoryName.toLowerCase()}`;
+      .reduce(
+        (groups, question) => {
+          const categoryName = question.categoryName?.trim() || "Uten kategori";
+          const categoryKey =
+            question.categoryId != null
+              ? `category-${question.categoryId}`
+              : `category-name-${categoryName.toLowerCase()}`;
 
-        const existingGroup = groups.get(categoryKey);
-        if (existingGroup) {
-          existingGroup.questions.push(question);
+          const existingGroup = groups.get(categoryKey);
+          if (existingGroup) {
+            existingGroup.questions.push(question);
+            return groups;
+          }
+
+          groups.set(categoryKey, {
+            categoryKey,
+            categoryName,
+            questions: [question],
+          });
           return groups;
-        }
-
-        groups.set(categoryKey, {
-          categoryKey,
-          categoryName,
-          questions: [question],
-        });
-        return groups;
-      }, new Map<string, {
-        categoryKey: string;
-        categoryName: string;
-        questions: QueryQuestionWithDetailsDto[];
-      }>())
+        },
+        new Map<
+          string,
+          {
+            categoryKey: string;
+            categoryName: string;
+            questions: QueryQuestionWithDetailsDto[];
+          }
+        >(),
+      )
       .values(),
   );
 
@@ -354,7 +420,10 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
       setIsSubmitting(true);
       await apiClient.post("/api/Responses/bulk", payload);
       if (measurementPayload.length > 0) {
-        await apiClient.post("/api/MeasurementResults/bulk", measurementPayload);
+        await apiClient.post(
+          "/api/MeasurementResults/bulk",
+          measurementPayload,
+        );
       }
       setAnswers({});
       setFormKey((k) => k + 1);
@@ -404,7 +473,19 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
                 defaultOpen={index === 0}
               >
                 <div className="px-6 py-4">
-                  {group.questions.map(renderQuestion)}
+                  {groupIntoRows(group.questions).map((row, rowIndex) =>
+                    row.length > 1 ? (
+                      <div key={rowIndex} className="flex gap-6 flex-wrap">
+                        {row.map((q) => (
+                          <div key={q.questionId} className="flex-1 min-w-40">
+                            {renderQuestion(q)}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      renderQuestion(row[0])
+                    ),
+                  )}
                 </div>
               </CollapsibleSection>
             ))}
