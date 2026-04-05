@@ -1,12 +1,9 @@
 "use client";
 
-interface Category {
-  name: string;
-  count: number;
-}
+import type { CategoryWithCount } from "@/types";
 
 interface CategorizedProgressBarProps {
-  categories: Category[];
+  categories: CategoryWithCount[];
   currentStep: number;
   questionCategories: number[];
   onCategoryClick?: (categoryIndex: number) => void;
@@ -35,8 +32,8 @@ export default function CategorizedProgressBar({
     <div className="w-full">
       {/* Category Segments */}
       <div className="flex gap-1 mb-3">
-        {categories.map((category, index) => {
-          const totalInCategory = category.count;
+        {categories.map((categoryWithCount, index) => {
+          const totalInCategory = categoryWithCount.count;
           const completedInCategory = completedPerCategory[index];
           const progressPercent =
             totalInCategory > 0
@@ -50,7 +47,7 @@ export default function CategorizedProgressBar({
               type="button"
               onClick={() => onCategoryClick?.(index)}
               className="flex-1 relative text-left"
-              style={{ flexBasis: `${(category.count / totalSteps) * 100}%` }}
+              style={{ flexBasis: `${(categoryWithCount.count / totalSteps) * 100}%` }}
             >
               {/* Background */}
               <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
@@ -68,7 +65,7 @@ export default function CategorizedProgressBar({
                     : "font-normal text-gray-600"
                 }`}
               >
-                {category.name}
+                {categoryWithCount.category.name}
               </div>
             </button>
           );
