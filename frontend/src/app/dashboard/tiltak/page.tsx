@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiClient } from "@/lib/apiClient";
 import { useUser } from "@/context/UserContext";
@@ -180,6 +180,32 @@ export default function TiltakPage() {
     };
   }, [hasPatientId, isAuthReady, patientId, user]);
 
+  const riskOrder: Record<TagVariant, number> = { high: 0, medium: 1, low: 2 };
+
+  const categoryVariant = useCallback((cat: CategoryDto): TagVariant | null => {
+    const normalized = normalizeKey(cat.name);
+    const isSleepCategory = normalized === "sovn";
+    const score = categoryScores[cat.categoryId];
+    const measures = measuresByCategory[cat.categoryId] ?? [];
+    const answered = isSleepCategory ? measures.length > 0 : score !== undefined;
+    if (!answered) return null;
+    if (isSleepCategory) {
+      return sleepTagVariant(measures);
+    }
+    return tagVariantFromCategoryScore(cat.name, score ?? 0);
+  }, [categoryScores, measuresByCategory]);
+
+  const sortedCategories = useMemo(() => {
+    return [...categories].sort((a, b) => {
+      const variantA = categoryVariant(a);
+      const variantB = categoryVariant(b);
+      const orderA = variantA ? riskOrder[variantA] ?? 3 : 4;
+      const orderB = variantB ? riskOrder[variantB] ?? 3 : 4;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.name.localeCompare(b.name);
+    });
+  }, [categories, categoryVariant]);
+
   const selectedCategory = useMemo(
     () => categories.find((cat) => cat.categoryId === selectedCategoryId) ?? null,
     [categories, selectedCategoryId],
@@ -225,16 +251,9 @@ export default function TiltakPage() {
             {loading && categories.length === 0 ? (
               <p className="text-slate-400 text-sm">Laster...</p>
             ) : (
-              categories.map((cat) => {
+              sortedCategories.map((cat) => {
                 const isSelected = selectedCategoryId === cat.categoryId;
-                const normalized = normalizeKey(cat.name);
-                const isSleepCategory = normalized === "sovn";
-                const score = categoryScores[cat.categoryId];
-                const variant = isSleepCategory
-                  ? sleepTagVariant(measuresByCategory[cat.categoryId] ?? [])
-                  : score !== undefined
-                    ? tagVariantFromCategoryScore(cat.name, score)
-                    : null;
+                const variant = categoryVariant(cat);
 
                 return (
                   <button
