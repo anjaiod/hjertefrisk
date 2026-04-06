@@ -237,4 +237,41 @@ public class PatientsController : ControllerBase
             return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
         }
     }
+
+    [HttpGet("{id:int}/response-history")]
+    public async Task<IActionResult> GetResponseHistory(int id)
+    {
+        try
+        {
+            var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
+            if (string.IsNullOrWhiteSpace(supabaseUserId))
+                return Unauthorized(new { error = "Missing x-supabase-user-id header" });
+
+            // Check if user is the patient themselves
+            var patientIdForUser = await _authService.GetPatientIdBySupabaseIdAsync(supabaseUserId);
+            if (patientIdForUser.HasValue && patientIdForUser.Value == id)
+            {
+                var history = await _responseService.GetHistoryForPatientAsync(id);
+                return Ok(history);
+            }
+
+            // Check if personnel has access
+            var personnelId = await _authService.GetPersonnelIdBySupabaseIdAsync(supabaseUserId);
+            if (personnelId.HasValue)
+            {
+                var hasAccess = await _authService.CanAccessPatientAsync(personnelId.Value, id);
+                if (!hasAccess)
+                    return Forbid();
+
+                var history = await _responseService.GetHistoryForPatientAsync(id);
+                return Ok(history);
+            }
+
+            return Unauthorized(new { error = "User not found" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
+        }
+    }
 }
