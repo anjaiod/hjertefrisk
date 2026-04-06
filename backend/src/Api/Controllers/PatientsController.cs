@@ -111,7 +111,7 @@ public class PatientsController : ControllerBase
             {
                 var hasAccess = await _authService.CanAccessPatientAsync(personnelId.Value, id);
                 if (!hasAccess)
-                    return Forbid();
+                    return StatusCode(403, new { error = "Access denied" });
 
                 var results = await _service.GetLatestMeasurementsAsync(id);
                 return Ok(results);
@@ -148,7 +148,7 @@ public class PatientsController : ControllerBase
             {
                 var hasAccess = await _authService.CanAccessPatientAsync(personnelId.Value, id);
                 if (!hasAccess)
-                    return Forbid();
+                    return StatusCode(403, new { error = "Access denied" });
 
                 var results = await _service.GetAllMeasurementsAsync(id);
                 return Ok(results);
@@ -181,7 +181,7 @@ public class PatientsController : ControllerBase
             {
                 var hasAccess = await _authService.CanAccessPatientAsync(personnelId.Value, id);
                 if (!hasAccess)
-                    return Forbid();
+                    return StatusCode(403, new { error = "Access denied" });
             }
             else
             {
@@ -219,7 +219,7 @@ public class PatientsController : ControllerBase
             {
                 var hasAccess = await _authService.CanAccessPatientAsync(personnelId.Value, id);
                 if (!hasAccess)
-                    return Forbid();
+                    return StatusCode(403, new { error = "Access denied" });
             }
             else
             {
@@ -261,7 +261,7 @@ public class PatientsController : ControllerBase
             {
                 var hasAccess = await _authService.CanAccessPatientAsync(personnelId.Value, id);
                 if (!hasAccess)
-                    return Forbid();
+                    return StatusCode(403, new { error = "Access denied" });
 
                 var history = await _responseService.GetHistoryForPatientAsync(id);
                 return Ok(history);

@@ -32,7 +32,7 @@ public class AccessAuthorizationService : IAccessAuthorizationService
         return await _db.Personnel
             .AsNoTracking()
             .Where(p => p.SupabaseUserId == supabaseUserId.Trim())
-            .Select(p => p.Id)
+            .Select(p => (int?)p.Id)
             .FirstOrDefaultAsync();
     }
 
@@ -42,7 +42,7 @@ public class AccessAuthorizationService : IAccessAuthorizationService
         return await _db.Patients
             .AsNoTracking()
             .Where(p => p.SupabaseUserId == supabaseUserId.Trim())
-            .Select(p => p.Id)
+            .Select(p => (int?)p.Id)
             .FirstOrDefaultAsync();
     }
 }
