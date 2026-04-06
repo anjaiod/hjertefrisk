@@ -1,5 +1,7 @@
 using backend.src.Application.Patients.DTOs;
 using backend.src.Application.Patients.Interfaces;
+using backend.src.Application.MeasurementResults.Interfaces;
+using backend.src.Application.MeasurementResults.DTOs;
 using backend.src.Domain.Models;
 using backend.src.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -9,10 +11,12 @@ namespace backend.src.Application.Patients.Services;
 public class PatientService : IPatientService
 {
     private readonly AppDbContext _db;
+    private readonly IMeasurementResultService _measurementResultService;
 
-    public PatientService(AppDbContext db)
+    public PatientService(AppDbContext db, IMeasurementResultService measurementResultService)
     {
         _db = db;
+        _measurementResultService = measurementResultService;
     }
 
     public async Task<IEnumerable<PatientDto>> GetAllAsync()
@@ -150,6 +154,11 @@ public class PatientService : IPatientService
                 RegisteredAt = r.RegisteredAt
             })
             .ToList();
+    }
+
+    public async Task<IEnumerable<MeasurementResultDto>> GetAllMeasurementsAsync(int patientId)
+    {
+        return await _measurementResultService.GetAllForPatientAsync(patientId);
     }
 
     private static bool IsSeverityMatch(Severity severity, int? optionId, string? textValue, decimal? numberValue)

@@ -30,7 +30,7 @@ export default function Page() {
         const [measurementsData, resultsData] = await Promise.all([
           apiClient.get<MeasurementDto[]>("/api/Measurements"),
           apiClient.get<MeasurementResultDto[]>(
-            `/api/MeasurementResults/patient/${patientId}`,
+            `/api/patients/${encodeURIComponent(patientId)}/all-measurements`,
           ),
         ]);
 
