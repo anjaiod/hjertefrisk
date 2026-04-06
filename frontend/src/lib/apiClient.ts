@@ -47,63 +47,99 @@ type RequestOptions = {
   headers?: HeadersInit;
 };
 
+function getSupabaseUserIdFromStorage(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const stored = window.localStorage.getItem("hjertefrisk:user");
+    if (!stored) return undefined;
+    const user = JSON.parse(stored) as { supabaseUserId?: string };
+    return user.supabaseUserId;
+  } catch {
+    return undefined;
+  }
+}
+
 async function request<TResponse = void>(
   path: string,
   options: RequestOptions = {},
 ): Promise<TResponse> {
   const requestUrl = `${getApiBaseUrl()}${path}`;
 
-  const response = await fetch(requestUrl, {
-    method: options.method ?? "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
+  const supabaseUserId = getSupabaseUserIdFromStorage();
+  const headers = new Headers({
+    "Content-Type": "application/json",
+    ...options.headers,
   });
 
-  if (!response.ok) {
-    const body = await response.text();
-    const fallbackMessage = `API-feil ${response.status} (${response.statusText}) for ${path}`;
+  if (supabaseUserId) {
+    headers.set("x-supabase-user-id", supabaseUserId);
+  }
 
-    let message = body.trim();
-    if (!message) {
-      message = fallbackMessage;
-    } else {
-      try {
-        const parsed = JSON.parse(message) as {
-          title?: string;
-          detail?: string;
-        };
-        const details = [parsed.title, parsed.detail]
-          .filter(Boolean)
-          .join(" - ");
-        if (details) {
-          message = details;
+  try {
+    const response = await fetch(requestUrl, {
+      method: options.method ?? "GET",
+      headers,
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      const fallbackMessage = `API-feil ${response.status} (${response.statusText}) for ${path}`;
+
+      let message = body.trim();
+      if (!message) {
+        message = fallbackMessage;
+      } else {
+        try {
+          const parsed = JSON.parse(message) as {
+            title?: string;
+            detail?: string;
+          };
+          const details = [parsed.title, parsed.detail]
+            .filter(Boolean)
+            .join(" - ");
+          if (details) {
+            message = details;
+          }
+        } catch {
+          // Response body may be plain text; keep original message in that case.
         }
-      } catch {
-        // Response body may be plain text; keep original message in that case.
       }
+
+      throw new ApiClientError(message, {
+        status: response.status,
+        statusText: response.statusText,
+        path,
+        responseBody: body,
+      });
     }
 
-    throw new ApiClientError(message, {
-      status: response.status,
-      statusText: response.statusText,
-      path,
-      responseBody: body,
-    });
-  }
+    if (response.status === 204) {
+      return undefined as TResponse;
+    }
 
-  if (response.status === 204) {
+    const contentType = response.headers.get("content-type");
+    if (contentType?.includes("application/json")) {
+      return (await response.json()) as TResponse;
+    }
+
     return undefined as TResponse;
+  } catch (error) {
+    if (error instanceof ApiClientError) {
+      throw error;
+    }
+    
+    // Enhanced error logging for network errors
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`Network error fetching ${path}:`, {
+      url: requestUrl,
+      method: options.method ?? "GET",
+      error: errorMessage,
+      hasSupabaseUserId: !!supabaseUserId,
+    });
+    
+    throw new Error(`Network error: ${errorMessage}. Details: Kunne ikke koble til API på ${getApiBaseUrl()}`);
   }
-
-  const contentType = response.headers.get("content-type");
-  if (contentType?.includes("application/json")) {
-    return (await response.json()) as TResponse;
-  }
-
-  return undefined as TResponse;
 }
 
 export const apiClient = {

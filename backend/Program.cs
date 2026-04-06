@@ -28,8 +28,9 @@ using backend.src.Application.Personnel.Services;
 using backend.src.Application.QuestionDependencies.Interfaces;
 using backend.src.Application.QuestionDependencies.Services;
 using backend.src.Application.MeasurementResults.Interfaces;
-using backend.src.Application.MeasurementResults.Services;
-
+using backend.src.Application.MeasurementResults.Services;using backend.src.Application.MeasurementResults.Services;
+using backend.src.Application.Authorization.Interfaces;
+using backend.src.Application.Authorization.Services;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -82,6 +83,7 @@ builder.Services.AddScoped<IResponseService, ResponseService>();
 builder.Services.AddScoped<IPersonnelService, PersonnelService>();
 builder.Services.AddScoped<IQuestionDependencyService, QuestionDependencyService>();
 builder.Services.AddScoped<IMeasurementResultService, MeasurementResultService>();
+builder.Services.AddScoped<IAccessAuthorizationService, AccessAuthorizationService>();
 
 // Optional but recommended for API documentation
 builder.Services.AddEndpointsApiExplorer();

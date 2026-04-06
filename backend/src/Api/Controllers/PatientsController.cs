@@ -1,5 +1,7 @@
 using backend.src.Application.Patients.DTOs;
 using backend.src.Application.Patients.Interfaces;
+using backend.src.Application.Authorization.Interfaces;
+using backend.src.Infrastructure.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.src.Api.Controllers;
@@ -9,17 +11,48 @@ namespace backend.src.Api.Controllers;
 public class PatientsController : ControllerBase
 {
     private readonly IPatientService _service;
+    private readonly IAccessAuthorizationService _authService;
 
-    public PatientsController(IPatientService service)
+    public PatientsController(IPatientService service, IAccessAuthorizationService authService)
     {
         _service = service;
+        _authService = authService;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var items = await _service.GetAllAsync();
-        return Ok(items);
+        try
+        {
+            var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
+            if (string.IsNullOrWhiteSpace(supabaseUserId))
+                return Unauthorized(new { error = "Missing x-supabase-user-id header" });
+
+            // Check if personnel
+            var personnelId = await _authService.GetPersonnelIdBySupabaseIdAsync(supabaseUserId);
+            if (personnelId.HasValue)
+            {
+                // Personnel: return only accessible patients
+                var accessibleIds = await _authService.GetAccessiblePatientIdsAsync(personnelId.Value);
+                var allPatients = await _service.GetAllAsync();
+                var filtered = allPatients.Where(p => accessibleIds.Contains(p.Id)).ToList();
+                return Ok(filtered);
+            }
+
+            // Check if patient
+            var patientId = await _authService.GetPatientIdBySupabaseIdAsync(supabaseUserId);
+            if (patientId.HasValue)
+            {
+                var patient = await _service.GetBySupabaseUserIdAsync(supabaseUserId);
+                return patient == null ? Ok(new List<PatientDto>()) : Ok(new[] { patient });
+            }
+
+            return Unauthorized(new { error = "User not found" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
+        }
     }
 
     [HttpGet("by-supabase/{supabaseUserId}")]
