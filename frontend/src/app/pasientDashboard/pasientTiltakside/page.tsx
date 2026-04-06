@@ -146,6 +146,32 @@ export default function PasientTiltakside() {
     loadData();
   }, [isAuthReady, user]);
 
+  const riskOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+  const sortedCategories = [...categories].sort((a, b) => {
+    const isSleepA = a.name.toLowerCase().trim() === "søvn";
+    const isSleepB = b.name.toLowerCase().trim() === "søvn";
+    const scoreA = categoryScores[a.categoryId];
+    const scoreB = categoryScores[b.categoryId];
+    const measuresA = measuresByCategory[a.categoryId] ?? [];
+    const measuresB = measuresByCategory[b.categoryId] ?? [];
+    const answeredA = isSleepA ? measuresA.length > 0 : scoreA !== undefined;
+    const answeredB = isSleepB ? measuresB.length > 0 : scoreB !== undefined;
+    const variantA = !answeredA
+      ? null
+      : isSleepA
+        ? sleepTagVariant(measuresA)
+        : tagVariantFromCategoryScore(a.name, scoreA ?? 0);
+    const variantB = !answeredB
+      ? null
+      : isSleepB
+        ? sleepTagVariant(measuresB)
+        : tagVariantFromCategoryScore(b.name, scoreB ?? 0);
+    const orderA = variantA != null ? (riskOrder[variantA] ?? 3) : 4;
+    const orderB = variantB != null ? (riskOrder[variantB] ?? 3) : 4;
+    return orderA - orderB;
+  });
+
   const selectedCategory = categories.find(
     (c) => c.categoryId === selectedCategoryId,
   );
@@ -173,7 +199,7 @@ export default function PasientTiltakside() {
                 {loading ? (
                   <p className="text-slate-400 text-sm">Laster...</p>
                 ) : (
-                  categories.map((cat) => {
+                  sortedCategories.map((cat) => {
                     const isSelected = selectedCategoryId === cat.categoryId;
                     const score = categoryScores[cat.categoryId];
                     const isSleep = cat.name.toLowerCase().trim() === "søvn";
