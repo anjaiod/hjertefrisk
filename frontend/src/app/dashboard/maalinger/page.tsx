@@ -113,7 +113,7 @@ export default function Page() {
 
     try {
       const saved = await apiClient.post<MeasurementResultDto[]>(
-        "/api/MeasurementResults/bulk",
+        `/api/patients/${encodeURIComponent(patientId)}/measurements`,
         payload,
       );
 

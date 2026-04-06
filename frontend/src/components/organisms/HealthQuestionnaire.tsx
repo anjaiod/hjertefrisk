@@ -323,9 +323,9 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
 
     try {
       setIsSubmitting(true);
-      await apiClient.post("/api/Responses/bulk", payload);
+      await apiClient.post(`/api/patients/${patientId}/responses`, payload);
       if (measurementPayload.length > 0) {
-        await apiClient.post("/api/MeasurementResults/bulk", measurementPayload);
+        await apiClient.post(`/api/patients/${patientId}/measurements`, measurementPayload);
       }
       setAnswers({});
       setFormKey((k) => k + 1);
