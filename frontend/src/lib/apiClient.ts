@@ -59,20 +59,39 @@ function getSupabaseUserIdFromStorage(): string | undefined {
   }
 }
 
+function getSupabaseSessionToken(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    // Find Supabase auth token dynamically (keys start with "sb-" and end with "-auth-token")
+    for (const key of Object.keys(window.localStorage)) {
+      if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
+        const authItem = window.localStorage.getItem(key);
+        if (authItem) {
+          const session = JSON.parse(authItem) as { access_token?: string };
+          return session.access_token;
+        }
+      }
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function request<TResponse = void>(
   path: string,
   options: RequestOptions = {},
 ): Promise<TResponse> {
   const requestUrl = `${getApiBaseUrl()}${path}`;
 
-  const supabaseUserId = getSupabaseUserIdFromStorage();
+  const token = getSupabaseSessionToken();
   const headers = new Headers({
     "Content-Type": "application/json",
     ...options.headers,
   });
 
-  if (supabaseUserId) {
-    headers.set("x-supabase-user-id", supabaseUserId);
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
   try {
@@ -135,7 +154,7 @@ async function request<TResponse = void>(
       url: requestUrl,
       method: options.method ?? "GET",
       error: errorMessage,
-      hasSupabaseUserId: !!supabaseUserId,
+      hasToken: !!token,
     });
     
     throw new Error(`Network error: ${errorMessage}. Details: Kunne ikke koble til API på ${getApiBaseUrl()}`);
