@@ -66,4 +66,21 @@ public class MeasurementResultService : IMeasurementResultService
                 RegisteredAt = DateTime.SpecifyKind(r.RegisteredAt, DateTimeKind.Utc),
             });
     }
+
+    public async Task<IEnumerable<MeasurementResultDto>> GetAllForPatientAsync(int patientId)
+    {
+        return await _db.MeasurementResults
+            .AsNoTracking()
+            .Where(r => r.PatientId == patientId)
+            .OrderByDescending(r => r.RegisteredAt)
+            .Select(r => new MeasurementResultDto
+            {
+                MeasurementId = r.MeasurementId,
+                PatientId = r.PatientId,
+                Result = r.Result,
+                RegisteredBy = r.RegisteredBy,
+                RegisteredAt = DateTime.SpecifyKind(r.RegisteredAt, DateTimeKind.Utc),
+            })
+            .ToListAsync();
+    }
 }

@@ -29,8 +29,11 @@ using backend.src.Application.QuestionDependencies.Interfaces;
 using backend.src.Application.QuestionDependencies.Services;
 using backend.src.Application.MeasurementResults.Interfaces;
 using backend.src.Application.MeasurementResults.Services;
-
+using backend.src.Application.Authorization.Interfaces;
+using backend.src.Application.Authorization.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,6 +53,38 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod();
     });
 });
+
+// Configure JwtBearer authentication for Supabase
+var supabaseUrl = builder.Configuration["Supabase:Url"];
+var supabaseAnonKey = builder.Configuration["Supabase:AnonKey"];
+
+if (!string.IsNullOrWhiteSpace(supabaseUrl) && !string.IsNullOrWhiteSpace(supabaseAnonKey))
+{
+    // Clean up URL (remove trailing slash if present)
+    supabaseUrl = supabaseUrl.TrimEnd('/');
+    
+    // Supabase auth URL for JWKS endpoint
+    var supabaseAuthUrl = $"{supabaseUrl}/auth/v1";
+    
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.Authority = supabaseAuthUrl;
+            options.Audience = "authenticated";
+            // CRITICAL: Disable claim type mapping to preserve 'sub' and other claims as-is
+            options.MapInboundClaims = false;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = supabaseAuthUrl,
+                ValidateAudience = true,
+                ValidAudience = "authenticated",
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ClockSkew = TimeSpan.Zero
+            };
+        });
+}
 
 builder.Services.AddControllers();
 
@@ -82,6 +117,7 @@ builder.Services.AddScoped<IResponseService, ResponseService>();
 builder.Services.AddScoped<IPersonnelService, PersonnelService>();
 builder.Services.AddScoped<IQuestionDependencyService, QuestionDependencyService>();
 builder.Services.AddScoped<IMeasurementResultService, MeasurementResultService>();
+builder.Services.AddScoped<IAccessAuthorizationService, AccessAuthorizationService>();
 
 // Optional but recommended for API documentation
 builder.Services.AddEndpointsApiExplorer();
@@ -103,6 +139,14 @@ if (!string.IsNullOrWhiteSpace(httpsPort))
 }
 
 app.UseCors(CorsPolicyName);
+
+
+if (!string.IsNullOrWhiteSpace(builder.Configuration["Supabase:Url"]) && 
+    !string.IsNullOrWhiteSpace(builder.Configuration["Supabase:AnonKey"]))
+{
+    app.UseAuthentication();
+    app.UseAuthorization();
+}
 
 app.MapControllers();
 

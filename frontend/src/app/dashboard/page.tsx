@@ -1,11 +1,14 @@
+"use client";
+
 import { PatientProfile } from "../../components/molecules/PatientProfile";
 import { TodoList } from "../../components/molecules/TodoList";
 import { RiskList } from "../../components/molecules/RiskList";
 import { FeatureCardGrid } from "../../components/molecules/FeatureCardGrid";
 
 import type { LatestMeasurementResultDto, PatientDto, ToDoDto } from "@/types";
-import { unstable_noStore as noStore } from "next/cache";
-import { getApiBaseUrl } from "@/lib/apiClient";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { apiClient } from "@/lib/apiClient";
 
 type RiskVariant = "high" | "medium" | "low";
 type CategoryRisk = { name: string; variant: RiskVariant };
@@ -28,170 +31,134 @@ const CATEGORY_RISK_THRESHOLDS: Record<
 async function getRiskCategoriesForPatient(
   patientId: string,
 ): Promise<CategoryRisk[]> {
-  const apiBaseUrl = getApiBaseUrl();
+  try {
+    const [query, categories] = await Promise.all([
+      apiClient.get<{ id: number }>("/api/Query/by-name/Helseskjema"),
+      apiClient.get<{ categoryId: number; name: string }[]>("/api/Categories"),
+    ]);
 
-  const [queryRes, catsRes] = await Promise.all([
-    fetch(`${apiBaseUrl}/api/Query/by-name/Helseskjema`, {
-      cache: "no-store",
-    }),
-    fetch(`${apiBaseUrl}/api/Categories`, { cache: "no-store" }),
-  ]);
-  if (!queryRes.ok || !catsRes.ok) return [];
-
-  const query: { id: number } = await queryRes.json();
-  const categories: { categoryId: number; name: string }[] =
-    await catsRes.json();
-
-  const evalRes = await fetch(`${apiBaseUrl}/api/measures/evaluate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+    const result = await apiClient.post<{
+      patientMeasures: { categoryId: number | null; title: string | null }[];
+      categoryScores: Record<number, number>;
+    }>("/api/measures/evaluate", {
       patientId: Number(patientId),
       queryId: query.id,
       languageCode: "no",
-    }),
-    cache: "no-store",
-  });
-  if (!evalRes.ok) return [];
+    });
 
-  const result: {
-    patientMeasures: { categoryId: number | null; title: string | null }[];
-    categoryScores: Record<number, number>;
-  } = await evalRes.json();
+    const categoryScores = result.categoryScores ?? {};
 
-  const categoryScores = result.categoryScores ?? {};
+    return categories
+      .map((cat): CategoryRisk | null => {
+        const isSleep = cat.name.toLowerCase().trim() === "søvn";
 
-  return categories
-    .map((cat): CategoryRisk | null => {
-      const isSleep = cat.name.toLowerCase().trim() === "søvn";
+        if (isSleep) {
+          const titles = result.patientMeasures
+            .filter((m) => m.categoryId === cat.categoryId)
+            .map((m) => m.title ?? "");
+          if (titles.some((t) => t === "Betydelige søvnvansker"))
+            return { name: cat.name, variant: "high" };
+          if (titles.some((t) => t === "Noen søvnproblemer"))
+            return { name: cat.name, variant: "medium" };
+          if (titles.some((t) => t === "God søvn"))
+            return { name: cat.name, variant: "low" };
+          return null;
+        }
 
-      if (isSleep) {
-        const titles = result.patientMeasures
-          .filter((m) => m.categoryId === cat.categoryId)
-          .map((m) => m.title ?? "");
-        if (titles.some((t) => t === "Betydelige søvnvansker"))
-          return { name: cat.name, variant: "high" };
-        if (titles.some((t) => t === "Noen søvnproblemer"))
+        const score = categoryScores[cat.categoryId];
+        if (score === undefined) return null;
+
+        const thresholds = CATEGORY_RISK_THRESHOLDS[cat.name.toLowerCase().trim()];
+        if (!thresholds) return null;
+
+        if (score >= thresholds.high) return { name: cat.name, variant: "high" };
+        if (thresholds.medium !== null && score >= thresholds.medium)
           return { name: cat.name, variant: "medium" };
-        if (titles.some((t) => t === "God søvn"))
-          return { name: cat.name, variant: "low" };
-        return null;
+        return { name: cat.name, variant: "low" };
+      })
+      .filter((r): r is CategoryRisk => r !== null);
+  } catch (error) {
+    console.error("Error fetching risk categories:", error);
+    return [];
+  }
+}
+
+export default function DashboardPage() {
+  const searchParams = useSearchParams();
+  const patientId = searchParams.get("patientId");
+
+  const [selectedPatient, setSelectedPatient] = useState<PatientDto | null>(null);
+  const [todos, setTodos] = useState<{ id: number; text: string; completed: boolean }[]>([]);
+  const [latestMeasurements, setLatestMeasurements] = useState<LatestMeasurementResultDto[]>([]);
+  const [risks, setRisks] = useState<CategoryRisk[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!patientId || patientId.trim() === "") {
+      setSelectedPatient(null);
+      setTodos([
+        { id: 1, text: "Måle blodtrykk", completed: false },
+        { id: 2, text: "Ta blodprøve", completed: true },
+        { id: 3, text: "Henvise til frisklivssentralen", completed: false },
+        { id: 4, text: "Logge vekt", completed: false },
+      ]);
+      setLatestMeasurements([]);
+      setRisks([]);
+      setLoading(false);
+      return;
+    }
+
+    const loadData = async () => {
+      try {
+        // Fetch patient data, todos, measurements, and risks in parallel
+        const [patients, allTodos, measurements, categoryRisks] = await Promise.all([
+          apiClient.get<PatientDto[]>("/api/patients"),
+          apiClient.get<ToDoDto[]>("/api/todos"),
+          apiClient.get<LatestMeasurementResultDto[]>(
+            `/api/patients/${encodeURIComponent(patientId)}/latest-measurements`
+          ),
+          getRiskCategoriesForPatient(patientId),
+        ]);
+
+        const patient = patients.find((p) => String(p.id) === patientId) ?? null;
+        setSelectedPatient(patient);
+
+        const filteredTodos = allTodos
+          .filter((t) => String(t.patientId) === patientId)
+          .map((t) => ({ id: t.toDoId, text: t.toDoText, completed: t.finished }));
+        setTodos(filteredTodos || []);
+
+        setLatestMeasurements(measurements || []);
+        setRisks(categoryRisks);
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+        setSelectedPatient(null);
+        setTodos([]);
+        setLatestMeasurements([]);
+        setRisks([]);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const score = categoryScores[cat.categoryId];
-      if (score === undefined) return null;
-
-      const thresholds = CATEGORY_RISK_THRESHOLDS[cat.name.toLowerCase().trim()];
-      if (!thresholds) return null;
-
-      if (score >= thresholds.high) return { name: cat.name, variant: "high" };
-      if (thresholds.medium !== null && score >= thresholds.medium)
-        return { name: cat.name, variant: "medium" };
-      return { name: cat.name, variant: "low" };
-    })
-    .filter((r): r is CategoryRisk => r !== null);
-}
-
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
-type DashboardPageProps = {
-  searchParams?:
-    | Record<string, string | string[] | undefined>
-    | Promise<Record<string, string | string[] | undefined>>;
-};
-
-function getSingleSearchParam(
-  value: string | string[] | undefined,
-): string | undefined {
-  if (typeof value === "string") return value;
-  if (Array.isArray(value)) return value[0];
-  return undefined;
-}
-
-async function getSelectedPatient(
-  patientId: string,
-): Promise<PatientDto | null> {
-  const apiBaseUrl = getApiBaseUrl();
-  const res = await fetch(`${apiBaseUrl}/api/patients`, { cache: "no-store" });
-  if (!res.ok) return null;
-
-  const patients: PatientDto[] = await res.json();
-  return patients.find((p) => String(p.id) === patientId) ?? null;
-}
-
-async function getTodosForPatient(patientId: string) {
-  const apiBaseUrl = getApiBaseUrl();
-  const res = await fetch(`${apiBaseUrl}/api/todos`, { cache: "no-store" });
-  if (!res.ok) return [] as { id: number; text: string; completed: boolean }[];
-
-  const todos: ToDoDto[] = await res.json();
-  return todos
-    .filter((t) => String(t.patientId) === patientId)
-    .map((t) => ({ id: t.toDoId, text: t.toDoText, completed: t.finished }));
-}
-
-async function getLatestMeasurementsForPatient(patientId: string) {
-  const apiBaseUrl = getApiBaseUrl();
-  const res = await fetch(
-    `${apiBaseUrl}/api/patients/${encodeURIComponent(patientId)}/latest-measurements`,
-    { cache: "no-store" },
-  );
-
-  if (!res.ok) return [] as LatestMeasurementResultDto[];
-  return (await res.json()) as LatestMeasurementResultDto[];
-}
-
-export default async function DashboardPage({
-  searchParams,
-}: DashboardPageProps) {
-  noStore();
-  const sp = await Promise.resolve(searchParams ?? {});
-  const patientId = getSingleSearchParam(sp.patientId);
-
-  const selectedPatient =
-    typeof patientId === "string" && patientId.trim() !== ""
-      ? await getSelectedPatient(patientId)
-      : null;
-
-  const todos =
-    typeof patientId === "string" && patientId.trim() !== ""
-      ? await getTodosForPatient(patientId)
-      : [
-          { id: 1, text: "Måle blodtrykk", completed: false },
-          { id: 2, text: "Ta blodprøve", completed: true },
-          { id: 3, text: "Henvise til frisklivssentralen", completed: false },
-          { id: 4, text: "Logge vekt", completed: false },
-        ];
+    loadData();
+  }, [patientId]);
 
   const patientName = selectedPatient?.name;
 
-  const latestMeasurements =
-    typeof patientId === "string" && patientId.trim() !== ""
-      ? await getLatestMeasurementsForPatient(patientId)
-      : [];
-
-  const allRisks =
-    typeof patientId === "string" && patientId.trim() !== ""
-      ? await getRiskCategoriesForPatient(patientId)
-      : [];
-
-  const highRisks = allRisks.filter((r) => r.variant === "high") as {
-    name: string;
-    variant: "high" | "medium";
-  }[];
-  const mediumRisks = allRisks.filter((r) => r.variant === "medium") as {
-    name: string;
-    variant: "high" | "medium";
-  }[];
+  const highRisks = risks.filter((r) => r.variant === "high");
+  const mediumRisks = risks.filter((r) => r.variant === "medium");
   const remaining = Math.max(0, 3 - highRisks.length);
   const risksToShow = [...highRisks, ...mediumRisks.slice(0, remaining)].slice(0, 3);
 
   const heightResult = latestMeasurements.find((m) => m.measurementId === 2);
   const weightResult = latestMeasurements.find((m) => m.measurementId === 1);
-
   const height = heightResult ? Number(heightResult.result) : null;
   const weight = weightResult ? Number(weightResult.result) : null;
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
 
   return (
     <div className="flex flex-col gap-10 max-w-7xl mx-auto">

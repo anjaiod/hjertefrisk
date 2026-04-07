@@ -47,63 +47,131 @@ type RequestOptions = {
   headers?: HeadersInit;
 };
 
+function getSupabaseSessionToken(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const allKeys = Object.keys(window.localStorage);
+    
+    // Find Supabase auth token dynamically (keys start with "sb-" and end with "-auth-token")
+    for (const key of allKeys) {
+      if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
+        const authItem = window.localStorage.getItem(key);
+        if (authItem) {
+          try {
+            const session = JSON.parse(authItem) as { access_token?: string };
+            if (session.access_token) {
+              return session.access_token;
+            }
+          } catch {
+            // Continue searching if JSON parsing fails for this key
+            continue;
+          }
+        }
+      }
+    }
+    
+    // Fallback: check for auth.session key (used by some Supabase configurations)
+    const sessionKey = allKeys.find(k => k.includes("auth") && k.includes("session"));
+    if (sessionKey) {
+      const sessionItem = window.localStorage.getItem(sessionKey);
+      if (sessionItem) {
+        try {
+          const session = JSON.parse(sessionItem) as { access_token?: string };
+          if (session.access_token) {
+            return session.access_token;
+          }
+        } catch {
+          // Continue if JSON parsing fails for fallback key
+        }
+      }
+    }
+    
+    return undefined;
+  } catch (error) {
+    return undefined;
+  }
+}
+
 async function request<TResponse = void>(
   path: string,
   options: RequestOptions = {},
 ): Promise<TResponse> {
   const requestUrl = `${getApiBaseUrl()}${path}`;
 
-  const response = await fetch(requestUrl, {
-    method: options.method ?? "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  const token = getSupabaseSessionToken();
+  
+  const headers = new Headers(options.headers);
+  headers.set("Content-Type", "application/json");
 
-  if (!response.ok) {
-    const body = await response.text();
-    const fallbackMessage = `API-feil ${response.status} (${response.statusText}) for ${path}`;
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
 
-    let message = body.trim();
-    if (!message) {
-      message = fallbackMessage;
-    } else {
-      try {
-        const parsed = JSON.parse(message) as {
-          title?: string;
-          detail?: string;
-        };
-        const details = [parsed.title, parsed.detail]
-          .filter(Boolean)
-          .join(" - ");
-        if (details) {
-          message = details;
+  try {
+    const response = await fetch(requestUrl, {
+      method: options.method ?? "GET",
+      headers,
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      const fallbackMessage = `API-feil ${response.status} (${response.statusText}) for ${path}`;
+
+      let message = body.trim();
+      if (!message) {
+        message = fallbackMessage;
+      } else {
+        try {
+          const parsed = JSON.parse(message) as {
+            title?: string;
+            detail?: string;
+          };
+          const details = [parsed.title, parsed.detail]
+            .filter(Boolean)
+            .join(" - ");
+          if (details) {
+            message = details;
+          }
+        } catch {
+          // Response body may be plain text; keep original message in that case.
         }
-      } catch {
-        // Response body may be plain text; keep original message in that case.
       }
+
+      throw new ApiClientError(message, {
+        status: response.status,
+        statusText: response.statusText,
+        path,
+        responseBody: body,
+      });
     }
 
-    throw new ApiClientError(message, {
-      status: response.status,
-      statusText: response.statusText,
-      path,
-      responseBody: body,
-    });
-  }
+    if (response.status === 204) {
+      return undefined as TResponse;
+    }
 
-  if (response.status === 204) {
+    const contentType = response.headers.get("content-type");
+    if (contentType?.includes("application/json")) {
+      return (await response.json()) as TResponse;
+    }
+
     return undefined as TResponse;
+  } catch (error) {
+    if (error instanceof ApiClientError) {
+      throw error;
+    }
+    
+    // Enhanced error logging for network errors
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`Network error fetching ${path}:`, {
+      url: requestUrl,
+      method: options.method ?? "GET",
+      error: errorMessage,
+      hasToken: !!token,
+    });
+    
+    throw new Error(`Network error: ${errorMessage}. Details: Kunne ikke koble til API på ${getApiBaseUrl()}`);
   }
-
-  const contentType = response.headers.get("content-type");
-  if (contentType?.includes("application/json")) {
-    return (await response.json()) as TResponse;
-  }
-
-  return undefined as TResponse;
 }
 
 export const apiClient = {
