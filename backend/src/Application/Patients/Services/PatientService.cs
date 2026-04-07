@@ -35,6 +35,27 @@ public class PatientService : IPatientService
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<PatientDto>> GetByIdsAsync(IEnumerable<int> ids)
+    {
+        var idList = ids.ToList();
+        if (idList.Count == 0)
+            return new List<PatientDto>();
+
+        return await _db.Patients
+            .AsNoTracking()
+            .Where(p => idList.Contains(p.Id))
+            .Select(p => new PatientDto
+            {
+                Id = p.Id,
+                SupabaseUserId = p.SupabaseUserId,
+                Name = p.Name,
+                Email = p.Email,
+                Gender = p.Gender,
+                CreatedAt = p.CreatedAt
+            })
+            .ToListAsync();
+    }
+
     public async Task<PatientDto?> GetBySupabaseUserIdAsync(string supabaseUserId)
     {
         var trimmed = supabaseUserId.Trim();

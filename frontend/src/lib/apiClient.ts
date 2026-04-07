@@ -85,10 +85,8 @@ async function request<TResponse = void>(
   const requestUrl = `${getApiBaseUrl()}${path}`;
 
   const token = getSupabaseSessionToken();
-  const headers = new Headers({
-    "Content-Type": "application/json",
-    ...options.headers,
-  });
+  const headers = new Headers(options.headers);
+  headers.set("Content-Type", "application/json");
 
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);

@@ -51,7 +51,12 @@ export default function Page() {
   const [patients, setPatients] = useState<Patient[]>([]);
 
   useEffect(() => {
-    fetchPatients().then(setPatients);
+    fetchPatients()
+      .then(setPatients)
+      .catch((error) => {
+        console.error("Failed to fetch patients:", error);
+        setPatients([]);
+      });
   }, []);
 
   return (

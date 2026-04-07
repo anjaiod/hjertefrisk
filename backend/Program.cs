@@ -28,7 +28,7 @@ using backend.src.Application.Personnel.Services;
 using backend.src.Application.QuestionDependencies.Interfaces;
 using backend.src.Application.QuestionDependencies.Services;
 using backend.src.Application.MeasurementResults.Interfaces;
-using backend.src.Application.MeasurementResults.Services;using backend.src.Application.MeasurementResults.Services;
+using backend.src.Application.MeasurementResults.Services;
 using backend.src.Application.Authorization.Interfaces;
 using backend.src.Application.Authorization.Services;
 using Microsoft.EntityFrameworkCore;

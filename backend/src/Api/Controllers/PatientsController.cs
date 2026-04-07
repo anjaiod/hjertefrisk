@@ -38,7 +38,7 @@ public class PatientsController : ControllerBase
         {
             var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
             if (string.IsNullOrWhiteSpace(supabaseUserId))
-                return Unauthorized(new { error = "Missing x-supabase-user-id header" });
+                return Unauthorized(new { error = "Missing Authorization header" });
 
             // Check if personnel
             var personnelId = await _authService.GetPersonnelIdBySupabaseIdAsync(supabaseUserId);
@@ -46,9 +46,11 @@ public class PatientsController : ControllerBase
             {
                 // Personnel: return only accessible patients
                 var accessibleIds = await _authService.GetAccessiblePatientIdsAsync(personnelId.Value);
-                var allPatients = await _service.GetAllAsync();
-                var filtered = allPatients.Where(p => accessibleIds.Contains(p.Id)).ToList();
-                return Ok(filtered);
+                // Query at DB level instead of in-memory filtering
+                if (accessibleIds.Count == 0)
+                    return Ok(new List<PatientDto>());
+                var accessiblePatients = await _service.GetByIdsAsync(accessibleIds);
+                return Ok(accessiblePatients);
             }
 
             // Check if patient
@@ -63,7 +65,9 @@ public class PatientsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
+            // Log exception server-side, return generic error to client
+            System.Diagnostics.Debug.WriteLine($"Error in GetAll: {ex}");
+            return StatusCode(500, new { error = "An error occurred while processing your request" });
         }
     }
 
@@ -95,7 +99,7 @@ public class PatientsController : ControllerBase
         {
             var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
             if (string.IsNullOrWhiteSpace(supabaseUserId))
-                return Unauthorized(new { error = "Missing x-supabase-user-id header" });
+                return Unauthorized(new { error = "Missing Authorization header" });
 
             // Check if user is the patient themselves
             var patientIdForUser = await _authService.GetPatientIdBySupabaseIdAsync(supabaseUserId);
@@ -121,7 +125,8 @@ public class PatientsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
+            System.Diagnostics.Debug.WriteLine($"Error in GetLatestMeasurements: {ex}");
+            return StatusCode(500, new { error = "An error occurred while processing your request" });
         }
     }
 
@@ -132,7 +137,7 @@ public class PatientsController : ControllerBase
         {
             var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
             if (string.IsNullOrWhiteSpace(supabaseUserId))
-                return Unauthorized(new { error = "Missing x-supabase-user-id header" });
+                return Unauthorized(new { error = "Missing Authorization header" });
 
             // Check if user is the patient themselves
             var patientIdForUser = await _authService.GetPatientIdBySupabaseIdAsync(supabaseUserId);
@@ -158,7 +163,8 @@ public class PatientsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
+            System.Diagnostics.Debug.WriteLine($"Error in GetAllMeasurements: {ex}");
+            return StatusCode(500, new { error = "An error occurred while processing your request" });
         }
     }
 
@@ -169,7 +175,7 @@ public class PatientsController : ControllerBase
         {
             var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
             if (string.IsNullOrWhiteSpace(supabaseUserId))
-                return Unauthorized(new { error = "Missing x-supabase-user-id header" });
+                return Unauthorized(new { error = "Missing Authorization header" });
 
             // Verify all responses are for the patient in the URL
             if (dtos.Any(d => d.PatientId != id))
@@ -196,7 +202,8 @@ public class PatientsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
+            System.Diagnostics.Debug.WriteLine($"Error in CreateResponses: {ex}");
+            return StatusCode(500, new { error = "An error occurred while processing your request" });
         }
     }
 
@@ -207,7 +214,7 @@ public class PatientsController : ControllerBase
         {
             var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
             if (string.IsNullOrWhiteSpace(supabaseUserId))
-                return Unauthorized(new { error = "Missing x-supabase-user-id header" });
+                return Unauthorized(new { error = "Missing Authorization header" });
 
             // Verify all measurements are for the patient in the URL
             if (dtos.Any(d => d.PatientId != id))
@@ -234,7 +241,8 @@ public class PatientsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
+            System.Diagnostics.Debug.WriteLine($"Error in CreateMeasurements: {ex}");
+            return StatusCode(500, new { error = "An error occurred while processing your request" });
         }
     }
 
@@ -245,7 +253,7 @@ public class PatientsController : ControllerBase
         {
             var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
             if (string.IsNullOrWhiteSpace(supabaseUserId))
-                return Unauthorized(new { error = "Missing x-supabase-user-id header" });
+                return Unauthorized(new { error = "Missing Authorization header" });
 
             // Check if user is the patient themselves
             var patientIdForUser = await _authService.GetPatientIdBySupabaseIdAsync(supabaseUserId);
@@ -271,7 +279,8 @@ public class PatientsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
+            System.Diagnostics.Debug.WriteLine($"Error in GetResponseHistory: {ex}");
+            return StatusCode(500, new { error = "An error occurred while processing your request" });
         }
     }
 }
