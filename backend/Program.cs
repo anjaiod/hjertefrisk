@@ -63,17 +63,22 @@ if (!string.IsNullOrWhiteSpace(supabaseUrl) && !string.IsNullOrWhiteSpace(supaba
     // Clean up URL (remove trailing slash if present)
     supabaseUrl = supabaseUrl.TrimEnd('/');
     
+    // Supabase auth URL for JWKS endpoint
+    var supabaseAuthUrl = $"{supabaseUrl}/auth/v1";
+    
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
-            options.Authority = supabaseUrl;
-            options.Audience = supabaseAnonKey;
+            options.Authority = supabaseAuthUrl;
+            options.Audience = "authenticated";
+            // CRITICAL: Disable claim type mapping to preserve 'sub' and other claims as-is
+            options.MapInboundClaims = false;
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
-                ValidIssuer = supabaseUrl,
+                ValidIssuer = supabaseAuthUrl,
                 ValidateAudience = true,
-                ValidAudience = supabaseAnonKey,
+                ValidAudience = "authenticated",
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
                 ClockSkew = TimeSpan.Zero
@@ -134,6 +139,7 @@ if (!string.IsNullOrWhiteSpace(httpsPort))
 }
 
 app.UseCors(CorsPolicyName);
+
 
 if (!string.IsNullOrWhiteSpace(builder.Configuration["Supabase:Url"]) && 
     !string.IsNullOrWhiteSpace(builder.Configuration["Supabase:AnonKey"]))
