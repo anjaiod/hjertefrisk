@@ -12,6 +12,7 @@ type RegisterFormProps = {
   name: string;
   email: string;
   password: string;
+  gender: string;
   errorMessage: string | null;
   successMessage: string | null;
   isLoading: boolean;
@@ -19,6 +20,7 @@ type RegisterFormProps = {
   onNameChange: (value: string) => void;
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
+  onGenderChange: (value: string) => void;
   onSubmit: () => Promise<void>;
 };
 
@@ -27,6 +29,7 @@ export function RegisterForm({
   name,
   email,
   password,
+  gender,
   errorMessage,
   successMessage,
   isLoading,
@@ -34,6 +37,7 @@ export function RegisterForm({
   onNameChange,
   onEmailChange,
   onPasswordChange,
+  onGenderChange,
   onSubmit,
 }: RegisterFormProps) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -79,6 +83,27 @@ export function RegisterForm({
           value={password}
           onChange={onPasswordChange}
         />
+
+        {role === "patient" && (
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="register-gender"
+              className="text-sm font-medium text-slate-700"
+            >
+              Kjønn
+            </label>
+            <select
+              id="register-gender"
+              value={gender}
+              onChange={(e) => onGenderChange(e.target.value)}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-sky"
+            >
+              <option value="">Velg kjønn</option>
+              <option value="Mann">Mann</option>
+              <option value="Kvinne">Kvinne</option>
+            </select>
+          </div>
+        )}
 
         {errorMessage ? <AuthMessage message={errorMessage} tone="error" /> : null}
         {successMessage ? (

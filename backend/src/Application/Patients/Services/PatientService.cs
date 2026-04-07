@@ -29,6 +29,7 @@ public class PatientService : IPatientService
                 SupabaseUserId = p.SupabaseUserId,
                 Name = p.Name,
                 Email = p.Email,
+                Gender = p.Gender,
                 CreatedAt = p.CreatedAt
             })
             .ToListAsync();
@@ -48,6 +49,7 @@ public class PatientService : IPatientService
                 SupabaseUserId = p.SupabaseUserId,
                 Name = p.Name,
                 Email = p.Email,
+                Gender = p.Gender,
                 CreatedAt = p.CreatedAt
             })
             .FirstOrDefaultAsync();
@@ -59,7 +61,8 @@ public class PatientService : IPatientService
         {
             SupabaseUserId = dto.SupabaseUserId.Trim(),
             Name = dto.Name.Trim(),
-            Email = dto.Email.Trim()
+            Email = dto.Email.Trim(),
+            Gender = dto.Gender?.Trim()
         };
 
         _db.Patients.Add(entity);
