@@ -24,6 +24,7 @@ export function useAuthPage() {
   const [registerName, setRegisterName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
+  const [registerGender, setRegisterGender] = useState("");
   const [registerErrorMessage, setRegisterErrorMessage] = useState<
     string | null
   >(null);
@@ -48,6 +49,7 @@ export function useAuthPage() {
       name: registerName,
       email: registerEmail,
       password: registerPassword,
+      gender: registerGender,
       errorMessage: registerErrorMessage,
       successMessage: registerSuccessMessage,
       isLoading: isRegisterLoading,
@@ -57,6 +59,7 @@ export function useAuthPage() {
       registerName,
       registerEmail,
       registerPassword,
+      registerGender,
       registerErrorMessage,
       registerSuccessMessage,
       isRegisterLoading,
@@ -151,6 +154,7 @@ export function useAuthPage() {
         name: registerName,
         email: registerEmail,
         password: registerPassword,
+        gender: registerGender || undefined,
       });
       setRegisterSuccessMessage(
         "Bruker opprettet i både Supabase og lokal database.",
@@ -158,6 +162,7 @@ export function useAuthPage() {
       setRegisterName("");
       setRegisterEmail("");
       setRegisterPassword("");
+      setRegisterGender("");
     } catch (error) {
       setRegisterErrorMessage(
         error instanceof Error ? error.message : "Kunne ikke opprette bruker.",
@@ -176,6 +181,7 @@ export function useAuthPage() {
     setRegisterName,
     setRegisterEmail,
     setRegisterPassword,
+    setRegisterGender,
     handleLoginSubmit,
     handleRegisterSubmit,
   };

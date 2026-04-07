@@ -73,7 +73,8 @@ public class PersonnelMeasureText
 public enum MeasureTriggerType
 {
     Question = 0,
-    Category = 1
+    Category = 1,
+    Custom = 2
 }
 
 public enum MeasureResultSource
