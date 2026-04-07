@@ -1,9 +1,12 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import PatientTable, { Patient } from "@/components/organisms/PatientTable";
 import { Input } from "@/components/atoms/Input";
 import { SearchBar } from "@/components/atoms/SearchBar";
 import { TagVariant } from "@/components/atoms/Tag";
 import { PatientDto } from "@/types";
-import { getApiBaseUrl } from "@/lib/apiClient";
+import { apiClient } from "@/lib/apiClient";
 
 function scoreToRiskLevel(score: number): TagVariant {
   if (score >= 7) return "high";
@@ -21,25 +24,16 @@ function formatDate(iso: string): string {
 }
 
 async function fetchPatients(): Promise<Patient[]> {
-  const apiBaseUrl = getApiBaseUrl();
-  const res = await fetch(`${apiBaseUrl}/api/patients`, { cache: "no-store" });
-  if (!res.ok) throw new Error("Kunne ikke hente pasienter");
-  const patients: PatientDto[] = await res.json();
+  const patients = await apiClient.get<PatientDto[]>("/api/patients");
 
   return Promise.all(
     patients.map(async (p) => {
       let riskLevel: TagVariant = "low";
       try {
-        const scoreRes = await fetch(
-          `${apiBaseUrl}/api/patients/${p.id}/score`,
-          {
-            cache: "no-store",
-          },
+        const scoreData = await apiClient.get<{ patientId: number; totalScore: number }>(
+          `/api/patients/${p.id}/score`
         );
-        if (scoreRes.ok) {
-          const { totalScore } = await scoreRes.json();
-          riskLevel = scoreToRiskLevel(totalScore);
-        }
+        riskLevel = scoreToRiskLevel(scoreData.totalScore);
       } catch {
         // fallback to "low" if score fetch fails
       }
@@ -53,8 +47,17 @@ async function fetchPatients(): Promise<Patient[]> {
   );
 }
 
-export default async function Page() {
-  const patients = await fetchPatients();
+export default function Page() {
+  const [patients, setPatients] = useState<Patient[]>([]);
+
+  useEffect(() => {
+    fetchPatients()
+      .then(setPatients)
+      .catch((error) => {
+        console.error("Failed to fetch patients:", error);
+        setPatients([]);
+      });
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto">

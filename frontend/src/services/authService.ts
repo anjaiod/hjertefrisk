@@ -11,11 +11,13 @@ async function createLocalUser(
   userId: string,
   name: string,
   email: string,
+  gender?: string,
 ) {
   await apiClient.post(getLocalUserEndpoint(role), {
     supabaseUserId: userId,
     name,
     email,
+    ...(role === "patient" && gender ? { gender } : {}),
   });
 }
 
@@ -35,6 +37,7 @@ export async function registerUser({
   name,
   email,
   password,
+  gender,
 }: RegisterUserInput) {
   const trimmedName = name.trim();
   const trimmedEmail = email.trim();
@@ -61,7 +64,7 @@ export async function registerUser({
     );
   }
 
-  await createLocalUser(role, userId, trimmedName, trimmedEmail);
+  await createLocalUser(role, userId, trimmedName, trimmedEmail, gender);
 }
 
 export async function signOut() {

@@ -28,18 +28,4 @@ public class ResponsesController : ControllerBase
         var created = await _service.CreateAsync(dto);
         return Created(string.Empty, created);
     }
-
-    [HttpPost("bulk")]
-    public async Task<IActionResult> UpsertBulk([FromBody] List<CreateResponseDto> dtos)
-    {
-        var updated = await _service.UpsertManyAsync(dtos);
-        return Ok(updated);
-    }
-
-    [HttpGet("patient/{patientId}/history")]
-    public async Task<IActionResult> GetHistoryForPatient(int patientId)
-    {
-        var history = await _service.GetHistoryForPatientAsync(patientId);
-        return Ok(history);
-    }
 }

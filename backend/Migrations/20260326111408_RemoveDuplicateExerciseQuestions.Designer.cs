@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.src.Infrastructure.Data;
@@ -11,9 +12,11 @@ using backend.src.Infrastructure.Data;
 namespace api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260326111408_RemoveDuplicateExerciseQuestions")]
+    partial class RemoveDuplicateExerciseQuestions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -184,9 +187,6 @@ namespace api.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Gender")
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
@@ -693,66 +693,6 @@ namespace api.Migrations
                     b.ToTable("QuestionTexts");
                 });
 
-            modelBuilder.Entity("backend.src.Domain.Models.QuickMeasure", b =>
-                {
-                    b.Property<int>("QuickMeasureId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("QuickMeasureId"));
-
-                    b.Property<int?>("CategoryId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("FallbackText")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsExclusive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Operator")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Priority")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("QuestionId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("RequiredOption")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("RequiredText")
-                        .HasColumnType("text");
-
-                    b.Property<decimal?>("RequiredValue")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("ResourceUrl")
-                        .HasColumnType("text");
-
-                    b.Property<int>("ScoreThreshold")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Title")
-                        .HasColumnType("text");
-
-                    b.Property<string>("TriggerType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("QuickMeasureId");
-
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("QuestionId");
-
-                    b.HasIndex("RequiredOption");
-
-                    b.ToTable("QuickMeasures");
-                });
-
             modelBuilder.Entity("backend.src.Domain.Models.Response", b =>
                 {
                     b.Property<int>("AnsweredQueryId")
@@ -1253,30 +1193,6 @@ namespace api.Migrations
                     b.Navigation("Question");
                 });
 
-            modelBuilder.Entity("backend.src.Domain.Models.QuickMeasure", b =>
-                {
-                    b.HasOne("backend.src.Domain.Models.Category", "Category")
-                        .WithMany("QuickMeasures")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("backend.src.Domain.Models.Question", "Question")
-                        .WithMany("QuickMeasures")
-                        .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("backend.src.Domain.Models.QuestionOption", "RequiredOptionNavigation")
-                        .WithMany()
-                        .HasForeignKey("RequiredOption")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Category");
-
-                    b.Navigation("Question");
-
-                    b.Navigation("RequiredOptionNavigation");
-                });
-
             modelBuilder.Entity("backend.src.Domain.Models.Response", b =>
                 {
                     b.HasOne("backend.src.Domain.Models.AnsweredQuery", "AnsweredQuery")
@@ -1367,8 +1283,6 @@ namespace api.Migrations
                     b.Navigation("PersonnelMeasures");
 
                     b.Navigation("Questions");
-
-                    b.Navigation("QuickMeasures");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.Language", b =>
@@ -1453,8 +1367,6 @@ namespace api.Migrations
                     b.Navigation("PersonnelMeasures");
 
                     b.Navigation("QueryQuestions");
-
-                    b.Navigation("QuickMeasures");
 
                     b.Navigation("Responses");
 

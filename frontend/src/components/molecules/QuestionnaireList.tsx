@@ -20,7 +20,7 @@ export function QuestionnaireList({ patientId }: { patientId: number }) {
 
     apiClient
       .get<AnsweredQueryHistory[]>(
-        `/api/Responses/patient/${patientId}/history`,
+        `/api/patients/${patientId}/response-history`,
       )
       .then((data) => {
         setForms(data.slice(0, 3));

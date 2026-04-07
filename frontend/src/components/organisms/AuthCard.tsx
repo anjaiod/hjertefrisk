@@ -14,6 +14,7 @@ export function AuthCard() {
     setRegisterName,
     setRegisterEmail,
     setRegisterPassword,
+    setRegisterGender,
     handleLoginSubmit,
     handleRegisterSubmit,
   } = useAuthPage();
@@ -42,6 +43,7 @@ export function AuthCard() {
         name={registerState.name}
         email={registerState.email}
         password={registerState.password}
+        gender={registerState.gender}
         errorMessage={registerState.errorMessage}
         successMessage={registerState.successMessage}
         isLoading={registerState.isLoading}
@@ -49,6 +51,7 @@ export function AuthCard() {
         onNameChange={setRegisterName}
         onEmailChange={setRegisterEmail}
         onPasswordChange={setRegisterPassword}
+        onGenderChange={setRegisterGender}
         onSubmit={handleRegisterSubmit}
       />
     </div>

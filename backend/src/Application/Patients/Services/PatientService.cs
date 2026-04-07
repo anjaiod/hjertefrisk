@@ -1,5 +1,7 @@
 using backend.src.Application.Patients.DTOs;
 using backend.src.Application.Patients.Interfaces;
+using backend.src.Application.MeasurementResults.Interfaces;
+using backend.src.Application.MeasurementResults.DTOs;
 using backend.src.Domain.Models;
 using backend.src.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -9,10 +11,12 @@ namespace backend.src.Application.Patients.Services;
 public class PatientService : IPatientService
 {
     private readonly AppDbContext _db;
+    private readonly IMeasurementResultService _measurementResultService;
 
-    public PatientService(AppDbContext db)
+    public PatientService(AppDbContext db, IMeasurementResultService measurementResultService)
     {
         _db = db;
+        _measurementResultService = measurementResultService;
     }
 
     public async Task<IEnumerable<PatientDto>> GetAllAsync()
@@ -25,6 +29,28 @@ public class PatientService : IPatientService
                 SupabaseUserId = p.SupabaseUserId,
                 Name = p.Name,
                 Email = p.Email,
+                Gender = p.Gender,
+                CreatedAt = p.CreatedAt
+            })
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<PatientDto>> GetByIdsAsync(IEnumerable<int> ids)
+    {
+        var idList = ids.ToList();
+        if (idList.Count == 0)
+            return new List<PatientDto>();
+
+        return await _db.Patients
+            .AsNoTracking()
+            .Where(p => idList.Contains(p.Id))
+            .Select(p => new PatientDto
+            {
+                Id = p.Id,
+                SupabaseUserId = p.SupabaseUserId,
+                Name = p.Name,
+                Email = p.Email,
+                Gender = p.Gender,
                 CreatedAt = p.CreatedAt
             })
             .ToListAsync();
@@ -44,6 +70,7 @@ public class PatientService : IPatientService
                 SupabaseUserId = p.SupabaseUserId,
                 Name = p.Name,
                 Email = p.Email,
+                Gender = p.Gender,
                 CreatedAt = p.CreatedAt
             })
             .FirstOrDefaultAsync();
@@ -55,7 +82,8 @@ public class PatientService : IPatientService
         {
             SupabaseUserId = dto.SupabaseUserId.Trim(),
             Name = dto.Name.Trim(),
-            Email = dto.Email.Trim()
+            Email = dto.Email.Trim(),
+            Gender = dto.Gender?.Trim()
         };
 
         _db.Patients.Add(entity);
@@ -150,6 +178,11 @@ public class PatientService : IPatientService
                 RegisteredAt = r.RegisteredAt
             })
             .ToList();
+    }
+
+    public async Task<IEnumerable<MeasurementResultDto>> GetAllMeasurementsAsync(int patientId)
+    {
+        return await _measurementResultService.GetAllForPatientAsync(patientId);
     }
 
     private static bool IsSeverityMatch(Severity severity, int? optionId, string? textValue, decimal? numberValue)
