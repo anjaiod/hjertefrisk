@@ -31,68 +31,56 @@ const CATEGORY_RISK_THRESHOLDS: Record<
 async function getRiskCategoriesForPatient(
   patientId: string,
 ): Promise<CategoryRisk[]> {
-  const apiBaseUrl = getApiBaseUrl();
+  try {
+    const [query, categories] = await Promise.all([
+      apiClient.get<{ id: number }>("/api/Query/by-name/Helseskjema"),
+      apiClient.get<{ categoryId: number; name: string }[]>("/api/Categories"),
+    ]);
 
-  const [queryRes, catsRes] = await Promise.all([
-    fetch(`${apiBaseUrl}/api/Query/by-name/Helseskjema`, {
-      cache: "no-store",
-    }),
-    fetch(`${apiBaseUrl}/api/Categories`, { cache: "no-store" }),
-  ]);
-  if (!queryRes.ok || !catsRes.ok) return [];
-
-  const query: { id: number } = await queryRes.json();
-  const categories: { categoryId: number; name: string }[] =
-    await catsRes.json();
-
-  const evalRes = await fetch(`${apiBaseUrl}/api/measures/evaluate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+    const result = await apiClient.post<{
+      patientMeasures: { categoryId: number | null; title: string | null }[];
+      categoryScores: Record<number, number>;
+    }>("/api/measures/evaluate", {
       patientId: Number(patientId),
       queryId: query.id,
       languageCode: "no",
-    }),
-    cache: "no-store",
-  });
-  if (!evalRes.ok) return [];
+    });
 
-  const result: {
-    patientMeasures: { categoryId: number | null; title: string | null }[];
-    categoryScores: Record<number, number>;
-  } = await evalRes.json();
+    const categoryScores = result.categoryScores ?? {};
 
-  const categoryScores = result.categoryScores ?? {};
+    return categories
+      .map((cat): CategoryRisk | null => {
+        const isSleep = cat.name.toLowerCase().trim() === "søvn";
 
-  return categories
-    .map((cat): CategoryRisk | null => {
-      const isSleep = cat.name.toLowerCase().trim() === "søvn";
+        if (isSleep) {
+          const titles = result.patientMeasures
+            .filter((m) => m.categoryId === cat.categoryId)
+            .map((m) => m.title ?? "");
+          if (titles.some((t) => t === "Betydelige søvnvansker"))
+            return { name: cat.name, variant: "high" };
+          if (titles.some((t) => t === "Noen søvnproblemer"))
+            return { name: cat.name, variant: "medium" };
+          if (titles.some((t) => t === "God søvn"))
+            return { name: cat.name, variant: "low" };
+          return null;
+        }
 
-      if (isSleep) {
-        const titles = result.patientMeasures
-          .filter((m) => m.categoryId === cat.categoryId)
-          .map((m) => m.title ?? "");
-        if (titles.some((t) => t === "Betydelige søvnvansker"))
-          return { name: cat.name, variant: "high" };
-        if (titles.some((t) => t === "Noen søvnproblemer"))
+        const score = categoryScores[cat.categoryId];
+        if (score === undefined) return null;
+
+        const thresholds = CATEGORY_RISK_THRESHOLDS[cat.name.toLowerCase().trim()];
+        if (!thresholds) return null;
+
+        if (score >= thresholds.high) return { name: cat.name, variant: "high" };
+        if (thresholds.medium !== null && score >= thresholds.medium)
           return { name: cat.name, variant: "medium" };
-        if (titles.some((t) => t === "God søvn"))
-          return { name: cat.name, variant: "low" };
-        return null;
-      }
-
-      const score = categoryScores[cat.categoryId];
-      if (score === undefined) return null;
-
-      const thresholds = CATEGORY_RISK_THRESHOLDS[cat.name.toLowerCase().trim()];
-      if (!thresholds) return null;
-
-      if (score >= thresholds.high) return { name: cat.name, variant: "high" };
-      if (thresholds.medium !== null && score >= thresholds.medium)
-        return { name: cat.name, variant: "medium" };
-      return { name: cat.name, variant: "low" };
-    })
-    .filter((r): r is CategoryRisk => r !== null);
+        return { name: cat.name, variant: "low" };
+      })
+      .filter((r): r is CategoryRisk => r !== null);
+  } catch (error) {
+    console.error("Error fetching risk categories:", error);
+    return [];
+  }
 }
 
 export default function DashboardPage() {
@@ -102,6 +90,7 @@ export default function DashboardPage() {
   const [selectedPatient, setSelectedPatient] = useState<PatientDto | null>(null);
   const [todos, setTodos] = useState<{ id: number; text: string; completed: boolean }[]>([]);
   const [latestMeasurements, setLatestMeasurements] = useState<LatestMeasurementResultDto[]>([]);
+  const [risks, setRisks] = useState<CategoryRisk[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -114,6 +103,7 @@ export default function DashboardPage() {
         { id: 4, text: "Logge vekt", completed: false },
       ]);
       setLatestMeasurements([]);
+      setRisks([]);
       setLoading(false);
       return;
     }
@@ -137,11 +127,16 @@ export default function DashboardPage() {
           `/api/patients/${encodeURIComponent(patientId)}/latest-measurements`
         );
         setLatestMeasurements(measurements || []);
+
+        // Get risk categories
+        const categoryRisks = await getRiskCategoriesForPatient(patientId);
+        setRisks(categoryRisks);
       } catch (error) {
         console.error("Error loading dashboard data:", error);
         setSelectedPatient(null);
         setTodos([]);
         setLatestMeasurements([]);
+        setRisks([]);
       } finally {
         setLoading(false);
       }
@@ -152,24 +147,8 @@ export default function DashboardPage() {
 
   const patientName = selectedPatient?.name;
 
-  const latestMeasurements =
-    typeof patientId === "string" && patientId.trim() !== ""
-      ? await getLatestMeasurementsForPatient(patientId)
-      : [];
-
-  const allRisks =
-    typeof patientId === "string" && patientId.trim() !== ""
-      ? await getRiskCategoriesForPatient(patientId)
-      : [];
-
-  const highRisks = allRisks.filter((r) => r.variant === "high") as {
-    name: string;
-    variant: "high" | "medium";
-  }[];
-  const mediumRisks = allRisks.filter((r) => r.variant === "medium") as {
-    name: string;
-    variant: "high" | "medium";
-  }[];
+  const highRisks = risks.filter((r) => r.variant === "high");
+  const mediumRisks = risks.filter((r) => r.variant === "medium");
   const remaining = Math.max(0, 3 - highRisks.length);
   const risksToShow = [...highRisks, ...mediumRisks.slice(0, remaining)].slice(0, 3);
 
