@@ -57,8 +57,15 @@ function getSupabaseSessionToken(): string | undefined {
       if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
         const authItem = window.localStorage.getItem(key);
         if (authItem) {
-          const session = JSON.parse(authItem) as { access_token?: string };
-          return session.access_token;
+          try {
+            const session = JSON.parse(authItem) as { access_token?: string };
+            if (session.access_token) {
+              return session.access_token;
+            }
+          } catch {
+            // Continue searching if JSON parsing fails for this key
+            continue;
+          }
         }
       }
     }
@@ -68,9 +75,13 @@ function getSupabaseSessionToken(): string | undefined {
     if (sessionKey) {
       const sessionItem = window.localStorage.getItem(sessionKey);
       if (sessionItem) {
-        const session = JSON.parse(sessionItem) as { access_token?: string };
-        if (session.access_token) {
-          return session.access_token;
+        try {
+          const session = JSON.parse(sessionItem) as { access_token?: string };
+          if (session.access_token) {
+            return session.access_token;
+          }
+        } catch {
+          // Continue if JSON parsing fails for fallback key
         }
       }
     }
