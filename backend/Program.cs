@@ -32,6 +32,8 @@ using backend.src.Application.MeasurementResults.Services;
 using backend.src.Application.Authorization.Interfaces;
 using backend.src.Application.Authorization.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,15 +54,32 @@ builder.Services.AddCors(options =>
     });
 });
 
-// TODO: Configure JwtBearer authentication for Supabase
-// Currently, authorization is based on manual JWT parsing without signature validation.
-// For production security, configure JWT bearer authentication:
-// 1. builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-//    .AddJwtBearer(options => { options.Authority = "YOUR_SUPABASE_URL"; ... });
-// 2. Add app.UseAuthentication() and app.UseAuthorization() in middleware
-// 3. Use [Authorize] attributes on controllers
-// 4. Read user ID from HttpContext.User.FindFirst("sub")?.Value
-// See: AuthExtensions.cs GetSupabaseUserIdFromContext() for details
+// Configure JwtBearer authentication for Supabase
+var supabaseUrl = builder.Configuration["Supabase:Url"];
+var supabaseAnonKey = builder.Configuration["Supabase:AnonKey"];
+
+if (!string.IsNullOrWhiteSpace(supabaseUrl) && !string.IsNullOrWhiteSpace(supabaseAnonKey))
+{
+    // Clean up URL (remove trailing slash if present)
+    supabaseUrl = supabaseUrl.TrimEnd('/');
+    
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.Authority = supabaseUrl;
+            options.Audience = supabaseAnonKey;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = supabaseUrl,
+                ValidateAudience = true,
+                ValidAudience = supabaseAnonKey,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ClockSkew = TimeSpan.Zero
+            };
+        });
+}
 
 builder.Services.AddControllers();
 
@@ -116,9 +135,12 @@ if (!string.IsNullOrWhiteSpace(httpsPort))
 
 app.UseCors(CorsPolicyName);
 
-// TODO: Uncomment when JwtBearer authentication is configured
-// app.UseAuthentication();
-// app.UseAuthorization();
+if (!string.IsNullOrWhiteSpace(builder.Configuration["Supabase:Url"]) && 
+    !string.IsNullOrWhiteSpace(builder.Configuration["Supabase:AnonKey"]))
+{
+    app.UseAuthentication();
+    app.UseAuthorization();
+}
 
 app.MapControllers();
 
