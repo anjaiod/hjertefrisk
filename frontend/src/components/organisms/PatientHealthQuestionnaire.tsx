@@ -230,9 +230,9 @@ export default function PatientHealthQuestionnaire() {
 
     try {
       setIsSubmitting(true);
-      await apiClient.post("/api/Responses/bulk", payload);
+      await apiClient.post(`/api/patients/${patientId}/responses`, payload);
       if (measurementPayload.length > 0) {
-        await apiClient.post("/api/MeasurementResults/bulk", measurementPayload);
+        await apiClient.post(`/api/patients/${patientId}/measurements`, measurementPayload);
       }
       router.push("/pasientDashboard");
     } catch (err) {

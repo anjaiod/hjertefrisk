@@ -1,7 +1,7 @@
 import { Tag } from "../atoms/Tag";
 import type { TagVariant } from "../atoms/Tag";
 
-type RiskItem = { name: string; variant: "high" | "medium" };
+type RiskItem = { name: string; variant: "high" | "medium" | "low" };
 
 function tagLabel(variant: TagVariant): string {
   if (variant === "high") return "Høy";
