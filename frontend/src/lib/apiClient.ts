@@ -85,8 +85,6 @@ async function request<TResponse = void>(
   path: string,
   options: RequestOptions = {},
 ): Promise<TResponse> {
-  console.log("📡 API Request:", { path, method: options.method ?? "GET" });
-  
   const requestUrl = `${getApiBaseUrl()}${path}`;
 
   const token = getSupabaseSessionToken();
