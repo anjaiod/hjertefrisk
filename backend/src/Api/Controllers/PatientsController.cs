@@ -173,6 +173,10 @@ public class PatientsController : ControllerBase
     {
         try
         {
+            // Validate input
+            if (dtos == null || !dtos.Any())
+                return BadRequest(new { error = "No response items were provided" });
+
             var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
             if (string.IsNullOrWhiteSpace(supabaseUserId))
                 return Unauthorized(new { error = "Missing Authorization header" });
@@ -212,6 +216,10 @@ public class PatientsController : ControllerBase
     {
         try
         {
+            // Validate input
+            if (dtos == null || !dtos.Any())
+                return BadRequest(new { error = "No measurements were provided" });
+
             var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
             if (string.IsNullOrWhiteSpace(supabaseUserId))
                 return Unauthorized(new { error = "Missing Authorization header" });

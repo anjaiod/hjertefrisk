@@ -32,6 +32,8 @@ using backend.src.Application.MeasurementResults.Services;
 using backend.src.Application.Authorization.Interfaces;
 using backend.src.Application.Authorization.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,6 +53,33 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod();
     });
 });
+
+// Configure JwtBearer authentication for Supabase
+var supabaseUrl = builder.Configuration["Supabase:Url"];
+var supabaseAnonKey = builder.Configuration["Supabase:AnonKey"];
+
+if (!string.IsNullOrWhiteSpace(supabaseUrl) && !string.IsNullOrWhiteSpace(supabaseAnonKey))
+{
+    // Clean up URL (remove trailing slash if present)
+    supabaseUrl = supabaseUrl.TrimEnd('/');
+    
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.Authority = supabaseUrl;
+            options.Audience = supabaseAnonKey;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = supabaseUrl,
+                ValidateAudience = true,
+                ValidAudience = supabaseAnonKey,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ClockSkew = TimeSpan.Zero
+            };
+        });
+}
 
 builder.Services.AddControllers();
 
@@ -105,6 +134,13 @@ if (!string.IsNullOrWhiteSpace(httpsPort))
 }
 
 app.UseCors(CorsPolicyName);
+
+if (!string.IsNullOrWhiteSpace(builder.Configuration["Supabase:Url"]) && 
+    !string.IsNullOrWhiteSpace(builder.Configuration["Supabase:AnonKey"]))
+{
+    app.UseAuthentication();
+    app.UseAuthorization();
+}
 
 app.MapControllers();
 

@@ -110,26 +110,25 @@ export default function DashboardPage() {
 
     const loadData = async () => {
       try {
-        // Get all patients
-        const patients = await apiClient.get<PatientDto[]>("/api/patients");
+        // Fetch patient data, todos, measurements, and risks in parallel
+        const [patients, allTodos, measurements, categoryRisks] = await Promise.all([
+          apiClient.get<PatientDto[]>("/api/patients"),
+          apiClient.get<ToDoDto[]>("/api/todos"),
+          apiClient.get<LatestMeasurementResultDto[]>(
+            `/api/patients/${encodeURIComponent(patientId)}/latest-measurements`
+          ),
+          getRiskCategoriesForPatient(patientId),
+        ]);
+
         const patient = patients.find((p) => String(p.id) === patientId) ?? null;
         setSelectedPatient(patient);
 
-        // Get todos
-        const allTodos = await apiClient.get<ToDoDto[]>("/api/todos");
         const filteredTodos = allTodos
           .filter((t) => String(t.patientId) === patientId)
           .map((t) => ({ id: t.toDoId, text: t.toDoText, completed: t.finished }));
         setTodos(filteredTodos || []);
 
-        // Get latest measurements
-        const measurements = await apiClient.get<LatestMeasurementResultDto[]>(
-          `/api/patients/${encodeURIComponent(patientId)}/latest-measurements`
-        );
         setLatestMeasurements(measurements || []);
-
-        // Get risk categories
-        const categoryRisks = await getRiskCategoriesForPatient(patientId);
         setRisks(categoryRisks);
       } catch (error) {
         console.error("Error loading dashboard data:", error);

@@ -47,18 +47,6 @@ type RequestOptions = {
   headers?: HeadersInit;
 };
 
-function getSupabaseUserIdFromStorage(): string | undefined {
-  if (typeof window === "undefined") return undefined;
-  try {
-    const stored = window.localStorage.getItem("hjertefrisk:user");
-    if (!stored) return undefined;
-    const user = JSON.parse(stored) as { supabaseUserId?: string };
-    return user.supabaseUserId;
-  } catch {
-    return undefined;
-  }
-}
-
 function getSupabaseSessionToken(): string | undefined {
   if (typeof window === "undefined") return undefined;
   try {
