@@ -24,6 +24,7 @@ public class AppDbContext : DbContext
     public DbSet<ToDo> ToDos => Set<ToDo>();
     public DbSet<PatientMeasure> PatientMeasures => Set<PatientMeasure>();
     public DbSet<PersonnelMeasure> PersonnelMeasures => Set<PersonnelMeasure>();
+    public DbSet<QuickMeasure> QuickMeasures => Set<QuickMeasure>();
     public DbSet<Severity> Severities => Set<Severity>();
     public DbSet<PatientMeasureText> PatientMeasureTexts => Set<PatientMeasureText>();
     public DbSet<PersonnelMeasureText> PersonnelMeasureTexts => Set<PersonnelMeasureText>();
@@ -335,6 +336,37 @@ public class AppDbContext : DbContext
             .HasOne(x => x.Language)
             .WithMany(l => l.PersonnelMeasureTexts)
             .HasForeignKey(x => x.LanguageCode);
+
+        // QuickMeasure
+        modelBuilder.Entity<QuickMeasure>()
+            .Property(x => x.TriggerType)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<QuickMeasure>()
+            .Property(x => x.FallbackText)
+            .HasColumnType("text");
+
+        modelBuilder.Entity<QuickMeasure>()
+            .Property(x => x.Title)
+            .HasColumnType("text");
+
+        modelBuilder.Entity<QuickMeasure>()
+            .HasOne(x => x.Question)
+            .WithMany(q => q.QuickMeasures)
+            .HasForeignKey(x => x.QuestionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<QuickMeasure>()
+            .HasOne(x => x.Category)
+            .WithMany(c => c.QuickMeasures)
+            .HasForeignKey(x => x.CategoryId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<QuickMeasure>()
+            .HasOne(x => x.RequiredOptionNavigation)
+            .WithMany()
+            .HasForeignKey(x => x.RequiredOption)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Severity
         modelBuilder.Entity<Severity>()

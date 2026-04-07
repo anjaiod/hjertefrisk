@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactElement, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import CollapsibleSection from "../molecules/CollapsibleSection";
 import QuestionRadio from "../molecules/QuestionRadio";
 import QuestionNumber from "../molecules/QuestionNumber";
@@ -87,7 +88,9 @@ interface HurtigSkjemaProps {
 
 export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
   const { user } = useUser();
+  const router = useRouter();
   const [questions, setQuestions] = useState<QueryQuestionWithDetailsDto[]>([]);
+  const [queryId, setQueryId] = useState<number | null>(null);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -102,6 +105,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
         const data = await apiClient.get<QueryWithQuestionsDto>(
           "/api/Query/full/by-name/HurtigHjertefrisk",
         );
+        setQueryId(data.id);
         setQuestions(data.questions ?? []);
       } catch (err) {
         setError("Noe gikk galt ved henting av spørsmål.");
@@ -118,16 +122,15 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
   const weightQuestion = questions.find((q) => q.measurementId === 1);
   const bmiQuestion = questions.find((q) => q.measurementId === 10);
 
+  const heightRaw = heightQuestion ? (answers[heightQuestion.questionId] ?? "") : "";
+  const weightRaw = weightQuestion ? (answers[weightQuestion.questionId] ?? "") : "";
+
   const updateAnswer = (questionId: number, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
   useEffect(() => {
     if (!heightQuestion || !weightQuestion || !bmiQuestion) return;
-
-    const heightRaw = answers[heightQuestion.questionId];
-    const weightRaw = answers[weightQuestion.questionId];
-
     if (!heightRaw || !weightRaw) return;
 
     const height = Number(heightRaw.replace(",", "."));
@@ -140,7 +143,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
     const bmi = Math.round((weight / (heightM * heightM)) * 10) / 10;
 
     setAnswers((prev) => ({ ...prev, [bmiQuestion.questionId]: String(bmi) }));
-  }, [answers, bmiQuestion, heightQuestion, weightQuestion]);
+  }, [heightRaw, weightRaw, bmiQuestion, heightQuestion, weightQuestion]);
 
   const shouldShowQuestion = (
     question: QueryQuestionWithDetailsDto,
@@ -425,10 +428,17 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
           measurementPayload,
         );
       }
-      setAnswers({});
-      setFormKey((k) => k + 1);
-      setSubmitSuccess("Skjema sendt inn!");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      if (queryId != null) {
+        router.push(
+          `/dashboard/hurtigskjema/tiltak?patientId=${patientId}&queryId=${queryId}`,
+        );
+      } else {
+        setAnswers({});
+        setFormKey((k) => k + 1);
+        setSubmitSuccess("Skjema sendt inn!");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     } catch (err) {
       setSubmitError("Kunne ikke lagre svarene.");
       console.error(err);
@@ -506,6 +516,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
             </button>
           </div>
         </form>
+
       </main>
     </div>
   );
