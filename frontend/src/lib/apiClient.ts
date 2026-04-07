@@ -50,8 +50,10 @@ type RequestOptions = {
 function getSupabaseSessionToken(): string | undefined {
   if (typeof window === "undefined") return undefined;
   try {
+    const allKeys = Object.keys(window.localStorage);
+    
     // Find Supabase auth token dynamically (keys start with "sb-" and end with "-auth-token")
-    for (const key of Object.keys(window.localStorage)) {
+    for (const key of allKeys) {
       if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
         const authItem = window.localStorage.getItem(key);
         if (authItem) {
@@ -60,8 +62,21 @@ function getSupabaseSessionToken(): string | undefined {
         }
       }
     }
+    
+    // Fallback: check for auth.session key (used by some Supabase configurations)
+    const sessionKey = allKeys.find(k => k.includes("auth") && k.includes("session"));
+    if (sessionKey) {
+      const sessionItem = window.localStorage.getItem(sessionKey);
+      if (sessionItem) {
+        const session = JSON.parse(sessionItem) as { access_token?: string };
+        if (session.access_token) {
+          return session.access_token;
+        }
+      }
+    }
+    
     return undefined;
-  } catch {
+  } catch (error) {
     return undefined;
   }
 }
@@ -70,9 +85,12 @@ async function request<TResponse = void>(
   path: string,
   options: RequestOptions = {},
 ): Promise<TResponse> {
+  console.log("📡 API Request:", { path, method: options.method ?? "GET" });
+  
   const requestUrl = `${getApiBaseUrl()}${path}`;
 
   const token = getSupabaseSessionToken();
+  
   const headers = new Headers(options.headers);
   headers.set("Content-Type", "application/json");
 
