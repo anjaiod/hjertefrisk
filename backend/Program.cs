@@ -52,6 +52,16 @@ builder.Services.AddCors(options =>
     });
 });
 
+// TODO: Configure JwtBearer authentication for Supabase
+// Currently, authorization is based on manual JWT parsing without signature validation.
+// For production security, configure JWT bearer authentication:
+// 1. builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+//    .AddJwtBearer(options => { options.Authority = "YOUR_SUPABASE_URL"; ... });
+// 2. Add app.UseAuthentication() and app.UseAuthorization() in middleware
+// 3. Use [Authorize] attributes on controllers
+// 4. Read user ID from HttpContext.User.FindFirst("sub")?.Value
+// See: AuthExtensions.cs GetSupabaseUserIdFromContext() for details
+
 builder.Services.AddControllers();
 
 var rawConnectionString = builder.Configuration.GetConnectionString("Default")
@@ -105,6 +115,10 @@ if (!string.IsNullOrWhiteSpace(httpsPort))
 }
 
 app.UseCors(CorsPolicyName);
+
+// TODO: Uncomment when JwtBearer authentication is configured
+// app.UseAuthentication();
+// app.UseAuthorization();
 
 app.MapControllers();
 
