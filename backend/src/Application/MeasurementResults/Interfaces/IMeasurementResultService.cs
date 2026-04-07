@@ -6,4 +6,5 @@ public interface IMeasurementResultService
 {
     Task<IEnumerable<MeasurementResultDto>> UpsertManyAsync(IEnumerable<CreateMeasurementResultDto> dtos);
     Task<IEnumerable<MeasurementResultDto>> GetLatestForPatientAsync(int patientId);
+    Task<IEnumerable<MeasurementResultDto>> GetAllForPatientAsync(int patientId);
 }

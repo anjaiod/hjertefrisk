@@ -35,7 +35,7 @@ export default function QuestionnaireHistory({
 
     apiClient
       .get<AnsweredQueryHistory[]>(
-        `/api/Responses/patient/${patientId}/history`,
+        `/api/patients/${patientId}/response-history`,
       )
       .then((data) => {
         setHistory(data);
