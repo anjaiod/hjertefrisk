@@ -36,29 +36,22 @@ type RiskThreshold = {
 
 const CATEGORY_RISK_THRESHOLDS: Record<string, RiskThreshold> = {
   "fysisk aktivitet": { high: 9, medium: 5 },
-  kosthold: { high: 9, medium: 5 },
-  rusmidler: { high: 3, medium: 1 },
-  alkohol: { high: 15, medium: 8 },
-  royking: { high: 2, medium: 1 },
-  tannhelse: { high: 1, medium: null },
-  kroppsdata: { high: 2, medium: 1 },
-  blodtrykk: { high: 2, medium: 1 },
-  glukose: { high: 2, medium: 1 },
+  "kosthold": { high: 9, medium: 5 },
+  "rusmidler": { high: 3, medium: 1 },
+  "alkohol": { high: 15, medium: 8 },
+  "røyking": { high: 2, medium: 1 },
+  "tannhelse": { high: 1, medium: null },
+  "kroppsdata": { high: 2, medium: 1 },
+  "blodtrykk": { high: 2, medium: 1 },
+  "glukose": { high: 2, medium: 1 },
 };
-
-function normalizeKey(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
-    .trim();
-}
 
 function tagVariantFromCategoryScore(
   categoryName: string,
   score: number,
 ): TagVariant | null {
-  const thresholds = CATEGORY_RISK_THRESHOLDS[normalizeKey(categoryName)];
+  const key = categoryName.toLowerCase().trim();
+  const thresholds = CATEGORY_RISK_THRESHOLDS[key];
   if (!thresholds) return null;
   if (score >= thresholds.high) return "high";
   if (thresholds.medium !== null && score >= thresholds.medium) return "medium";
@@ -183,8 +176,8 @@ export default function TiltakPage() {
   const riskOrder: Record<TagVariant, number> = { high: 0, medium: 1, low: 2 };
 
   const categoryVariant = useCallback((cat: CategoryDto): TagVariant | null => {
-    const normalized = normalizeKey(cat.name);
-    const isSleepCategory = normalized === "sovn";
+    const normalized = cat.name.toLowerCase().trim();
+    const isSleepCategory = normalized === "søvn";
     const score = categoryScores[cat.categoryId];
     const measures = measuresByCategory[cat.categoryId] ?? [];
     const answered = isSleepCategory ? measures.length > 0 : score !== undefined;
