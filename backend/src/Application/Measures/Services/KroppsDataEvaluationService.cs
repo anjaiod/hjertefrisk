@@ -27,6 +27,8 @@ namespace backend.src.Application.Measures.Services;
 ///   "kroppsdata_middels" – score 1
 ///   "kroppsdata_hoy"     – score 2
 /// </summary>
+public record KroppsDataEvaluationResult(int Score, IReadOnlyList<string> Titles);
+
 public class KroppsDataEvaluationService
 {
     private readonly AppDbContext _db;
@@ -42,7 +44,7 @@ public class KroppsDataEvaluationService
         _db = db;
     }
 
-    public async Task<IReadOnlyList<string>> EvaluatePatientTitlesAsync(
+    public async Task<KroppsDataEvaluationResult?> EvaluateAsync(
         int patientId,
         IReadOnlyDictionary<int, Response> responses)
     {
@@ -71,26 +73,35 @@ public class KroppsDataEvaluationService
         var latestWaist   = waistHistory.ElementAtOrDefault(0)?.Result;
         var previousWaist = waistHistory.ElementAtOrDefault(1)?.Result;
 
-        // BMI score
-        int bmiScore = 0;
+        bool hasHighTrigger = false;
+        bool hasMediumTrigger = false;
+
+        if (!latestWeight.HasValue && !latestWaist.HasValue)
+        {
+            return null;
+        }
+
         if (latestWeight.HasValue && latestHeight.HasValue && latestHeight.Value > 0)
         {
             var heightM = latestHeight.Value / 100m;
             var bmi = latestWeight.Value / (heightM * heightM);
 
-            if (bmi >= 30m)      bmiScore = 2;
-            else if (bmi >= 25m) bmiScore = 1;
+            if (bmi >= 30m)
+            {
+                hasHighTrigger = true;
+            }
+            else if (bmi >= 25m)
+            {
+                hasMediumTrigger = true;
+            }
         }
 
-        // Weight gain (+1 if "ja", capped at 2)
         if (responses.TryGetValue(WeightGainQuestionId, out var weightGainResponse) &&
             string.Equals(weightGainResponse.TextValue, "ja", StringComparison.OrdinalIgnoreCase))
         {
-            bmiScore = Math.Min(bmiScore + 1, 2);
+            hasMediumTrigger = true;
         }
 
-        // Waist score
-        int waistScore = 0;
         if (latestWaist.HasValue)
         {
             var gender = patient?.Gender ?? "";
@@ -100,27 +111,36 @@ public class KroppsDataEvaluationService
 
             if (highWaist)
             {
-                waistScore = 2;
+                hasHighTrigger = true;
             }
             else if (previousWaist.HasValue && latestWaist.Value - previousWaist.Value >= 5m)
             {
-                waistScore = 1;
+                hasMediumTrigger = true;
             }
         }
 
-        int finalScore = Math.Max(bmiScore, waistScore);
+        int finalScore = hasHighTrigger
+            ? 2
+            : hasMediumTrigger
+                ? 1
+                : 0;
 
         var title = finalScore switch
         {
             0 => "Lav risiko for overvekt",
             1 => "Middels risiko overvekt",
-            _ => "Høy risiko overvekt"
+            2 => "Høy risiko overvekt",
+            _ => "Middels risiko overvekt"
         };
 
-        // For middels (1) or høy (2) risk, also include kostholdsråd
-        if (finalScore >= 1)
-            return [title, "Kostholdsråd"];
+        var titles = finalScore switch
+        {
+            0 => new List<string> { title },
+            1 => new List<string> { title, "Kostholdsråd" },
+            2 => new List<string> { title, "Kostholdsråd" },
+            _ => new List<string> { title }
+        };
 
-        return [title];
+        return new KroppsDataEvaluationResult(finalScore, titles);
     }
 }
