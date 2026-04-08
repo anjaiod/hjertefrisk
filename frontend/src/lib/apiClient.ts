@@ -50,18 +50,44 @@ type RequestOptions = {
 function getSupabaseSessionToken(): string | undefined {
   if (typeof window === "undefined") return undefined;
   try {
+    const allKeys = Object.keys(window.localStorage);
+    
     // Find Supabase auth token dynamically (keys start with "sb-" and end with "-auth-token")
-    for (const key of Object.keys(window.localStorage)) {
+    for (const key of allKeys) {
       if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
         const authItem = window.localStorage.getItem(key);
         if (authItem) {
-          const session = JSON.parse(authItem) as { access_token?: string };
-          return session.access_token;
+          try {
+            const session = JSON.parse(authItem) as { access_token?: string };
+            if (session.access_token) {
+              return session.access_token;
+            }
+          } catch {
+            // Continue searching if JSON parsing fails for this key
+            continue;
+          }
         }
       }
     }
+    
+    // Fallback: check for auth.session key (used by some Supabase configurations)
+    const sessionKey = allKeys.find(k => k.includes("auth") && k.includes("session"));
+    if (sessionKey) {
+      const sessionItem = window.localStorage.getItem(sessionKey);
+      if (sessionItem) {
+        try {
+          const session = JSON.parse(sessionItem) as { access_token?: string };
+          if (session.access_token) {
+            return session.access_token;
+          }
+        } catch {
+          // Continue if JSON parsing fails for fallback key
+        }
+      }
+    }
+    
     return undefined;
-  } catch {
+  } catch (error) {
     return undefined;
   }
 }
@@ -73,6 +99,7 @@ async function request<TResponse = void>(
   const requestUrl = `${getApiBaseUrl()}${path}`;
 
   const token = getSupabaseSessionToken();
+  
   const headers = new Headers(options.headers);
   headers.set("Content-Type", "application/json");
 
