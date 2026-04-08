@@ -113,6 +113,14 @@ public class MeasureEvaluationService : IMeasureEvaluationService
 
         var categoryScores = CalculateCategoryScores(questions, responses, answeredCategoryIds, dependencies);
         await ApplyMeasurementSeveritiesAsync(dto.PatientId, categoryScores, answeredCategoryIds);
+
+        var kroppsDataResult = await _kroppsDataEvaluationService.EvaluateAsync(dto.PatientId, responses);
+        if (kroppsDataResult is not null)
+        {
+            answeredCategoryIds.Add(KroppsDataCategoryId);
+            var updatedScore = Math.Max(categoryScores.GetValueOrDefault(KroppsDataCategoryId), kroppsDataResult.Score);
+            categoryScores[KroppsDataCategoryId] = updatedScore;
+        }
         var languageCode = NormalizeLanguage(dto.LanguageCode);
         var generatedAt = DateTime.UtcNow;
 
@@ -158,19 +166,20 @@ public class MeasureEvaluationService : IMeasureEvaluationService
             }
         }
 
-        if (answeredCategoryIds.Contains(KroppsDataCategoryId))
+        if (kroppsDataResult is not null)
         {
-            var kroppsDataTitles = await _kroppsDataEvaluationService.EvaluatePatientTitlesAsync(dto.PatientId, responses);
-            var kroppsDataMeasures = await _db.PatientMeasures
+            var updatedScore = categoryScores.GetValueOrDefault(KroppsDataCategoryId);
+
+            var kroppsDataPatientMeasures = await _db.PatientMeasures
                 .AsNoTracking()
                 .Include(m => m.Texts)
                 .Where(m => m.TriggerType == MeasureTriggerType.Custom
                          && m.CategoryId == KroppsDataCategoryId
                          && m.Title != null
-                         && kroppsDataTitles.Contains(m.Title))
+                         && kroppsDataResult.Titles.Contains(m.Title))
                 .ToListAsync();
 
-            foreach (var measure in kroppsDataMeasures)
+            foreach (var measure in kroppsDataPatientMeasures)
             {
                 patientResults.Add(new PatientMeasureResultDto
                 {
@@ -178,7 +187,7 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     Source            = MeasureResultSource.CategoryScore,
                     CategoryId        = measure.CategoryId,
                     TriggerQuestionId = null,
-                    CategoryScore     = categoryScores.GetValueOrDefault(KroppsDataCategoryId),
+                    CategoryScore     = updatedScore,
                     Text              = ResolvePatientText(measure, languageCode),
                     Title             = ResolvePatientTitle(measure, languageCode),
                     ResourceUrl       = measure.ResourceUrl,
@@ -186,6 +195,34 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     ScoreThreshold    = measure.ScoreThreshold,
                     IsExclusive       = measure.IsExclusive,
                     Priority          = measure.Priority
+                });
+            }
+
+            var kroppsDataPersonnelMeasures = await _db.PersonnelMeasures
+                .AsNoTracking()
+                .Include(m => m.Texts)
+                .Where(m => m.TriggerType == MeasureTriggerType.Custom
+                         && m.CategoryId == KroppsDataCategoryId
+                         && m.Title != null
+                         && kroppsDataResult.Titles.Contains(m.Title))
+                .ToListAsync();
+
+            foreach (var measure in kroppsDataPersonnelMeasures)
+            {
+                personnelResults.Add(new PersonnelMeasureResultDto
+                {
+                    PersonnelMeasureId = measure.PersonnelMeasureId,
+                    Source             = MeasureResultSource.CategoryScore,
+                    CategoryId         = measure.CategoryId,
+                    TriggerQuestionId  = null,
+                    CategoryScore      = updatedScore,
+                    Text               = ResolvePersonnelText(measure, languageCode),
+                    Title              = ResolvePersonnelTitle(measure, languageCode),
+                    ResourceUrl        = measure.ResourceUrl,
+                    GeneratedAt        = generatedAt,
+                    ScoreThreshold     = measure.ScoreThreshold,
+                    IsExclusive        = measure.IsExclusive,
+                    Priority           = measure.Priority
                 });
             }
         }
