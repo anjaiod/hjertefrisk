@@ -1,5 +1,6 @@
 using backend.src.Application.Responses.DTOs;
 using backend.src.Application.Responses.Interfaces;
+using backend.src.Application.ToDos.Interfaces;
 using backend.src.Domain.Models;
 using backend.src.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -9,10 +10,12 @@ namespace backend.src.Application.Responses.Services;
 public class ResponseService : IResponseService
 {
     private readonly AppDbContext _db;
+    private readonly IToDoRuleService _toDoRuleService;
 
-    public ResponseService(AppDbContext db)
+    public ResponseService(AppDbContext db, IToDoRuleService toDoRuleService)
     {
         _db = db;
+        _toDoRuleService = toDoRuleService;
     }
 
     public async Task<IEnumerable<ResponseDto>> GetAllAsync()
@@ -47,6 +50,9 @@ public class ResponseService : IResponseService
 
         _db.Responses.Add(entity);
         await _db.SaveChangesAsync();
+
+        // Process ToDoRules for this response
+        await _toDoRuleService.ProcessResponseAsync(entity);
 
         return new ResponseDto
         {
@@ -93,6 +99,32 @@ public class ResponseService : IResponseService
         await _db.SaveChangesAsync();
         await transaction.CommitAsync();
 
+        // Build a map of question IDs to their categories for score-based rules
+        var questionIds = entities.Where(e => e.QuestionId.HasValue).Select(e => e.QuestionId.Value).Distinct().ToList();
+        var questionsWithCategories = await _db.Questions
+            .AsNoTracking()
+            .Where(q => questionIds.Contains(q.QuestionId))
+            .Select(q => new { q.QuestionId, q.CategoryId })
+            .ToListAsync();
+
+        // Process ToDoRules for each response with calculated scores
+        foreach (var entity in entities)
+        {
+            if (entity.QuestionId.HasValue)
+            {
+                var questionCategory = questionsWithCategories.FirstOrDefault(q => q.QuestionId == entity.QuestionId.Value);
+                
+                // Calculate category score for score-based matching
+                int? categoryScore = null;
+                if (questionCategory?.CategoryId.HasValue == true)
+                {
+                    categoryScore = await CalculateCategoryScoreAsync(patientId, questionCategory.CategoryId.Value);
+                }
+                
+                await _toDoRuleService.ProcessResponseWithScoreAsync(entity, categoryScore);
+            }
+        }
+
         return entities.Select(r => new ResponseDto
         {
             AnsweredQueryId = r.AnsweredQueryId,
@@ -132,5 +164,21 @@ public class ResponseService : IResponseService
                     NumberValue = r.NumberValue,
                 }).ToList()
         });
+    }
+
+    /// <summary>
+    /// Calculates the cumulative score for a category based on patient responses.
+    /// Sums numeric values from questions in the category.
+    /// </summary>
+    private async Task<int> CalculateCategoryScoreAsync(int patientId, int categoryId)
+    {
+        var score = await _db.Responses
+            .AsNoTracking()
+            .Where(r => r.PatientId == patientId && 
+                        r.Question.CategoryId == categoryId &&
+                        r.NumberValue.HasValue)
+            .SumAsync(r => (int)(r.NumberValue ?? 0));
+
+        return score;
     }
 }
