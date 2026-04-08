@@ -85,10 +85,6 @@ export default function PasientRisikoSide() {
         ]);
 
         setCategories(cats);
-        console.log(
-          "Kategorier i DB:",
-          cats.map((c) => c.name),
-        ); // Se i console hvis Blodlipider mangler, ellers fjern
 
         const isNumericId = /^\d+$/.test(user!.id);
         const patientId = isNumericId
@@ -164,7 +160,6 @@ export default function PasientRisikoSide() {
         key={apiName}
         title={displayTitle ?? apiName}
         categoryId={categoryId}
-        description={description}
         tag={variant ? tagTextFromVariant(variant) : undefined}
         tagVariant={variant ?? undefined}
       />
@@ -196,29 +191,21 @@ export default function PasientRisikoSide() {
             <SectionWrapper title="Levevaner">
               {renderHealthCard("Fysisk aktivitet")}
               {renderHealthCard("Kosthold")}
-              {renderHealthCard("Kroppsdata", "Overvekt")}
+              {renderHealthCard("Kroppsdata")}
               {renderHealthCard("Søvn")}
             </SectionWrapper>
 
             <SectionWrapper title="Livsstilsvaner">
               {renderHealthCard("Røyking")}
               {renderHealthCard("Alkohol")}
-              {renderHealthCard("Rusmidler", "Rus")}
+              {renderHealthCard("Rusmidler")}
               {renderHealthCard("Tannhelse")}
             </SectionWrapper>
 
             <SectionWrapper title="Annet">
-              {renderHealthCard(
-                "Blodtrykk",
-                "Blodtrykk",
-                "≥ 140 systolisk / ≥ 90 diastolisk",
-              )}
-              {renderHealthCard("Glukose", "Glukose", "Se blodsukkerverdier")}
-              {renderHealthCard(
-                "Blodlipider",
-                "Blodlipider",
-                "Kolesterol og triglyserider",
-              )}
+              {renderHealthCard("Blodtrykk")}
+              {renderHealthCard("Glukose")}
+              {renderHealthCard("Blodlipider")}
             </SectionWrapper>
           </div>
         </main>

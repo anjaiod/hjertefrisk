@@ -5,7 +5,6 @@ import { Tag } from "../atoms/Tag";
 
 type HealthCardProps = {
   title: string;
-  description?: string;
   tag?: string;
   tagVariant?: "high" | "medium" | "low";
   categoryId?: number;
@@ -13,7 +12,6 @@ type HealthCardProps = {
 
 export function HealthCard({
   title,
-  description,
   tag,
   tagVariant,
   categoryId,
@@ -35,12 +33,6 @@ export function HealthCard({
     >
       <div>
         <h3 className="text-brand-navy font-semibold">{title}</h3>
-
-        {description && (
-          <p className="text-xs text-gray-600 mt-1 whitespace-pre-line">
-            {description}
-          </p>
-        )}
       </div>
 
       {tag && tagVariant && (
