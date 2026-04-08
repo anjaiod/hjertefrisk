@@ -15,9 +15,15 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
   const patientId = searchParams.get("patientId");
 
-  const [selectedPatient, setSelectedPatient] = useState<PatientDto | null>(null);
-  const [todos, setTodos] = useState<{ id: number; text: string; completed: boolean }[]>([]);
-  const [latestMeasurements, setLatestMeasurements] = useState<LatestMeasurementResultDto[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<PatientDto | null>(
+    null,
+  );
+  const [todos, setTodos] = useState<
+    { id: number; text: string; completed: boolean }[]
+  >([]);
+  const [latestMeasurements, setLatestMeasurements] = useState<
+    LatestMeasurementResultDto[]
+  >([]);
   const [risks, setRisks] = useState<CategoryRisk[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,21 +45,27 @@ export default function DashboardPage() {
     const loadData = async () => {
       try {
         // Fetch patient data, todos, measurements, and risks in parallel
-        const [patients, allTodos, measurements, categoryRisks] = await Promise.all([
-          apiClient.get<PatientDto[]>("/api/patients"),
-          apiClient.get<ToDoDto[]>("/api/todos"),
-          apiClient.get<LatestMeasurementResultDto[]>(
-            `/api/patients/${encodeURIComponent(patientId)}/latest-measurements`
-          ),
-          getRisks(patientId),
-        ]);
+        const [patients, allTodos, measurements, categoryRisks] =
+          await Promise.all([
+            apiClient.get<PatientDto[]>("/api/patients"),
+            apiClient.get<ToDoDto[]>("/api/todos"),
+            apiClient.get<LatestMeasurementResultDto[]>(
+              `/api/patients/${encodeURIComponent(patientId)}/latest-measurements`,
+            ),
+            getRisks(patientId),
+          ]);
 
-        const patient = patients.find((p) => String(p.id) === patientId) ?? null;
+        const patient =
+          patients.find((p) => String(p.id) === patientId) ?? null;
         setSelectedPatient(patient);
 
         const filteredTodos = allTodos
           .filter((t) => String(t.patientId) === patientId)
-          .map((t) => ({ id: t.toDoId, text: t.toDoText, completed: t.finished }));
+          .map((t) => ({
+            id: t.toDoId,
+            text: t.toDoText,
+            completed: t.finished,
+          }));
         setTodos(filteredTodos || []);
 
         setLatestMeasurements(measurements || []);
@@ -77,7 +89,10 @@ export default function DashboardPage() {
   const highRisks = risks.filter((r) => r.variant === "high");
   const mediumRisks = risks.filter((r) => r.variant === "medium");
   const remaining = Math.max(0, 3 - highRisks.length);
-  const risksToShow = [...highRisks, ...mediumRisks.slice(0, remaining)].slice(0, 3);
+  const risksToShow = [...highRisks, ...mediumRisks.slice(0, remaining)].slice(
+    0,
+    3,
+  );
 
   const heightResult = latestMeasurements.find((m) => m.measurementId === 2);
   const weightResult = latestMeasurements.find((m) => m.measurementId === 1);
@@ -85,7 +100,11 @@ export default function DashboardPage() {
   const weight = weightResult ? Number(weightResult.result) : null;
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
   }
 
   return (
