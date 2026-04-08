@@ -43,7 +43,7 @@ const CATEGORY_RISK_THRESHOLDS: Record<string, RiskThreshold> = {
   "tannhelse": { high: 1, medium: null },
   "kroppsdata": { high: 2, medium: 1 },
   "blodtrykk": { high: 2, medium: 1 },
-  "glukose": { high: 2, medium: 1 },
+  "glukoseregulering": { high: 2, medium: 1 },
 };
 
 function tagVariantFromCategoryScore(
@@ -93,6 +93,7 @@ export default function TiltakPage() {
   const [categoryScores, setCategoryScores] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const hasPatientId = typeof patientId === "number" && Number.isFinite(patientId);
 
@@ -171,7 +172,25 @@ export default function TiltakPage() {
     return () => {
       cancelled = true;
     };
-  }, [hasPatientId, isAuthReady, patientId, user]);
+  }, [hasPatientId, isAuthReady, patientId, reloadKey, user]);
+
+  useEffect(() => {
+    if (!hasPatientId) return;
+    if (typeof window === "undefined") return;
+
+    const handler = (event: Event) => {
+      const customEvent = event as CustomEvent<{ patientId?: string | number }>;
+      const detail = customEvent.detail;
+      if (!detail?.patientId) return;
+      if (String(detail.patientId) !== String(patientId)) return;
+      setReloadKey((key) => key + 1);
+    };
+
+    window.addEventListener("measurements:updated", handler as EventListener);
+    return () => {
+      window.removeEventListener("measurements:updated", handler as EventListener);
+    };
+  }, [hasPatientId, patientId]);
 
   const riskOrder: Record<TagVariant, number> = { high: 0, medium: 1, low: 2 };
 

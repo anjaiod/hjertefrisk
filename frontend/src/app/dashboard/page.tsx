@@ -18,14 +18,14 @@ const CATEGORY_RISK_THRESHOLDS: Record<
   { high: number; medium: number | null }
 > = {
   "fysisk aktivitet": { high: 9, medium: 5 },
-  kosthold:           { high: 9, medium: 5 },
-  rusmidler:          { high: 3, medium: 1 },
-  alkohol:            { high: 15, medium: 8 },
-  røyking:            { high: 2, medium: 1 },
-  tannhelse:          { high: 1, medium: null },
-  kroppsdata:         { high: 2, medium: 1 },
-  blodtrykk:          { high: 2, medium: 1 },
-  glukose:            { high: 2, medium: 1 },
+  "kosthold":           { high: 9, medium: 5 },
+  "rusmidler":          { high: 3, medium: 1 },
+  "alkohol":            { high: 15, medium: 8 },
+  "røyking":            { high: 2, medium: 1 },
+  "tannhelse":          { high: 1, medium: null },
+  "kroppsdata":         { high: 2, medium: 1 },
+  "blodtrykk":          { high: 2, medium: 1 },
+  "glukoseregulering":  { high: 2, medium: 1 },
 };
 
 async function getRiskCategoriesForPatient(

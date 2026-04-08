@@ -112,6 +112,7 @@ public class MeasureEvaluationService : IMeasureEvaluationService
             .ToHashSet();
 
         var categoryScores = CalculateCategoryScores(questions, responses, answeredCategoryIds, dependencies);
+        await ApplyMeasurementSeveritiesAsync(dto.PatientId, categoryScores, answeredCategoryIds);
         var languageCode = NormalizeLanguage(dto.LanguageCode);
         var generatedAt = DateTime.UtcNow;
 
@@ -500,6 +501,80 @@ public class MeasureEvaluationService : IMeasureEvaluationService
         await transaction.CommitAsync();
     }
 
+    private async Task ApplyMeasurementSeveritiesAsync(
+        int patientId,
+        Dictionary<int, int> categoryScores,
+        HashSet<int> answeredCategoryIds)
+    {
+        var measurementSeverities = await _db.Severities
+            .AsNoTracking()
+            .Where(s => s.MeasurementId.HasValue)
+            .Join(
+                _db.Measurements.AsNoTracking().Where(m => m.CategoryId.HasValue),
+                severity => severity.MeasurementId!.Value,
+                measurement => measurement.MeasurementId,
+                (severity, measurement) => new MeasurementSeverityInfo(
+                    severity.MeasurementId!.Value,
+                    measurement.CategoryId!.Value,
+                    severity.RequiredValue,
+                    severity.Operator,
+                    severity.Score))
+            .ToListAsync();
+
+        if (measurementSeverities.Count == 0)
+        {
+            return;
+        }
+
+        var measurementIds = measurementSeverities
+            .Select(s => s.MeasurementId)
+            .Distinct()
+            .ToList();
+
+        var latestMeasurements = await _db.MeasurementResults
+            .AsNoTracking()
+            .Where(r => r.PatientId == patientId && measurementIds.Contains(r.MeasurementId))
+            .OrderByDescending(r => r.RegisteredAt)
+            .ToListAsync();
+
+        var latestByMeasurement = latestMeasurements
+            .GroupBy(r => r.MeasurementId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.First().Result);
+
+        if (latestByMeasurement.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var severity in measurementSeverities)
+        {
+            if (!latestByMeasurement.TryGetValue(severity.MeasurementId, out var actualValue))
+            {
+                continue;
+            }
+
+            if (severity.RequiredValue.HasValue &&
+                !EvaluateNumber(actualValue, severity.RequiredValue.Value, severity.Operator))
+            {
+                continue;
+            }
+
+            var categoryId = severity.CategoryId;
+            answeredCategoryIds.Add(categoryId);
+            var current = categoryScores.GetValueOrDefault(categoryId);
+            categoryScores[categoryId] = current + severity.Score;
+        }
+    }
+
+    private sealed record MeasurementSeverityInfo(
+        int MeasurementId,
+        int CategoryId,
+        decimal? RequiredValue,
+        string? Operator,
+        int Score);
+
     private static bool MatchesRule(int? requiredOption, string? requiredText, decimal? requiredValue, string? op, Response response)
     {
         if (requiredOption.HasValue && response.SelectedOptionId != requiredOption)
@@ -626,4 +701,3 @@ public class MeasureEvaluationService : IMeasureEvaluationService
     private static string? NormalizeLanguage(string? languageCode)
         => string.IsNullOrWhiteSpace(languageCode) ? null : languageCode.Trim();
 }
-

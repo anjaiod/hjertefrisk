@@ -44,7 +44,7 @@ const CATEGORY_RISK_THRESHOLDS: Record<string, RiskThreshold> = {
   "tannhelse":        { high: 1, medium: null },
   "kroppsdata":       { high: 2, medium: 1 },
   "blodtrykk":        { high: 2, medium: 1 },
-  "glukose":          { high: 2, medium: 1 },
+  "glukoseregulering": { high: 2, medium: 1 },
 };
 
 function tagVariantFromCategoryScore(
