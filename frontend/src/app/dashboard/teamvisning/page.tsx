@@ -10,6 +10,7 @@ import { Button } from "@/components/atoms/Button";
 type RiskVariant = "high" | "medium" | "low";
 type CategoryRisk = { name: string; variant: RiskVariant };
 
+//mock verdier
 const CATEGORY_RISK_THRESHOLDS: Record<string, { high: number; medium: number | null }> = {
   "fysisk aktivitet": { high: 9, medium: 5 },
   kosthold:           { high: 9, medium: 5 },
