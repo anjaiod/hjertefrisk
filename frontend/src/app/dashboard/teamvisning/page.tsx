@@ -4,64 +4,8 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/apiClient";
 import type { LatestMeasurementResultDto, PatientDto } from "@/types";
-import { RiskList } from "@/components/molecules/RiskList";
+import { RiskList, getRisks, type CategoryRisk } from "@/components/molecules/RiskList";
 import { Button } from "@/components/atoms/Button";
-
-type RiskVariant = "high" | "medium" | "low";
-type CategoryRisk = { name: string; variant: RiskVariant };
-
-//mock verdier
-const CATEGORY_RISK_THRESHOLDS: Record<string, { high: number; medium: number | null }> = {
-  "fysisk aktivitet": { high: 9, medium: 5 },
-  kosthold:           { high: 9, medium: 5 },
-  rusmidler:          { high: 3, medium: 1 },
-  alkohol:            { high: 15, medium: 8 },
-  røyking:            { high: 2, medium: 1 },
-  tannhelse:          { high: 1, medium: null },
-  kroppsdata:         { high: 2, medium: 1 },
-  blodtrykk:          { high: 2, medium: 1 },
-  glukose:            { high: 2, medium: 1 },
-};
-
-async function getRisks(patientId: string): Promise<CategoryRisk[]> {
-  try {
-    const [query, categories] = await Promise.all([
-      apiClient.get<{ id: number }>("/api/Query/by-name/Helseskjema"),
-      apiClient.get<{ categoryId: number; name: string }[]>("/api/Categories"),
-    ]);
-    const result = await apiClient.post<{
-      patientMeasures: { categoryId: number | null; title: string | null }[];
-      categoryScores: Record<number, number>;
-    }>("/api/measures/evaluate", {
-      patientId: Number(patientId),
-      queryId: query.id,
-      languageCode: "no",
-    });
-    const scores = result.categoryScores ?? {};
-    return categories
-      .map((cat): CategoryRisk | null => {
-        if (cat.name.toLowerCase().trim() === "søvn") {
-          const titles = result.patientMeasures
-            .filter((m) => m.categoryId === cat.categoryId)
-            .map((m) => m.title ?? "");
-          if (titles.some((t) => t === "Betydelige søvnvansker")) return { name: cat.name, variant: "high" };
-          if (titles.some((t) => t === "Noen søvnproblemer")) return { name: cat.name, variant: "medium" };
-          if (titles.some((t) => t === "God søvn")) return { name: cat.name, variant: "low" };
-          return null;
-        }
-        const score = scores[cat.categoryId];
-        if (score === undefined) return null;
-        const thresholds = CATEGORY_RISK_THRESHOLDS[cat.name.toLowerCase().trim()];
-        if (!thresholds) return null;
-        if (score >= thresholds.high) return { name: cat.name, variant: "high" };
-        if (thresholds.medium !== null && score >= thresholds.medium) return { name: cat.name, variant: "medium" };
-        return { name: cat.name, variant: "low" };
-      })
-      .filter((r): r is CategoryRisk => r !== null);
-  } catch {
-    return [];
-  }
-}
 
 export default function TeamvisningPage() {
   const patientId = useSearchParams().get("patientId");
