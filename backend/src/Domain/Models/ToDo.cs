@@ -13,24 +13,32 @@ public class ToDo
     public Personnel Personnel { get; set; } = null!;
 }
 
-public class ToDoRule
+public abstract class ToDoRule
 {
     public int ToDoRuleId { get; set; }
-    public int? QuestionId { get; set; }
-    public int? CategoryId { get; set; }
-    public int? ScoreThreshold { get; set; }
-    public ToDoRuleType TriggerType { get; set; }
-    public int? RequiredOption { get; set; }
-    public string? RequiredText { get; set; }
-    public decimal? RequiredValue { get; set; }
     public string Operator { get; set; } = "";
     public string ToDoText { get; set; } = "";
     public int Priority { get; set; }
     public bool IsExclusive { get; set; }
+}
+
+public class QuestionAnswerRule : ToDoRule
+{
+    public int QuestionId { get; set; }
+    public int? RequiredOption { get; set; }
+    public string? RequiredText { get; set; }
+    public decimal? RequiredValue { get; set; }
 
     public Question? Question { get; set; }
-    public Category? Category { get; set; }
     public QuestionOption? RequiredOptionNavigation { get; set; }
+}
+
+public class CategoryScoreRule : ToDoRule
+{
+    public int CategoryId { get; set; }
+    public int ScoreThreshold { get; set; }
+
+    public Category? Category { get; set; }
 }
 
 public enum ToDoRuleType

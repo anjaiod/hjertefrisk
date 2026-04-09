@@ -19,9 +19,9 @@ public class ToDoRuleService : IToDoRuleService
         if (response.QuestionId == null)
             return;
 
-        // Find all ToDoRules for this question
-        var rules = await _db.ToDoRules
-            .Where(r => r.QuestionId == response.QuestionId && r.TriggerType == ToDoRuleType.Question)
+        // Find all QuestionAnswerRules for this question
+        var rules = await _db.QuestionAnswerRules
+            .Where(r => r.QuestionId == response.QuestionId)
             .Include(r => r.Question)
             .ToListAsync();
 
@@ -39,22 +39,50 @@ public class ToDoRuleService : IToDoRuleService
         if (response.QuestionId == null)
             return;
 
-        // Find all ToDoRules for this question
-        var rules = await _db.ToDoRules
-            .Where(r => r.QuestionId == response.QuestionId && r.TriggerType == ToDoRuleType.Question)
+        // Find all QuestionAnswerRules for this question
+        var questionRules = await _db.QuestionAnswerRules
+            .Where(r => r.QuestionId == response.QuestionId)
             .Include(r => r.Question)
             .ToListAsync();
 
-        foreach (var rule in rules)
+        foreach (var rule in questionRules)
         {
             if (await MatchesRuleAsync(response, rule, categoryScore))
             {
                 await CreateToDoFromRuleAsync(response, rule);
             }
         }
+
+        // Find all CategoryScoreRules for the question's category
+        var question = await _db.Questions.FindAsync(response.QuestionId);
+        if (question?.CategoryId != null && categoryScore != null)
+        {
+            var categoryRules = await _db.CategoryScoreRules
+                .Where(r => r.CategoryId == question.CategoryId)
+                .ToListAsync();
+
+            foreach (var rule in categoryRules)
+            {
+                if (await MatchesRuleAsync(response, rule, categoryScore))
+                {
+                    await CreateToDoFromRuleAsync(response, rule);
+                }
+            }
+        }
     }
 
     public async Task<bool> MatchesRuleAsync(Response response, ToDoRule rule, int? categoryScore = null)
+    {
+        if (rule is QuestionAnswerRule qr)
+            return MatchesQuestionRule(response, qr);
+        
+        if (rule is CategoryScoreRule cr)
+            return MatchesCategoryRule(categoryScore, cr);
+
+        return false;
+    }
+
+    private bool MatchesQuestionRule(Response response, QuestionAnswerRule rule)
     {
         // Check if rule has a required answer condition
         if (rule.RequiredOption.HasValue)
@@ -89,13 +117,24 @@ public class ToDoRuleService : IToDoRuleService
             };
         }
 
-        if (rule.ScoreThreshold.HasValue)
-        {
-            // Score-based matching - use provided score or calculate it
-            return MatchesCategoryScore(categoryScore, rule);
-        }
-
         return false;
+    }
+
+    private bool MatchesCategoryRule(int? score, CategoryScoreRule rule)
+    {
+        if (score == null)
+            return false;
+
+        return rule.Operator switch
+        {
+            "=" => score == rule.ScoreThreshold,
+            "!=" => score != rule.ScoreThreshold,
+            "<" => score < rule.ScoreThreshold,
+            ">" => score > rule.ScoreThreshold,
+            "<=" => score <= rule.ScoreThreshold,
+            ">=" => score >= rule.ScoreThreshold,
+            _ => false
+        };
     }
 
     public async Task CreateToDoFromRuleAsync(Response response, ToDoRule rule)
@@ -111,22 +150,5 @@ public class ToDoRuleService : IToDoRuleService
 
         _db.ToDos.Add(todo);
         await _db.SaveChangesAsync();
-    }
-
-    private bool MatchesCategoryScore(int? score, ToDoRule rule)
-    {
-        if (score == null || !rule.ScoreThreshold.HasValue)
-            return false;
-
-        return rule.Operator switch
-        {
-            "=" => score == rule.ScoreThreshold,
-            "!=" => score != rule.ScoreThreshold,
-            "<" => score < rule.ScoreThreshold,
-            ">" => score > rule.ScoreThreshold,
-            "<=" => score <= rule.ScoreThreshold,
-            ">=" => score >= rule.ScoreThreshold,
-            _ => false
-        };
     }
 }
