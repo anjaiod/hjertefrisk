@@ -31,6 +31,8 @@ using backend.src.Application.MeasurementResults.Interfaces;
 using backend.src.Application.MeasurementResults.Services;
 using backend.src.Application.QuickMeasures.Interfaces;
 using backend.src.Application.QuickMeasures.Services;
+using backend.src.Application.Authorization.Interfaces;
+using backend.src.Application.Authorization.Services;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -119,6 +121,7 @@ builder.Services.AddScoped<IPersonnelService, PersonnelService>();
 builder.Services.AddScoped<IQuestionDependencyService, QuestionDependencyService>();
 builder.Services.AddScoped<IMeasurementResultService, MeasurementResultService>();
 builder.Services.AddScoped<IAccessAuthorizationService, AccessAuthorizationService>();
+builder.Services.AddScoped<IQuickMeasureService, QuickMeasureService>();
 
 // Optional but recommended for API documentation
 builder.Services.AddEndpointsApiExplorer();
