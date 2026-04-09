@@ -9,79 +9,7 @@ import type { LatestMeasurementResultDto, PatientDto, ToDoDto } from "@/types";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/apiClient";
-
-type RiskVariant = "high" | "medium" | "low";
-type CategoryRisk = { name: string; variant: RiskVariant };
-
-const CATEGORY_RISK_THRESHOLDS: Record<
-  string,
-  { high: number; medium: number | null }
-> = {
-  "fysisk aktivitet": { high: 9, medium: 5 },
-  kosthold:           { high: 9, medium: 5 },
-  rusmidler:          { high: 3, medium: 1 },
-  alkohol:            { high: 15, medium: 8 },
-  røyking:            { high: 2, medium: 1 },
-  tannhelse:          { high: 1, medium: null },
-  kroppsdata:         { high: 2, medium: 1 },
-  blodtrykk:          { high: 2, medium: 1 },
-  glukose:            { high: 2, medium: 1 },
-};
-
-async function getRiskCategoriesForPatient(
-  patientId: string,
-): Promise<CategoryRisk[]> {
-  try {
-    const [query, categories] = await Promise.all([
-      apiClient.get<{ id: number }>("/api/Query/by-name/Helseskjema"),
-      apiClient.get<{ categoryId: number; name: string }[]>("/api/Categories"),
-    ]);
-
-    const result = await apiClient.post<{
-      patientMeasures: { categoryId: number | null; title: string | null }[];
-      categoryScores: Record<number, number>;
-    }>("/api/measures/evaluate", {
-      patientId: Number(patientId),
-      queryId: query.id,
-      languageCode: "no",
-    });
-
-    const categoryScores = result.categoryScores ?? {};
-
-    return categories
-      .map((cat): CategoryRisk | null => {
-        const isSleep = cat.name.toLowerCase().trim() === "søvn";
-
-        if (isSleep) {
-          const titles = result.patientMeasures
-            .filter((m) => m.categoryId === cat.categoryId)
-            .map((m) => m.title ?? "");
-          if (titles.some((t) => t === "Betydelige søvnvansker"))
-            return { name: cat.name, variant: "high" };
-          if (titles.some((t) => t === "Noen søvnproblemer"))
-            return { name: cat.name, variant: "medium" };
-          if (titles.some((t) => t === "God søvn"))
-            return { name: cat.name, variant: "low" };
-          return null;
-        }
-
-        const score = categoryScores[cat.categoryId];
-        if (score === undefined) return null;
-
-        const thresholds = CATEGORY_RISK_THRESHOLDS[cat.name.toLowerCase().trim()];
-        if (!thresholds) return null;
-
-        if (score >= thresholds.high) return { name: cat.name, variant: "high" };
-        if (thresholds.medium !== null && score >= thresholds.medium)
-          return { name: cat.name, variant: "medium" };
-        return { name: cat.name, variant: "low" };
-      })
-      .filter((r): r is CategoryRisk => r !== null);
-  } catch (error) {
-    console.error("Error fetching risk categories:", error);
-    return [];
-  }
-}
+import { getRisks, type CategoryRisk } from "@/components/molecules/RiskList";
 
 export default function DashboardPage() {
   const searchParams = useSearchParams();
@@ -117,7 +45,7 @@ export default function DashboardPage() {
           apiClient.get<LatestMeasurementResultDto[]>(
             `/api/patients/${encodeURIComponent(patientId)}/latest-measurements`
           ),
-          getRiskCategoriesForPatient(patientId),
+          getRisks(patientId),
         ]);
 
         const patient = patients.find((p) => String(p.id) === patientId) ?? null;
