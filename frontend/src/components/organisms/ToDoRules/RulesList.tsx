@@ -25,22 +25,22 @@ export default function RulesList({
   const getQuestionText = (id: number) => questions.find(q => q.questionId === id)?.fallbackText || 'Unknown';
 
   const startEdit = (rule: ToDoRule) => {
-    setEditingId(rule.id);
+    setEditingId(rule.toDoRuleId);
     setEditData({
       toDoText: rule.toDoText,
       priority: rule.priority,
       isExclusive: rule.isExclusive,
-      triggerType: rule.triggerType as any,
+      triggerType: rule.triggerType,
       ...(rule.triggerType === 'Question'
         ? {
-          questionId: rule.questionId,
-          requiredOption: rule.requiredOption,
-          requiredValue: rule.requiredValue,
+          questionId: (rule as any).questionId,
+          requiredOption: (rule as any).requiredOption,
+          requiredValue: (rule as any).requiredValue,
           operator: rule.operator
         }
         : {
-          categoryId: rule.categoryId,
-          scoreThreshold: rule.scoreThreshold,
+          categoryId: (rule as any).categoryId,
+          scoreThreshold: (rule as any).scoreThreshold,
           operator: rule.operator
         })
     });
@@ -72,10 +72,10 @@ export default function RulesList({
     <div className="space-y-4 max-h-96 overflow-y-auto">
       {rules.map(rule => (
         <div
-          key={rule.id}
+          key={rule.toDoRuleId}
           className="border rounded-lg p-4 bg-gray-50 hover:bg-white transition"
         >
-          {editingId === rule.id ? (
+          {editingId === rule.toDoRuleId ? (
             // Edit Mode
             <div className="space-y-3">
               <div>
@@ -90,7 +90,7 @@ export default function RulesList({
 
               <div className="flex gap-2">
                 <button
-                  onClick={() => saveEdit(rule.id)}
+                  onClick={() => saveEdit(rule.toDoRuleId)}
                   className="flex-1 px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
                 >
                   Save
@@ -114,14 +114,14 @@ export default function RulesList({
                       <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs mr-2">
                         Answer
                       </span>
-                      Question: {getQuestionText(rule.questionId!)}
+                      Question: {getQuestionText((rule as any).questionId)}
                     </div>
                   ) : (
                     <div>
                       <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded text-xs mr-2">
                         Score
                       </span>
-                      Category: {getCategoryName(rule.categoryId!)}
+                      Category: {getCategoryName((rule as any).categoryId)}
                     </div>
                   )}
                 </div>
@@ -153,7 +153,7 @@ export default function RulesList({
                     Edit
                   </button>
                   <button
-                    onClick={() => onRuleDeleted(rule.id)}
+                    onClick={() => onRuleDeleted(rule.toDoRuleId)}
                     className="text-xs px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
                   >
                     Delete

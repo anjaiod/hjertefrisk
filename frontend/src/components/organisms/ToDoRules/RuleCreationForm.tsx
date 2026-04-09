@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import type { CategoryDto, QuestionDto, CreateToDoRule } from '@/types';
+import type { CategoryDto, QuestionDto, CreateQuestionAnswerRule, CreateCategoryScoreRule, CreateToDoRule } from '@/types';
 
 interface RuleCreationFormProps {
   mode: 'answer' | 'score';
@@ -42,25 +42,33 @@ export default function RuleCreationForm({
     try {
       setLoading(true);
 
-      const rule: CreateToDoRule = {
-        toDoText,
-        priority,
-        isExclusive,
-        ...(mode === 'answer'
-          ? {
-            triggerType: 'Question',
-            questionId: parseInt(selectedQuestion),
-            requiredOption: selectedOption || undefined,
-            requiredValue: answerValue || undefined,
-            operator: answerOperator as any
-          }
-          : {
-            triggerType: 'Category',
-            categoryId: parseInt(selectedCategory),
-            scoreThreshold,
-            operator: scoreOperator as any
-          })
-      };
+      let rule: CreateToDoRule;
+
+      if (mode === 'answer') {
+        // Determine if the value is a number, text, or option reference
+        const numValue = parseFloat(answerValue);
+        const isNumeric = !isNaN(numValue) && answerValue.trim() !== '';
+
+        rule = {
+          triggerType: 'Question',
+          questionId: parseInt(selectedQuestion),
+          operator: answerOperator as any,
+          toDoText,
+          priority,
+          isExclusive,
+          ...(isNumeric ? { requiredValue: numValue } : { requiredText: answerValue })
+        } as CreateQuestionAnswerRule;
+      } else {
+        rule = {
+          triggerType: 'Category',
+          categoryId: parseInt(selectedCategory),
+          scoreThreshold: Math.floor(scoreThreshold),
+          operator: scoreOperator as any,
+          toDoText,
+          priority,
+          isExclusive
+        } as CreateCategoryScoreRule;
+      }
 
       await onRuleCreated(rule);
 

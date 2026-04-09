@@ -139,7 +139,7 @@ export default function ToDoRulesPage() {
       }
 
       const updatedRuleData = await response.json();
-      setRules(rules.map(r => r.id === id ? updatedRuleData : r));
+      setRules(rules.map(r => (r.toDoRuleId === updatedRuleData.toDoRuleId) ? updatedRuleData : r));
       alert('Rule updated successfully!');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update rule');
@@ -166,7 +166,7 @@ export default function ToDoRulesPage() {
         throw new Error('Failed to delete rule');
       }
 
-      setRules(rules.filter(r => r.id !== id));
+      setRules(rules.filter(r => r.toDoRuleId !== id));
       alert('Rule deleted successfully!');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete rule');
