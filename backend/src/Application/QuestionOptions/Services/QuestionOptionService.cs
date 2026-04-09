@@ -30,6 +30,23 @@ public class QuestionOptionService : IQuestionOptionService
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<QuestionOptionDto>> GetByQuestionIdAsync(int questionId)
+    {
+        return await _db.QuestionOptions
+            .AsNoTracking()
+            .Where(o => o.QuestionId == questionId)
+            .OrderBy(o => o.DisplayOrder)
+            .Select(o => new QuestionOptionDto
+            {
+                QuestionOptionId = o.QuestionOptionId,
+                QuestionId = o.QuestionId,
+                FallbackText = o.FallbackText,
+                OptionValue = o.OptionValue,
+                DisplayOrder = o.DisplayOrder
+            })
+            .ToListAsync();
+    }
+
     public async Task<QuestionOptionDto> CreateAsync(CreateQuestionOptionDto dto)
     {
         var entity = new QuestionOption

@@ -103,7 +103,7 @@ public class ToDoRuleService : IToDoRuleService
         var todo = new ToDo
         {
             PatientId = response.PatientId,
-            PersonnelId = rule.AssignedPersonnelId,
+            PersonnelId = null,
             ToDoText = rule.ToDoText,
             Finished = false,
             Public = true

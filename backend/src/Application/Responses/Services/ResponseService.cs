@@ -100,7 +100,7 @@ public class ResponseService : IResponseService
         await transaction.CommitAsync();
 
         // Build a map of question IDs to their categories for score-based rules
-        var questionIds = entities.Where(e => e.QuestionId.HasValue).Select(e => e.QuestionId.Value).Distinct().ToList();
+        var questionIds = entities.Select(e => e.QuestionId).Distinct().ToList();
         var questionsWithCategories = await _db.Questions
             .AsNoTracking()
             .Where(q => questionIds.Contains(q.QuestionId))
@@ -110,20 +110,18 @@ public class ResponseService : IResponseService
         // Process ToDoRules for each response with calculated scores
         foreach (var entity in entities)
         {
-            if (entity.QuestionId.HasValue)
-            {
-                var questionCategory = questionsWithCategories.FirstOrDefault(q => q.QuestionId == entity.QuestionId.Value);
-                
-                // Calculate category score for score-based matching
-                int? categoryScore = null;
-                if (questionCategory?.CategoryId.HasValue == true)
+            var questionCategory = questionsWithCategories.FirstOrDefault(q => q.QuestionId == entity.QuestionId);
+            
+            // Calculate category score for score-based matching
+            int? categoryScore = null;
+            if (questionCategory?.CategoryId.HasValue == true)
                 {
                     categoryScore = await CalculateCategoryScoreAsync(patientId, questionCategory.CategoryId.Value);
                 }
                 
-                await _toDoRuleService.ProcessResponseWithScoreAsync(entity, categoryScore);
-            }
+            await _toDoRuleService.ProcessResponseWithScoreAsync(entity, categoryScore);
         }
+        
 
         return entities.Select(r => new ResponseDto
         {

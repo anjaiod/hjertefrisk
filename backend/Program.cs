@@ -114,6 +114,7 @@ builder.Services.AddScoped<IMeasurementService, MeasurementService>();
 builder.Services.AddScoped<IPatientService, PatientService>();
 builder.Services.AddScoped<IToDoService, ToDoService>();
 builder.Services.AddScoped<IToDoRuleService, ToDoRuleService>();
+builder.Services.AddScoped<IToDoRuleManagementService, ToDoRuleManagementService>();
 builder.Services.AddScoped<IResponseService, ResponseService>();
 builder.Services.AddScoped<IPersonnelService, PersonnelService>();
 builder.Services.AddScoped<IQuestionDependencyService, QuestionDependencyService>();
