@@ -7,4 +7,5 @@ public class QuickMeasureResultDto
     public string? Title { get; set; }
     public string? ResourceUrl { get; set; }
     public int Priority { get; set; }
+    public string? CategoryName { get; set; }
 }

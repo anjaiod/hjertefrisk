@@ -16,25 +16,6 @@ import type {
   QueryWithQuestionsDto,
 } from "@/types";
 
-function toPatientPerspective(text: string): string {
-  return text
-    .replace(/\b[Dd]u\b/g, (match) =>
-      match === "Du" ? "Pasienten" : "pasienten",
-    )
-    .replace(/\b[Dd]eg\b/g, (match) =>
-      match === "Deg" ? "Pasienten" : "pasienten",
-    )
-    .replace(/\b[Dd]in\b/g, (match) =>
-      match === "Din" ? "Pasientens" : "pasientens",
-    )
-    .replace(/\b[Dd]itt\b/g, (match) =>
-      match === "Ditt" ? "Pasientens" : "pasientens",
-    )
-    .replace(/\b[Dd]ine\b/g, (match) =>
-      match === "Dine" ? "Pasientens" : "pasientens",
-    );
-}
-
 const HWB_MEASUREMENT_IDS = new Set([1, 2, 10]);
 
 function groupIntoRows(
@@ -122,8 +103,12 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
   const weightQuestion = questions.find((q) => q.measurementId === 1);
   const bmiQuestion = questions.find((q) => q.measurementId === 10);
 
-  const heightRaw = heightQuestion ? (answers[heightQuestion.questionId] ?? "") : "";
-  const weightRaw = weightQuestion ? (answers[weightQuestion.questionId] ?? "") : "";
+  const heightRaw = heightQuestion
+    ? (answers[heightQuestion.questionId] ?? "")
+    : "";
+  const weightRaw = weightQuestion
+    ? (answers[weightQuestion.questionId] ?? "")
+    : "";
 
   const updateAnswer = (questionId: number, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -236,7 +221,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
   ): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
-    const questionText = toPatientPerspective(question.fallbackText);
+    const questionText = question.fallbackText;
 
     if (bmiQuestion && question.questionId === bmiQuestion.questionId) {
       return (
@@ -516,7 +501,6 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
             </button>
           </div>
         </form>
-
       </main>
     </div>
   );

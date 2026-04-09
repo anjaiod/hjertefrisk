@@ -7,8 +7,55 @@ interface TiltakPrintProps {
   patientId: number;
 }
 
+function splitBullets(text: string): string[] {
+  const parts = text
+    .split(/(?:^|\s)-\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return parts;
+}
+
+function BulletText({ text }: { text: string }) {
+  const parts = splitBullets(text);
+  if (parts.length <= 1) {
+    return <p className="text-gray-800 text-sm leading-relaxed">{text}</p>;
+  }
+  return (
+    <ul className="list-disc pl-5 space-y-1 text-gray-800 text-sm leading-relaxed">
+      {parts.map((part, i) => (
+        <li key={i}>{part}</li>
+      ))}
+    </ul>
+  );
+}
+
+function buildBulletHtml(text: string): string {
+  const parts = splitBullets(text);
+  if (parts.length <= 1) {
+    return `<p class="measure-text">${text}</p>`;
+  }
+  const items = parts.map((p) => `<li>${p}</li>`).join("\n      ");
+  return `<ul class="measure-list">\n      ${items}\n    </ul>`;
+}
+
+function groupByCategory(
+  measures: QuickMeasureResultDto[],
+): { category: string; items: QuickMeasureResultDto[] }[] {
+  const map = new Map<string, QuickMeasureResultDto[]>();
+  for (const m of measures) {
+    const key = m.categoryName ?? "Generelt";
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(m);
+  }
+  return Array.from(map.entries()).map(([category, items]) => ({
+    category,
+    items,
+  }));
+}
+
 export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
   const sorted = [...measures].sort((a, b) => b.priority - a.priority);
+  const groups = groupByCategory(sorted);
 
   const dateStr = new Date().toLocaleDateString("nb-NO", {
     day: "2-digit",
@@ -17,11 +64,30 @@ export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
   });
 
   const handlePrint = () => {
-    const content = document.getElementById("tiltak-print-content");
-    if (!content) return;
-
-    const printWindow = window.open("", "_blank", "width=800,height=600");
+    const printWindow = window.open("", "_blank", "width=900,height=700");
     if (!printWindow) return;
+
+    const groupsHtml =
+      sorted.length === 0
+        ? `<p class="empty">Ingen tiltak ble generert basert på svarene i skjemaet.</p>`
+        : groups
+            .map(
+              ({ category, items }) => `
+  <div class="category-group">
+    <div class="category-title">${category}</div>
+    ${items
+      .map(
+        (m) => `
+    <div class="measure">
+      ${m.title ? `<div class="measure-title">${m.title}</div>` : ""}
+      ${m.fallbackText ? buildBulletHtml(m.fallbackText) : ""}
+      ${m.resourceUrl ? `<p class="measure-url-label">Les mer: <a href="${m.resourceUrl}" class="measure-url">${m.resourceUrl}</a></p>` : ""}
+    </div>`,
+      )
+      .join("\n")}
+  </div>`,
+            )
+            .join("\n");
 
     printWindow.document.write(`<!DOCTYPE html>
 <html lang="nb">
@@ -33,26 +99,87 @@ export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
     body {
       font-family: Arial, sans-serif;
       font-size: 12pt;
-      color: #111;
-      padding: 20mm;
+      color: #1a1a2e;
+      background: #fff;
+      padding: 18mm 20mm 14mm;
     }
-    h1 { font-size: 18pt; margin-bottom: 3mm; }
-    .meta { font-size: 10pt; color: #555; margin-bottom: 8mm; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 3px solid #1a3a5c;
+      padding-bottom: 5mm;
+      margin-bottom: 7mm;
+    }
+    .header-title { font-size: 20pt; font-weight: bold; color: #1a3a5c; }
+    .header-sub { font-size: 9pt; color: #555; margin-top: 1mm; }
+    .header-meta { text-align: right; font-size: 9pt; color: #555; line-height: 1.6; }
+    .section-label {
+      font-size: 9pt;
+      font-weight: bold;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #1a3a5c;
+      margin-bottom: 4mm;
+    }
+    .category-group { margin-bottom: 6mm; page-break-inside: avoid; }
+    .category-title {
+      font-size: 11pt;
+      font-weight: bold;
+      color: #1a3a5c;
+      text-transform: capitalize;
+      border-bottom: 1px solid #c8d8e8;
+      padding-bottom: 1.5mm;
+      margin-bottom: 3mm;
+    }
     .measure {
-      border-bottom: 1px solid #ddd;
-      padding: 4mm 0;
+      background: #f7f9fc;
+      border-left: 4px solid #1a3a5c;
+      border-radius: 3px;
+      padding: 3mm 5mm;
+      margin-bottom: 3mm;
+      page-break-inside: avoid;
     }
-    .measure:last-child { border-bottom: none; }
-    .measure-title { font-weight: bold; font-size: 12pt; margin-bottom: 1mm; }
-    .measure-text { font-size: 11pt; }
-    .measure-url-label { font-size: 10pt; margin-top: 2mm; }
-    .measure-url { font-size: 10pt; color: #1a56db; }
+    .measure-title { font-weight: bold; font-size: 11pt; color: #1a3a5c; margin-bottom: 1.5mm; }
+    .measure-text { font-size: 11pt; color: #333; line-height: 1.5; }
+    .measure-list { font-size: 11pt; color: #333; line-height: 1.6; padding-left: 18px; }
+    .measure-list li { margin-bottom: 1mm; }
+    .measure-url-label { font-size: 9pt; color: #555; margin-top: 2mm; }
+    .measure-url { color: #1a56db; }
+    .footer {
+      border-top: 1px solid #ccc;
+      margin-top: 8mm;
+      padding-top: 3mm;
+      font-size: 8pt;
+      color: #888;
+      display: flex;
+      justify-content: space-between;
+    }
     .empty { color: #888; font-style: italic; }
-    @media print { body { padding: 10mm; } }
+    @media print {
+      body { padding: 10mm 12mm; }
+      .category-group { break-inside: avoid; }
+      .measure { break-inside: avoid; }
+    }
   </style>
 </head>
 <body>
-  ${content.innerHTML}
+  <div class="header">
+    <div>
+      <div class="header-title">Hjertefrisk</div>
+      <div class="header-sub">Tiltaksplan</div>
+    </div>
+    <div class="header-meta">
+      Pasient-ID: ${patientId}<br/>
+      Dato: ${dateStr}
+    </div>
+  </div>
+  <div class="section-label">Anbefalte tiltak (${sorted.length})</div>
+  ${groupsHtml}
+  <div class="footer">
+    <span>Hjertefrisk – tiltaksplan</span>
+    <span>Generert: ${dateStr}</span>
+  </div>
 </body>
 </html>`);
 
@@ -68,7 +195,9 @@ export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
     <div className="min-h-screen bg-white">
       {/* Screen toolbar */}
       <div className="flex items-center justify-between px-8 py-4 border-b border-gray-200 bg-slate-50 print:hidden">
-        <h1 className="text-2xl font-bold text-gray-900">Tiltak – Hjertefrisk</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Tiltak – Hjertefrisk
+        </h1>
         <button
           type="button"
           onClick={handlePrint}
@@ -86,23 +215,29 @@ export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+              d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
             />
           </svg>
           Skriv ut tiltak
         </button>
       </div>
 
-      {/* Printable content */}
-      <div id="tiltak-print-content" className="px-8 py-6 max-w-3xl mx-auto">
-        <h1
-          className="text-2xl font-bold text-gray-900 mb-1"
-          style={{ fontFamily: "Arial, sans-serif" }}
-        >
-          Tiltak – Hjertefrisk
-        </h1>
-        <p className="text-sm text-gray-500 mb-6" style={{ fontFamily: "Arial, sans-serif" }}>
-          Pasient-ID: {patientId}&nbsp;&nbsp;|&nbsp;&nbsp;Dato: {dateStr}
+      {/* Screen preview */}
+      <div className="px-8 py-6 max-w-3xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-end border-b-2 border-brand-navy pb-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-brand-navy">Hjertefrisk</h1>
+            <p className="text-sm text-gray-500">Tiltaksplan</p>
+          </div>
+          <div className="text-right text-sm text-gray-500 leading-relaxed">
+            <p>Pasient-ID: {patientId}</p>
+            <p>Dato: {dateStr}</p>
+          </div>
+        </div>
+
+        <p className="text-xs font-bold uppercase tracking-widest text-brand-navy mb-4">
+          Anbefalte tiltak ({sorted.length})
         </p>
 
         {sorted.length === 0 ? (
@@ -110,30 +245,49 @@ export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
             Ingen tiltak ble generert basert på svarene i skjemaet.
           </p>
         ) : (
-          <div className="divide-y divide-gray-200">
-            {sorted.map((m) => (
-              <div key={m.quickMeasureId} className="py-4">
-                {m.title && (
-                  <p className="font-semibold text-gray-900 mb-1">{m.title}</p>
-                )}
-                <p className="text-gray-800 text-sm">{m.fallbackText}</p>
-                {m.resourceUrl && (
-                  <p className="text-sm mt-2">
-                    <span className="text-gray-600">Les mer her: </span>
-                    <a
-                      href={m.resourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 underline break-all"
+          <div className="space-y-6">
+            {groups.map(({ category, items }) => (
+              <div key={category}>
+                <h2 className="text-sm font-bold text-brand-navy capitalize border-b border-blue-200 pb-1 mb-3">
+                  {category}
+                </h2>
+                <div className="space-y-3">
+                  {items.map((m) => (
+                    <div
+                      key={m.quickMeasureId}
+                      className="bg-slate-50 border-l-4 border-brand-navy rounded px-5 py-4"
                     >
-                      {m.resourceUrl}
-                    </a>
-                  </p>
-                )}
+                      {m.title && (
+                        <p className="font-semibold text-brand-navy mb-1">
+                          {m.title}
+                        </p>
+                      )}
+                      {m.fallbackText && <BulletText text={m.fallbackText} />}
+                      {m.resourceUrl && (
+                        <p className="text-sm mt-2">
+                          <span className="text-gray-600">Les mer: </span>
+                          <a
+                            href={m.resourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline break-all"
+                          >
+                            {m.resourceUrl}
+                          </a>
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
         )}
+
+        <div className="mt-8 pt-3 border-t border-gray-200 flex justify-between text-xs text-gray-400">
+          <span>Hjertefrisk – tiltaksplan</span>
+          <span>Generert: {dateStr}</span>
+        </div>
       </div>
     </div>
   );

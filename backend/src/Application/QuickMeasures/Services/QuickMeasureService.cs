@@ -84,6 +84,9 @@ public class QuickMeasureService : IQuickMeasureService
 
         var questionMeasures = await _db.QuickMeasures
             .AsNoTracking()
+            .Include(m => m.Category)
+            .Include(m => m.Question)
+                .ThenInclude(q => q!.Category)
             .Where(m => m.TriggerType == MeasureTriggerType.Question
                         && m.QuestionId.HasValue
                         && questionIds.Contains(m.QuestionId.Value))
@@ -91,6 +94,7 @@ public class QuickMeasureService : IQuickMeasureService
 
         var categoryMeasures = await _db.QuickMeasures
             .AsNoTracking()
+            .Include(m => m.Category)
             .Where(m => m.TriggerType == MeasureTriggerType.Category
                         && m.CategoryId.HasValue
                         && categoryIds.Contains(m.CategoryId.Value))
@@ -256,6 +260,7 @@ public class QuickMeasureService : IQuickMeasureService
         FallbackText = m.FallbackText,
         Title = m.Title,
         ResourceUrl = m.ResourceUrl,
-        Priority = m.Priority
+        Priority = m.Priority,
+        CategoryName = m.Category?.Name ?? m.Question?.Category?.Name
     };
 }

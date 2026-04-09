@@ -4,6 +4,7 @@ export type QuickMeasureResultDto = {
   title?: string | null;
   resourceUrl?: string | null;
   priority: number;
+  categoryName?: string | null;
 };
 
 export type EvaluateQuickMeasuresDto = {
