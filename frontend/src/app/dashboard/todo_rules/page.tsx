@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import CategoryTree from '@/components/organisms/ToDoRules/CategoryTree';
-import RuleCreationForm from '@/components/organisms/ToDoRules/RuleCreationForm';
-import RulesList from '@/components/organisms/ToDoRules/RulesList';
 import type { CategoryDto, QuestionDto, ToDoRule, CreateToDoRule } from '@/types';
 
 export default function ToDoRulesPage() {
@@ -12,7 +10,6 @@ export default function ToDoRulesPage() {
   const [rules, setRules] = useState<ToDoRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedMode, setSelectedMode] = useState<'answer' | 'score'>('answer');
 
   // Get token from localStorage
   const getToken = () => {
@@ -186,71 +183,15 @@ export default function ToDoRulesPage() {
       {loading ? (
         <div className="text-center py-12">Loading...</div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Categories and Questions */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Categories & Questions</h2>
-              <CategoryTree
-                categories={categories}
-                questions={questions}
-              />
-            </div>
-          </div>
-
-          {/* Middle Column: Rule Creation */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Create New Rule</h2>
-              
-              {/* Mode Selector */}
-              <div className="mb-6 border-b">
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setSelectedMode('answer')}
-                    className={`pb-3 px-2 font-medium text-sm ${
-                      selectedMode === 'answer'
-                        ? 'border-b-2 border-blue-600 text-blue-600'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Answer-Based
-                  </button>
-                  <button
-                    onClick={() => setSelectedMode('score')}
-                    className={`pb-3 px-2 font-medium text-sm ${
-                      selectedMode === 'score'
-                        ? 'border-b-2 border-blue-600 text-blue-600'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Score-Based
-                  </button>
-                </div>
-              </div>
-
-              <RuleCreationForm
-                mode={selectedMode}
-                categories={categories}
-                questions={questions}
-                onRuleCreated={handleRuleCreated}
-              />
-            </div>
-          </div>
-
-          {/* Right Column: Existing Rules */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Existing Rules ({rules.length})</h2>
-              <RulesList
-                rules={rules}
-                categories={categories}
-                questions={questions}
-                onRuleUpdated={handleRuleUpdated}
-                onRuleDeleted={handleRuleDeleted}
-              />
-            </div>
-          </div>
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <CategoryTree
+            categories={categories}
+            questions={questions}
+            rules={rules}
+            onRuleCreated={handleRuleCreated}
+            onRuleUpdated={handleRuleUpdated}
+            onRuleDeleted={handleRuleDeleted}
+          />
         </div>
       )}
     </div>
