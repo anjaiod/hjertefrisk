@@ -15,6 +15,12 @@ public interface IToDoRuleService
     Task ProcessResponseWithScoreAsync(Response response, int? categoryScore);
     
     /// <summary>
+    /// Processes all CategoryScoreRules for a specific category once per batch.
+    /// Creates a single ToDo if any rule matches (not one per response).
+    /// </summary>
+    Task ProcessCategoryRulesAsync(int patientId, int categoryId, int categoryScore);
+    
+    /// <summary>
     /// Evaluates if a response matches a specific ToDoRule, with optional pre-calculated category score.
     /// </summary>
     Task<bool> MatchesRuleAsync(Response response, ToDoRule rule, int? categoryScore = null);

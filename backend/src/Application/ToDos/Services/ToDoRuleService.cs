@@ -34,6 +34,46 @@ public class ToDoRuleService : IToDoRuleService
         }
     }
 
+    public async Task ProcessCategoryRulesAsync(int patientId, int categoryId, int categoryScore)
+    {
+        // Find all CategoryScoreRules for this category
+        var categoryRules = await _db.CategoryScoreRules
+            .Where(r => r.CategoryId == categoryId)
+            .ToListAsync();
+
+        Console.WriteLine($"[ToDoRuleService] Processing CategoryScoreRules for category {categoryId}, score: {categoryScore}. Found {categoryRules.Count} rules");
+
+        foreach (var rule in categoryRules)
+        {
+            Console.WriteLine($"[ToDoRuleService] Checking CategoryScoreRule {rule.ToDoRuleId}: threshold={rule.ScoreThreshold}, operator={rule.Operator}");
+            
+            if (MatchesCategoryRule(categoryScore, rule))
+            {
+                Console.WriteLine($"[ToDoRuleService] CategoryScoreRule {rule.ToDoRuleId} matched! Creating single ToDo for this category");
+                
+                // Create a single ToDo for this category rule match (not one per response)
+                var todo = new ToDo
+                {
+                    PatientId = patientId,
+                    PersonnelId = null,
+                    ToDoText = rule.ToDoText,
+                    Finished = false,
+                    Public = true
+                };
+                _db.ToDos.Add(todo);
+            }
+            else
+            {
+                Console.WriteLine($"[ToDoRuleService] CategoryScoreRule {rule.ToDoRuleId} did NOT match");
+            }
+        }
+
+        if (categoryRules.Any(r => MatchesCategoryRule(categoryScore, r)))
+        {
+            await _db.SaveChangesAsync();
+        }
+    }
+
     public async Task ProcessResponseWithScoreAsync(Response response, int? categoryScore)
     {
         if (response.QuestionId == null)
@@ -56,38 +96,6 @@ public class ToDoRuleService : IToDoRuleService
                 Console.WriteLine($"[ToDoRuleService] QuestionAnswerRule {rule.ToDoRuleId} matched!");
                 await CreateToDoFromRuleAsync(response, rule);
             }
-        }
-
-        // Find all CategoryScoreRules for the question's category
-        var question = await _db.Questions.FindAsync(response.QuestionId);
-        Console.WriteLine($"[ToDoRuleService] Question CategoryId: {question?.CategoryId}");
-        
-        if (question?.CategoryId != null && categoryScore.HasValue)
-        {
-            var categoryRules = await _db.CategoryScoreRules
-                .Where(r => r.CategoryId == question.CategoryId)
-                .ToListAsync();
-
-            Console.WriteLine($"[ToDoRuleService] Found {categoryRules.Count} CategoryScoreRules for category {question.CategoryId}, score: {categoryScore}");
-
-            foreach (var rule in categoryRules)
-            {
-                Console.WriteLine($"[ToDoRuleService] Checking CategoryScoreRule {rule.ToDoRuleId}: threshold={rule.ScoreThreshold}, operator={rule.Operator}");
-                
-                if (await MatchesRuleAsync(response, rule, categoryScore))
-                {
-                    Console.WriteLine($"[ToDoRuleService] CategoryScoreRule {rule.ToDoRuleId} matched!");
-                    await CreateToDoFromRuleAsync(response, rule);
-                }
-                else
-                {
-                    Console.WriteLine($"[ToDoRuleService] CategoryScoreRule {rule.ToDoRuleId} did NOT match");
-                }
-            }
-        }
-        else
-        {
-            Console.WriteLine($"[ToDoRuleService] No CategoryId or categoryScore - skipping category rules");
         }
     }
 

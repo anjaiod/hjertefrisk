@@ -127,22 +127,25 @@ public class ResponseService : IResponseService
             Console.WriteLine($"[ResponseService] Pre-calculated category {categoryId} score: {score}");
         }
 
-        // Process ToDoRules for each response with pre-calculated scores
+        // Process QuestionAnswerRules for each response
         foreach (var entity in entities)
         {
-            var questionCategory = questionsWithCategories.FirstOrDefault(q => q.QuestionId == entity.QuestionId);
-            
-            // Get pre-calculated category score if available
-            int? categoryScore = null;
-            if (questionCategory?.CategoryId.HasValue == true && categoryScoreMap.TryGetValue(questionCategory.CategoryId.Value, out var score))
-            {
-                categoryScore = score;
-                Console.WriteLine($"[ResponseService] Using pre-calculated score {categoryScore} for question {entity.QuestionId} (category {questionCategory.CategoryId})");
-            }
-                
-            await _toDoRuleService.ProcessResponseWithScoreAsync(entity, categoryScore);
+            await _toDoRuleService.ProcessResponseAsync(entity);
         }
-        
+
+        // Process CategoryScoreRules once per category (not once per response)
+        var processedCategories = new HashSet<int>();
+        foreach (var categoryId in categoriesInBatch)
+        {
+            if (processedCategories.Contains(categoryId))
+                continue;
+
+            var categoryScore = categoryScoreMap[categoryId];
+            Console.WriteLine($"[ResponseService] Processing CategoryScoreRules for category {categoryId} with score {categoryScore}");
+            
+            await _toDoRuleService.ProcessCategoryRulesAsync(patientId, categoryId, categoryScore);
+            processedCategories.Add(categoryId);
+        }
 
         return entities.Select(r => new ResponseDto
         {
