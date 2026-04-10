@@ -4,7 +4,7 @@ public class QuestionOption
 {
     public int QuestionOptionId { get; set; }            // PK
     public int QuestionId { get; set; }          // FK -> Question
-    public string FallbackText { get; set; }    
+    public string FallbackText { get; set; }
     public string OptionValue { get; set; } = "";
     public int DisplayOrder { get; set; }
 
