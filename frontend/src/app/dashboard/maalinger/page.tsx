@@ -12,7 +12,9 @@ export default function Page() {
   const { user } = useUser();
 
   const [measurements, setMeasurements] = useState<MeasurementDto[]>([]);
-  const [results, setResults] = useState<Record<number, MeasurementResultDto>>({});
+  const [results, setResults] = useState<Record<number, MeasurementResultDto>>(
+    {},
+  );
   const [editValues, setEditValues] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,13 +84,18 @@ export default function Page() {
           registeredBy: personnelId ?? undefined,
         };
       })
-      .filter(Boolean) as { measurementId: number; patientId: number; result: number; registeredBy?: number | null }[];
+      .filter(Boolean) as {
+      measurementId: number;
+      patientId: number;
+      result: number;
+      registeredBy?: number | null;
+    }[];
 
     // Recalculate BMI if height (1) or weight (2) was edited
-    const weightVal = payload.find((p) => p.measurementId === 1)?.result
-      ?? results[1]?.result;
-    const heightVal = payload.find((p) => p.measurementId === 2)?.result
-      ?? results[2]?.result;
+    const weightVal =
+      payload.find((p) => p.measurementId === 1)?.result ?? results[1]?.result;
+    const heightVal =
+      payload.find((p) => p.measurementId === 2)?.result ?? results[2]?.result;
 
     if (
       heightVal != null &&
@@ -157,7 +164,7 @@ export default function Page() {
               const isEditing = m.measurementId in editValues;
               const currentValue = isEditing
                 ? editValues[m.measurementId]
-                : result?.result?.toString() ?? "";
+                : (result?.result?.toString() ?? "");
 
               const isBmi = m.measurementId === 10;
 
@@ -167,9 +174,13 @@ export default function Page() {
                   className="flex items-center justify-between px-5 py-4"
                 >
                   <div>
-                    <p className="font-medium text-gray-800">{m.fallbackText}</p>
+                    <p className="font-medium text-gray-800">
+                      {m.fallbackText}
+                    </p>
                     {isBmi && (
-                      <p className="text-xs text-gray-400">Beregnes automatisk</p>
+                      <p className="text-xs text-gray-400">
+                        Beregnes automatisk
+                      </p>
                     )}
                   </div>
 
@@ -190,7 +201,9 @@ export default function Page() {
                             autoFocus
                           />
                           {m.unit && (
-                            <span className="text-sm text-gray-500">{m.unit}</span>
+                            <span className="text-sm text-gray-500">
+                              {m.unit}
+                            </span>
                           )}
                         </div>
                         <button

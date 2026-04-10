@@ -5,7 +5,7 @@ public class Personnel
     public int Id { get; set; }              // PK
     public string SupabaseUserId { get; set; } = "";
     public string Name { get; set; } = "";
-    public string Email { get; set; } = "";  
+    public string Email { get; set; } = "";
     public DateTime CreatedAt { get; set; }
 
     public ICollection<PatientAccess> PatientAccesses { get; set; } = new List<PatientAccess>();

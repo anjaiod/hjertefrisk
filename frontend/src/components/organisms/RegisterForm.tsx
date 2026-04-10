@@ -105,7 +105,9 @@ export function RegisterForm({
           </div>
         )}
 
-        {errorMessage ? <AuthMessage message={errorMessage} tone="error" /> : null}
+        {errorMessage ? (
+          <AuthMessage message={errorMessage} tone="error" />
+        ) : null}
         {successMessage ? (
           <AuthMessage message={successMessage} tone="success" />
         ) : null}

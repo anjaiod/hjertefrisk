@@ -18,14 +18,14 @@ const CATEGORY_RISK_THRESHOLDS: Record<
   { high: number; medium: number | null }
 > = {
   "fysisk aktivitet": { high: 9, medium: 5 },
-  kosthold:           { high: 9, medium: 5 },
-  rusmidler:          { high: 3, medium: 1 },
-  alkohol:            { high: 15, medium: 8 },
-  røyking:            { high: 2, medium: 1 },
-  tannhelse:          { high: 1, medium: null },
-  kroppsdata:         { high: 2, medium: 1 },
-  blodtrykk:          { high: 2, medium: 1 },
-  glukose:            { high: 2, medium: 1 },
+  kosthold: { high: 9, medium: 5 },
+  rusmidler: { high: 3, medium: 1 },
+  alkohol: { high: 15, medium: 8 },
+  røyking: { high: 2, medium: 1 },
+  tannhelse: { high: 1, medium: null },
+  kroppsdata: { high: 2, medium: 1 },
+  blodtrykk: { high: 2, medium: 1 },
+  glukose: { high: 2, medium: 1 },
 };
 
 async function getRiskCategoriesForPatient(
@@ -68,10 +68,12 @@ async function getRiskCategoriesForPatient(
         const score = categoryScores[cat.categoryId];
         if (score === undefined) return null;
 
-        const thresholds = CATEGORY_RISK_THRESHOLDS[cat.name.toLowerCase().trim()];
+        const thresholds =
+          CATEGORY_RISK_THRESHOLDS[cat.name.toLowerCase().trim()];
         if (!thresholds) return null;
 
-        if (score >= thresholds.high) return { name: cat.name, variant: "high" };
+        if (score >= thresholds.high)
+          return { name: cat.name, variant: "high" };
         if (thresholds.medium !== null && score >= thresholds.medium)
           return { name: cat.name, variant: "medium" };
         return { name: cat.name, variant: "low" };
@@ -87,9 +89,15 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
   const patientId = searchParams.get("patientId");
 
-  const [selectedPatient, setSelectedPatient] = useState<PatientDto | null>(null);
-  const [todos, setTodos] = useState<{ id: number; text: string; completed: boolean }[]>([]);
-  const [latestMeasurements, setLatestMeasurements] = useState<LatestMeasurementResultDto[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<PatientDto | null>(
+    null,
+  );
+  const [todos, setTodos] = useState<
+    { id: number; text: string; completed: boolean }[]
+  >([]);
+  const [latestMeasurements, setLatestMeasurements] = useState<
+    LatestMeasurementResultDto[]
+  >([]);
   const [risks, setRisks] = useState<CategoryRisk[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -111,21 +119,27 @@ export default function DashboardPage() {
     const loadData = async () => {
       try {
         // Fetch patient data, todos, measurements, and risks in parallel
-        const [patients, allTodos, measurements, categoryRisks] = await Promise.all([
-          apiClient.get<PatientDto[]>("/api/patients"),
-          apiClient.get<ToDoDto[]>("/api/todos"),
-          apiClient.get<LatestMeasurementResultDto[]>(
-            `/api/patients/${encodeURIComponent(patientId)}/latest-measurements`
-          ),
-          getRiskCategoriesForPatient(patientId),
-        ]);
+        const [patients, allTodos, measurements, categoryRisks] =
+          await Promise.all([
+            apiClient.get<PatientDto[]>("/api/patients"),
+            apiClient.get<ToDoDto[]>("/api/todos"),
+            apiClient.get<LatestMeasurementResultDto[]>(
+              `/api/patients/${encodeURIComponent(patientId)}/latest-measurements`,
+            ),
+            getRiskCategoriesForPatient(patientId),
+          ]);
 
-        const patient = patients.find((p) => String(p.id) === patientId) ?? null;
+        const patient =
+          patients.find((p) => String(p.id) === patientId) ?? null;
         setSelectedPatient(patient);
 
         const filteredTodos = allTodos
           .filter((t) => String(t.patientId) === patientId)
-          .map((t) => ({ id: t.toDoId, text: t.toDoText, completed: t.finished }));
+          .map((t) => ({
+            id: t.toDoId,
+            text: t.toDoText,
+            completed: t.finished,
+          }));
         setTodos(filteredTodos || []);
 
         setLatestMeasurements(measurements || []);
@@ -149,7 +163,10 @@ export default function DashboardPage() {
   const highRisks = risks.filter((r) => r.variant === "high");
   const mediumRisks = risks.filter((r) => r.variant === "medium");
   const remaining = Math.max(0, 3 - highRisks.length);
-  const risksToShow = [...highRisks, ...mediumRisks.slice(0, remaining)].slice(0, 3);
+  const risksToShow = [...highRisks, ...mediumRisks.slice(0, remaining)].slice(
+    0,
+    3,
+  );
 
   const heightResult = latestMeasurements.find((m) => m.measurementId === 2);
   const weightResult = latestMeasurements.find((m) => m.measurementId === 1);
@@ -157,7 +174,11 @@ export default function DashboardPage() {
   const weight = weightResult ? Number(weightResult.result) : null;
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
   }
 
   return (

@@ -62,10 +62,10 @@ if (!string.IsNullOrWhiteSpace(supabaseUrl) && !string.IsNullOrWhiteSpace(supaba
 {
     // Clean up URL (remove trailing slash if present)
     supabaseUrl = supabaseUrl.TrimEnd('/');
-    
+
     // Supabase auth URL for JWKS endpoint
     var supabaseAuthUrl = $"{supabaseUrl}/auth/v1";
-    
+
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
@@ -141,7 +141,7 @@ if (!string.IsNullOrWhiteSpace(httpsPort))
 app.UseCors(CorsPolicyName);
 
 
-if (!string.IsNullOrWhiteSpace(builder.Configuration["Supabase:Url"]) && 
+if (!string.IsNullOrWhiteSpace(builder.Configuration["Supabase:Url"]) &&
     !string.IsNullOrWhiteSpace(builder.Configuration["Supabase:AnonKey"]))
 {
     app.UseAuthentication();

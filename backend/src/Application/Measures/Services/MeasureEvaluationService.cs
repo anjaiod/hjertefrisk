@@ -13,7 +13,7 @@ public class MeasureEvaluationService : IMeasureEvaluationService
     private readonly SleepEvaluationService _sleepEvaluationService;
     private readonly KroppsDataEvaluationService _kroppsDataEvaluationService;
 
-    private const int SleepCategoryId      = 10;
+    private const int SleepCategoryId = 10;
     private const int KroppsDataCategoryId = 9;
 
     public MeasureEvaluationService(AppDbContext db)
@@ -142,17 +142,17 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                 patientResults.Add(new PatientMeasureResultDto
                 {
                     PatientMeasureId = measure.PatientMeasureId,
-                    Source           = MeasureResultSource.CategoryScore,
-                    CategoryId       = measure.CategoryId,
+                    Source = MeasureResultSource.CategoryScore,
+                    CategoryId = measure.CategoryId,
                     TriggerQuestionId = null,
-                    CategoryScore    = categoryScores.GetValueOrDefault(SleepCategoryId),
-                    Text             = ResolvePatientText(measure, languageCode),
-                    Title            = ResolvePatientTitle(measure, languageCode),
-                    ResourceUrl      = measure.ResourceUrl,
-                    GeneratedAt      = generatedAt,
-                    ScoreThreshold   = measure.ScoreThreshold,
-                    IsExclusive      = measure.IsExclusive,
-                    Priority         = measure.Priority
+                    CategoryScore = categoryScores.GetValueOrDefault(SleepCategoryId),
+                    Text = ResolvePatientText(measure, languageCode),
+                    Title = ResolvePatientTitle(measure, languageCode),
+                    ResourceUrl = measure.ResourceUrl,
+                    GeneratedAt = generatedAt,
+                    ScoreThreshold = measure.ScoreThreshold,
+                    IsExclusive = measure.IsExclusive,
+                    Priority = measure.Priority
                 });
             }
         }
@@ -173,18 +173,18 @@ public class MeasureEvaluationService : IMeasureEvaluationService
             {
                 patientResults.Add(new PatientMeasureResultDto
                 {
-                    PatientMeasureId  = measure.PatientMeasureId,
-                    Source            = MeasureResultSource.CategoryScore,
-                    CategoryId        = measure.CategoryId,
+                    PatientMeasureId = measure.PatientMeasureId,
+                    Source = MeasureResultSource.CategoryScore,
+                    CategoryId = measure.CategoryId,
                     TriggerQuestionId = null,
-                    CategoryScore     = categoryScores.GetValueOrDefault(KroppsDataCategoryId),
-                    Text              = ResolvePatientText(measure, languageCode),
-                    Title             = ResolvePatientTitle(measure, languageCode),
-                    ResourceUrl       = measure.ResourceUrl,
-                    GeneratedAt       = generatedAt,
-                    ScoreThreshold    = measure.ScoreThreshold,
-                    IsExclusive       = measure.IsExclusive,
-                    Priority          = measure.Priority
+                    CategoryScore = categoryScores.GetValueOrDefault(KroppsDataCategoryId),
+                    Text = ResolvePatientText(measure, languageCode),
+                    Title = ResolvePatientTitle(measure, languageCode),
+                    ResourceUrl = measure.ResourceUrl,
+                    GeneratedAt = generatedAt,
+                    ScoreThreshold = measure.ScoreThreshold,
+                    IsExclusive = measure.IsExclusive,
+                    Priority = measure.Priority
                 });
             }
         }

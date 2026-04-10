@@ -30,9 +30,10 @@ async function fetchPatients(): Promise<Patient[]> {
     patients.map(async (p) => {
       let riskLevel: TagVariant = "low";
       try {
-        const scoreData = await apiClient.get<{ patientId: number; totalScore: number }>(
-          `/api/patients/${p.id}/score`
-        );
+        const scoreData = await apiClient.get<{
+          patientId: number;
+          totalScore: number;
+        }>(`/api/patients/${p.id}/score`);
         riskLevel = scoreToRiskLevel(scoreData.totalScore);
       } catch {
         // fallback to "low" if score fetch fails
@@ -49,6 +50,7 @@ async function fetchPatients(): Promise<Patient[]> {
 
 export default function Page() {
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetchPatients()
@@ -59,27 +61,43 @@ export default function Page() {
       });
   }, []);
 
+  const filteredPatients = patients.filter((p) => {
+    if (!search) return true;
+    const query = search.toLowerCase();
+    const lower = p.name.toLowerCase();
+    return (
+      lower.startsWith(query) ||
+      lower.split(" ").some((part) => part.startsWith(query))
+    );
+  });
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-brand-navy">Pasienter</h1>
         <div className="flex items-center gap-3">
-          <Input
-            as="select"
-            className="w-36"
-            options={[
-              { value: "high", label: "Status: Høy" },
-              { value: "medium", label: "Status: Middels" },
-              { value: "low", label: "Status: Lav" },
-              { value: "lastVisited", label: "Sist besøkt" },
-            ]}
-            placeholder="Filtrer"
-            defaultValue=""
+          <div className="w-36">
+            <Input
+              as="select"
+              options={[
+                { value: "high", label: "Status: Høy" },
+                { value: "medium", label: "Status: Middels" },
+                { value: "low", label: "Status: Lav" },
+                { value: "lastVisited", label: "Sist besøkt" },
+              ]}
+              placeholder="Filtrer"
+              defaultValue=""
+            />
+          </div>
+          <SearchBar
+            placeholder="Søk..."
+            value={search}
+            onChange={setSearch}
+            className="w-72"
           />
-          <SearchBar placeholder="Søk..." />
         </div>
       </div>
-      <PatientTable patients={patients} />
+      <PatientTable patients={filteredPatients} />
     </div>
   );
 }

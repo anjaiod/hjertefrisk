@@ -37,14 +37,14 @@ type RiskThreshold = {
 
 const CATEGORY_RISK_THRESHOLDS: Record<string, RiskThreshold> = {
   "fysisk aktivitet": { high: 9, medium: 5 },
-  "kosthold":         { high: 9, medium: 5 },
-  "rusmidler":        { high: 3, medium: 1 },
-  "alkohol":          { high: 15, medium: 8 },
-  "røyking":          { high: 2, medium: 1 },
-  "tannhelse":        { high: 1, medium: null },
-  "kroppsdata":       { high: 2, medium: 1 },
-  "blodtrykk":        { high: 2, medium: 1 },
-  "glukose":          { high: 2, medium: 1 },
+  kosthold: { high: 9, medium: 5 },
+  rusmidler: { high: 3, medium: 1 },
+  alkohol: { high: 15, medium: 8 },
+  røyking: { high: 2, medium: 1 },
+  tannhelse: { high: 1, medium: null },
+  kroppsdata: { high: 2, medium: 1 },
+  blodtrykk: { high: 2, medium: 1 },
+  glukose: { high: 2, medium: 1 },
 };
 
 function tagVariantFromCategoryScore(
@@ -94,7 +94,9 @@ export default function PasientTiltakside() {
   const [measuresByCategory, setMeasuresByCategory] = useState<
     Record<number, PatientMeasureResult[]>
   >({});
-  const [categoryScores, setCategoryScores] = useState<Record<number, number>>({});
+  const [categoryScores, setCategoryScores] = useState<Record<number, number>>(
+    {},
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -204,7 +206,9 @@ export default function PasientTiltakside() {
                     const score = categoryScores[cat.categoryId];
                     const isSleep = cat.name.toLowerCase().trim() === "søvn";
                     const variant = isSleep
-                      ? sleepTagVariant(measuresByCategory[cat.categoryId] ?? [])
+                      ? sleepTagVariant(
+                          measuresByCategory[cat.categoryId] ?? [],
+                        )
                       : score !== undefined
                         ? tagVariantFromCategoryScore(cat.name, score)
                         : null;

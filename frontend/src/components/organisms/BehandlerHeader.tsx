@@ -110,7 +110,6 @@ export function BehandlerHeader() {
       </nav>
 
       <div className="flex items-center gap-3">
-
         <button
           onClick={() => (window.location.href = dashboardHref)}
           className="bg-brand-navy hover:bg-brand-navy-light transition rounded-full w-10 h-10 flex items-center justify-center cursor-pointer"
