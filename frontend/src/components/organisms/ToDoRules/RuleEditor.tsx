@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import type { CreateQuestionAnswerRule, QuestionDto } from '@/types';
+import { Modal } from '@/components/atoms/Modal';
 
 interface RuleEditorProps {
   question: QuestionDto;
@@ -98,9 +99,8 @@ export default function RuleEditor({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4">
-        <h3 className="text-lg font-bold text-gray-900">{getTitle()}</h3>
+    <Modal onClose={onClose} title={getTitle()}>
+      <div className="max-w-md w-full p-2 space-y-4">
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -204,6 +204,6 @@ export default function RuleEditor({
           </div>
         </form>
       </div>
-    </div>
+    </Modal>
   );
 }
