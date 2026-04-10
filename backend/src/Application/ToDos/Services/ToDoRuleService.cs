@@ -145,7 +145,7 @@ public class ToDoRuleService : IToDoRuleService
         if (score == null)
             return false;
 
-        return rule.Operator switch
+        bool matches = rule.Operator switch
         {
             "=" => score == rule.ScoreThreshold,
             "!=" => score != rule.ScoreThreshold,
@@ -155,6 +155,10 @@ public class ToDoRuleService : IToDoRuleService
             ">=" => score >= rule.ScoreThreshold,
             _ => false
         };
+        
+        Console.WriteLine($"[ToDoRuleService.MatchesCategoryRule] score={score}, operator='{rule.Operator}', threshold={rule.ScoreThreshold} -> matches={matches}");
+        
+        return matches;
     }
 
     public async Task CreateToDoFromRuleAsync(Response response, ToDoRule rule)

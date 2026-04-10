@@ -117,7 +117,12 @@ public class ResponseService : IResponseService
 
         foreach (var categoryId in categoriesInBatch)
         {
-            var score = await CalculateCategoryScoreAsync(patientId, categoryId);
+            // Get only the responses from the current batch for this category
+            var responsesForCategory = entities
+                .Where(e => questionsWithCategories.FirstOrDefault(q => q.QuestionId == e.QuestionId)?.CategoryId == categoryId)
+                .ToList();
+            
+            var score = await CalculateCategoryScoreAsync(categoryId, responsesForCategory);
             categoryScoreMap[categoryId] = score;
             Console.WriteLine($"[ResponseService] Pre-calculated category {categoryId} score: {score}");
         }
@@ -181,10 +186,11 @@ public class ResponseService : IResponseService
     }
 
     /// <summary>
-    /// Calculates the cumulative score for a category based on patient responses and Severity rules.
+    /// Calculates the cumulative score for a category based on responses from the current batch and Severity rules.
     /// Matches responses against Severity rules for questions in the category and sums matching scores.
+    /// Only considers responses from the current submission, not historical responses.
     /// </summary>
-    private async Task<int> CalculateCategoryScoreAsync(int patientId, int categoryId)
+    private async Task<int> CalculateCategoryScoreAsync(int categoryId, List<Response> currentBatchResponses)
     {
         // Get all questions in this category with their Severity rules
         var questions = await _db.Questions
@@ -200,26 +206,21 @@ public class ResponseService : IResponseService
         }
 
         var questionIds = questions.Select(q => q.QuestionId).ToList();
-
-        // Get the most recent responses for this patient for these questions
-        var responses = await _db.Responses
-            .AsNoTracking()
-            .Where(r => r.PatientId == patientId && questionIds.Contains(r.QuestionId))
-            .OrderBy(r => r.CreatedAt)
-            .ToListAsync();
-
-        var responseMap = responses
+        
+        // Build a map of current batch responses by question ID
+        var responseMap = currentBatchResponses
+            .Where(r => questionIds.Contains(r.QuestionId))
             .GroupBy(r => r.QuestionId)
-            .ToDictionary(g => g.Key, g => g.Last()); // Get most recent per question
+            .ToDictionary(g => g.Key, g => g.Last()); // Last in case multiple responses for same question
 
         var totalScore = 0;
-        Console.WriteLine($"[CalculateCategoryScoreAsync] Patient {patientId}, Category {categoryId}:");
+        Console.WriteLine($"[CalculateCategoryScoreAsync] Category {categoryId} (current batch only):");
 
         foreach (var question in questions)
         {
             if (!responseMap.TryGetValue(question.QuestionId, out var response))
             {
-                Console.WriteLine($"  - Question {question.QuestionId}: No response found");
+                Console.WriteLine($"  - Question {question.QuestionId}: No response in current batch");
                 continue;
             }
 
