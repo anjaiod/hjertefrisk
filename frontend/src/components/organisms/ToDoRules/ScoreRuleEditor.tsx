@@ -19,7 +19,6 @@ export default function ScoreRuleEditor({
 }: ScoreRuleEditorProps) {
   const [toDoText, setToDoText] = useState('');
   const [priority, setPriority] = useState(1);
-  const [isExclusive, setIsExclusive] = useState(false);
   const [operator, setOperator] = useState('>=');
   const [scoreThreshold, setScoreThreshold] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,7 +43,6 @@ export default function ScoreRuleEditor({
         scoreThreshold: parseInt(scoreThreshold),
         toDoText: toDoText.trim(),
         priority,
-        isExclusive,
         operator: operator as any,
         triggerType: 'Category'
       };
@@ -117,20 +115,6 @@ export default function ScoreRuleEditor({
                 min="0"
                 disabled={loading}
               />
-            </div>
-
-            <div className="flex items-center gap-2 pt-6">
-              <input
-                type="checkbox"
-                id="exclusive"
-                checked={isExclusive}
-                onChange={(e) => setIsExclusive(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
-                disabled={loading}
-              />
-              <label htmlFor="exclusive" className="text-sm font-medium text-gray-700">
-                Exclusive
-              </label>
             </div>
           </div>
 

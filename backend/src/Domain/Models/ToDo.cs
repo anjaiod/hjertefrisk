@@ -19,7 +19,6 @@ public abstract class ToDoRule
     public string Operator { get; set; } = "";
     public string ToDoText { get; set; } = "";
     public int Priority { get; set; }
-    public bool IsExclusive { get; set; }
 }
 
 public class QuestionAnswerRule : ToDoRule

@@ -6,7 +6,6 @@ export interface ToDoRuleBase {
   operator: '=' | '!=' | '<' | '>' | '<=' | '>=';
   toDoText: string;
   priority: number; // 0 = low, 1 = medium, 2 = high
-  isExclusive: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -45,7 +44,6 @@ export interface CreateQuestionAnswerRule {
   operator: '=' | '!=' | '<' | '>' | '<=' | '>=';
   toDoText: string;
   priority: number;
-  isExclusive: boolean;
 }
 
 /**
@@ -58,7 +56,6 @@ export interface CreateCategoryScoreRule {
   operator: '=' | '!=' | '<' | '>' | '<=' | '>=';
   toDoText: string;
   priority: number;
-  isExclusive: boolean;
 }
 
 export type CreateToDoRule = CreateQuestionAnswerRule | CreateCategoryScoreRule;

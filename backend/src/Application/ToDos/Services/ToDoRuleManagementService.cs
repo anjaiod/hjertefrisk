@@ -78,8 +78,7 @@ public class ToDoRuleManagementService : IToDoRuleManagementService
                 RequiredValue = dto.RequiredValue,
                 Operator = dto.Operator,
                 ToDoText = dto.ToDoText.Trim(),
-                Priority = dto.Priority,
-                IsExclusive = dto.IsExclusive
+                Priority = dto.Priority
             };
         }
         else if (dto.TriggerType == "Category")
@@ -90,8 +89,7 @@ public class ToDoRuleManagementService : IToDoRuleManagementService
                 ScoreThreshold = dto.ScoreThreshold ?? 0,
                 Operator = dto.Operator,
                 ToDoText = dto.ToDoText.Trim(),
-                Priority = dto.Priority,
-                IsExclusive = dto.IsExclusive
+                Priority = dto.Priority
             };
         }
         else
@@ -128,7 +126,6 @@ public class ToDoRuleManagementService : IToDoRuleManagementService
         entity.Operator = dto.Operator;
         entity.ToDoText = dto.ToDoText.Trim();
         entity.Priority = dto.Priority;
-        entity.IsExclusive = dto.IsExclusive;
 
         // Update type-specific properties
         if (entity is QuestionAnswerRule qr)
@@ -182,8 +179,7 @@ public class ToDoRuleManagementService : IToDoRuleManagementService
             RequiredValue = rule.RequiredValue,
             Operator = rule.Operator,
             ToDoText = rule.ToDoText,
-            Priority = rule.Priority,
-            IsExclusive = rule.IsExclusive
+            Priority = rule.Priority
         };
     }
 
@@ -197,8 +193,7 @@ public class ToDoRuleManagementService : IToDoRuleManagementService
             TriggerType = "Category",
             Operator = rule.Operator,
             ToDoText = rule.ToDoText,
-            Priority = rule.Priority,
-            IsExclusive = rule.IsExclusive
+            Priority = rule.Priority
         };
     }
 

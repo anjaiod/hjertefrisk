@@ -195,7 +195,7 @@ export default function CategoryTree({
                                                 {rule.toDoText}
                                               </div>
                                               <div className="text-xs text-green-700 mt-1">
-                                                Priority: {rule.priority} {rule.isExclusive && '• Exclusive'}
+                                                Priority: {rule.priority}
                                               </div>
                                             </div>
                                             <div className="flex gap-1 flex-shrink-0">
@@ -289,8 +289,7 @@ export default function CategoryTree({
                               {rule.toDoText}
                             </div>
                             <div className="text-xs text-purple-700 mt-1">
-                              Score {(rule as any).operator} {(rule as any).scoreThreshold} • Priority: {rule.priority}{' '}
-                              {rule.isExclusive && '• Exclusive'}
+                              Score {(rule as any).operator} {(rule as any).scoreThreshold} • Priority: {rule.priority}
                             </div>
                           </div>
                           <div className="flex gap-1 flex-shrink-0">

@@ -33,7 +33,6 @@ export default function RuleCreationForm({
   // Common form state
   const [toDoText, setToDoText] = useState<string>('');
   const [priority, setPriority] = useState<number>(1); // 0=low, 1=medium, 2=high
-  const [isExclusive, setIsExclusive] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +54,6 @@ export default function RuleCreationForm({
           operator: answerOperator as any,
           toDoText,
           priority,
-          isExclusive,
           ...(isNumeric ? { requiredValue: numValue } : { requiredText: answerValue })
         } as CreateQuestionAnswerRule;
       } else {
@@ -65,8 +63,7 @@ export default function RuleCreationForm({
           scoreThreshold: Math.floor(scoreThreshold),
           operator: scoreOperator as any,
           toDoText,
-          priority,
-          isExclusive
+          priority
         } as CreateCategoryScoreRule;
       }
 
@@ -85,7 +82,6 @@ export default function RuleCreationForm({
       }
       setToDoText('');
       setPriority(1);
-      setIsExclusive(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create rule');
     } finally {
@@ -176,19 +172,6 @@ export default function RuleCreationForm({
             <option value="1">Medium</option>
             <option value="2">High</option>
           </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="exclusive"
-            checked={isExclusive}
-            onChange={(e) => setIsExclusive(e.target.checked)}
-            className="rounded"
-          />
-          <label htmlFor="exclusive" className="text-sm font-medium text-gray-900">
-            Exclusive (only create once)
-          </label>
         </div>
 
         <button
@@ -287,18 +270,6 @@ export default function RuleCreationForm({
         </select>
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="exclusive"
-          checked={isExclusive}
-          onChange={(e) => setIsExclusive(e.target.checked)}
-          className="rounded"
-        />
-        <label htmlFor="exclusive" className="text-sm font-medium text-gray-900">
-          Exclusive (only create once)
-        </label>
-      </div>
 
       <button
         type="submit"

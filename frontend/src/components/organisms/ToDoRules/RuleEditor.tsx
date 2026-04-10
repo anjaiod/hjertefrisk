@@ -19,7 +19,6 @@ export default function RuleEditor({
 }: RuleEditorProps) {
   const [toDoText, setToDoText] = useState('');
   const [priority, setPriority] = useState(1);
-  const [isExclusive, setIsExclusive] = useState(false);
   const [operator, setOperator] = useState('=');
   const [requiredValue, setRequiredValue] = useState('');
   const [loading, setLoading] = useState(false);
@@ -52,7 +51,6 @@ export default function RuleEditor({
         questionId: question.questionId,
         toDoText: toDoText.trim(),
         priority,
-        isExclusive,
         operator: operator as any,
         triggerType: 'Question'
       };
@@ -169,20 +167,6 @@ export default function RuleEditor({
                 ))}
               </select>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="exclusive"
-              checked={isExclusive}
-              onChange={(e) => setIsExclusive(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
-              disabled={loading}
-            />
-            <label htmlFor="exclusive" className="text-sm font-medium text-gray-700">
-              Exclusive (block other rules)
-            </label>
           </div>
 
           <div className="flex gap-3 pt-4">

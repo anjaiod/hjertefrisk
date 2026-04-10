@@ -29,7 +29,6 @@ export default function RulesList({
     setEditData({
       toDoText: rule.toDoText,
       priority: rule.priority,
-      isExclusive: rule.isExclusive,
       triggerType: rule.triggerType,
       ...(rule.triggerType === 'Question'
         ? {
@@ -138,11 +137,6 @@ export default function RulesList({
                   }`}>
                     {rule.priority === 2 ? 'HIGH' : rule.priority === 1 ? 'MEDIUM' : 'LOW'}
                   </span>
-                  {rule.isExclusive && (
-                    <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                      Exclusive
-                    </span>
-                  )}
                 </div>
 
                 <div className="flex gap-2">
