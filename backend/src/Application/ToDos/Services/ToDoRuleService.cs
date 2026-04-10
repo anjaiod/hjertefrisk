@@ -43,35 +43,42 @@ public class ToDoRuleService : IToDoRuleService
 
         Console.WriteLine($"[ToDoRuleService] Processing CategoryScoreRules for category {categoryId}, score: {categoryScore}. Found {categoryRules.Count} rules");
 
-        foreach (var rule in categoryRules)
+        // Find all matching rules
+        var matchingRules = categoryRules
+            .Where(rule => MatchesCategoryRule(categoryScore, rule))
+            .ToList();
+
+        if (matchingRules.Count == 0)
         {
-            Console.WriteLine($"[ToDoRuleService] Checking CategoryScoreRule {rule.ToDoRuleId}: threshold={rule.ScoreThreshold}, operator={rule.Operator}");
-            
-            if (MatchesCategoryRule(categoryScore, rule))
-            {
-                Console.WriteLine($"[ToDoRuleService] CategoryScoreRule {rule.ToDoRuleId} matched! Creating single ToDo for this category");
-                
-                // Create a single ToDo for this category rule match (not one per response)
-                var todo = new ToDo
-                {
-                    PatientId = patientId,
-                    PersonnelId = null,
-                    ToDoText = rule.ToDoText,
-                    Finished = false,
-                    Public = true
-                };
-                _db.ToDos.Add(todo);
-            }
-            else
-            {
-                Console.WriteLine($"[ToDoRuleService] CategoryScoreRule {rule.ToDoRuleId} did NOT match");
-            }
+            Console.WriteLine($"[ToDoRuleService] No matching CategoryScoreRules for category {categoryId}");
+            return;
         }
 
-        if (categoryRules.Any(r => MatchesCategoryRule(categoryScore, r)))
+        // Find the highest threshold among matching rules
+        var highestThreshold = matchingRules.Max(r => r.ScoreThreshold);
+        Console.WriteLine($"[ToDoRuleService] Found {matchingRules.Count} matching rules, highest threshold: {highestThreshold}");
+
+        // Only use rules with the highest threshold
+        var rulesToUse = matchingRules.Where(r => r.ScoreThreshold == highestThreshold).ToList();
+        Console.WriteLine($"[ToDoRuleService] Using {rulesToUse.Count} rule(s) with threshold {highestThreshold}");
+
+        // Create a ToDo for each rule with the highest threshold
+        foreach (var rule in rulesToUse)
         {
-            await _db.SaveChangesAsync();
+            Console.WriteLine($"[ToDoRuleService] Creating ToDo for CategoryScoreRule {rule.ToDoRuleId} with threshold {rule.ScoreThreshold}");
+            
+            var todo = new ToDo
+            {
+                PatientId = patientId,
+                PersonnelId = null,
+                ToDoText = rule.ToDoText,
+                Finished = false,
+                Public = true
+            };
+            _db.ToDos.Add(todo);
         }
+
+        await _db.SaveChangesAsync();
     }
 
     public async Task ProcessResponseWithScoreAsync(Response response, int? categoryScore)
