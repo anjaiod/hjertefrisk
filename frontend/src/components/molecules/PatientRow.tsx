@@ -18,6 +18,7 @@ const tagLabel: Record<TagVariant, string> = {
   high: "Høy",
   medium: "Middels",
   low: "Lav",
+  none: "Mangler",
 };
 
 const btnClass =

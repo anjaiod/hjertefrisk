@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type TagVariant = "high" | "medium" | "low";
+export type TagVariant = "high" | "medium" | "low" | "none";
 
 interface TagProps {
   variant?: TagVariant;
@@ -12,12 +12,14 @@ const variantClasses: Record<TagVariant, string> = {
   high: "bg-brand-orange-lightest text-brand-orange",
   medium: "bg-brand-sun-lightest text-brand-orange",
   low: "bg-brand-mint-lightest text-brand-sage",
+  none: "bg-brand-mist-lightest text-brand-navy",
 };
 
 const dotClasses: Record<TagVariant, string> = {
   high: "bg-brand-orange",
   medium: "bg-brand-sun",
   low: "bg-brand-sage",
+  none: "bg-brand-navy-lightest",
 };
 
 export function Tag({

@@ -8,6 +8,7 @@ public class Patient
     public string Email { get; set; } = "";
     public string? Gender { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? RiskLevel { get; set; }
 
     public ICollection<Response> Responses { get; set; } = new List<Response>();
     public ICollection<AnsweredQuery> AnsweredQueries { get; set; } = new List<AnsweredQuery>();
