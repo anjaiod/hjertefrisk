@@ -7,6 +7,7 @@ export interface Patient {
   id: string;
   name: string;
   lastVisited: string;
+  lastVisitedRaw: string;
   riskLevel: TagVariant;
 }
 
