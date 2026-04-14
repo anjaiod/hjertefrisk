@@ -30,8 +30,7 @@ function SortIcon({
   sortKey: SortKey | null;
   sortDir: SortDir;
 }) {
-  if (sortKey !== col)
-    return <span className="ml-1 text-lg">⇅</span>;
+  if (sortKey !== col) return <span className="ml-1 text-lg">⇅</span>;
   return <span className="ml-1 text-lg">{sortDir === "asc" ? "↑" : "↓"}</span>;
 }
 
