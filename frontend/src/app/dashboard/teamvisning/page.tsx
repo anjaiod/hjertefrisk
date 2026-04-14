@@ -5,6 +5,25 @@ import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/apiClient";
 import type { LatestMeasurementResultDto, PatientDto } from "@/types";
 import { RiskList, getRisks, type CategoryRisk } from "@/components/molecules/RiskList";
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ResponsiveContainer,
+} from "recharts";
+
+const BAR_COLOR: Record<string, string> = {
+  high: "#ef4444",
+  medium: "#f97316",
+  low: "#22c55e",
+};
+const BAR_WIDTH: Record<string, string> = {
+  high: "100%",
+  medium: "60%",
+  low: "25%",
+};
 
 const CATEGORY_PDF: Record<string, string> = {
   "fysisk aktivitet": "Fysisk aktivitet og kosthold.pdf",
@@ -27,6 +46,7 @@ export default function TeamvisningPage() {
   const [weight, setWeight] = useState<number | null>(null);
   const [risks, setRisks] = useState<CategoryRisk[]>([]);
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<"radar" | "bar">("radar");
 
   useEffect(() => {
     if (!patientId) { setLoading(false); return; }
@@ -94,12 +114,77 @@ export default function TeamvisningPage() {
             <RiskList risks={risks} />
           </div>
 
-          {/* Graph placeholder */}
-          <div className="flex flex-1 flex-col rounded-xl bg-brand-navy p-6">
-            <span className="text-sm font-semibold text-white">Graf</span>
-            <div className="flex flex-1 items-center justify-center">
-              <p className="text-sm text-brand-mist">Grafisk fremstilling av risikoprofil</p>
+          {/* Chart area */}
+          <div className="flex flex-1 flex-col rounded-xl bg-brand-navy p-6 min-h-[280px]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-white">Risikoprofil</span>
+              <div className="flex rounded-lg overflow-hidden border border-white/20">
+                <button
+                  onClick={() => setView("radar")}
+                  className={`px-3 py-1 text-xs font-medium transition-colors ${view === "radar" ? "bg-white/20 text-white" : "text-white/50 hover:text-white/80"}`}
+                >
+                  Radar
+                </button>
+                <button
+                  onClick={() => setView("bar")}
+                  className={`px-3 py-1 text-xs font-medium transition-colors ${view === "bar" ? "bg-white/20 text-white" : "text-white/50 hover:text-white/80"}`}
+                >
+                  Stolpe
+                </button>
+              </div>
             </div>
+
+            {risks.length === 0 ? (
+              <div className="flex flex-1 items-center justify-center">
+                <p className="text-sm text-brand-mist">Ikke nok data for grafisk fremstilling</p>
+              </div>
+            ) : view === "radar" && risks.length >= 3 ? (
+              <div className="flex-1 min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart
+                    data={risks.map((r) => ({
+                      category: r.name.charAt(0).toUpperCase() + r.name.slice(1),
+                      value: r.variant === "high" ? 9 : r.variant === "medium" ? 5 : 1,
+                    }))}
+                  >
+                    <PolarGrid stroke="rgba(255,255,255,0.2)" />
+                    <PolarAngleAxis
+                      dataKey="category"
+                      tick={{ fill: "white", fontSize: 11 }}
+                    />
+                    <PolarRadiusAxis domain={[0, 10]} tick={false} axisLine={false} />
+                    <Radar
+                      dataKey="value"
+                      fill="#03c199"
+                      fillOpacity={0.35}
+                      stroke="#03c199"
+                      strokeWidth={2}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : view === "radar" ? (
+              <div className="flex flex-1 items-center justify-center">
+                <p className="text-sm text-brand-mist">Trenger minst 3 kategorier for radarvisning</p>
+              </div>
+            ) : (
+              <div className="flex flex-1 flex-col justify-center gap-2 overflow-y-auto">
+                {[...risks].sort((a, b) => ({ high: 0, medium: 1, low: 2 }[a.variant] - { high: 0, medium: 1, low: 2 }[b.variant])).map((r) => (
+                  <div key={r.name} className="flex items-center gap-3">
+                    <span className="w-28 shrink-0 text-right text-xs text-white/80 capitalize">{r.name}</span>
+                    <div className="flex-1 rounded-full bg-white/10 h-4">
+                      <div
+                        className="h-4 rounded-full transition-all"
+                        style={{ width: BAR_WIDTH[r.variant], backgroundColor: BAR_COLOR[r.variant] }}
+                      />
+                    </div>
+                    <span className="w-14 shrink-0 text-xs text-white/60">
+                      {r.variant === "high" ? "Høy" : r.variant === "medium" ? "Middels" : "Lav"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
