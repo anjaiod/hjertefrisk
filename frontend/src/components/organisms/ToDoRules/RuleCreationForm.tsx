@@ -1,10 +1,16 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import type { CategoryDto, QuestionDto, CreateQuestionAnswerRule, CreateCategoryScoreRule, CreateToDoRule } from '@/types';
+import React, { useState } from "react";
+import type {
+  CategoryDto,
+  QuestionDto,
+  CreateQuestionAnswerRule,
+  CreateCategoryScoreRule,
+  CreateToDoRule,
+} from "@/types";
 
 interface RuleCreationFormProps {
-  mode: 'answer' | 'score';
+  mode: "answer" | "score";
   categories: CategoryDto[];
   questions: QuestionDto[];
   onRuleCreated: (rule: CreateToDoRule) => Promise<void>;
@@ -14,24 +20,24 @@ export default function RuleCreationForm({
   mode,
   categories,
   questions,
-  onRuleCreated
+  onRuleCreated,
 }: RuleCreationFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Answer-based form state
-  const [selectedQuestion, setSelectedQuestion] = useState<string>('');
-  const [selectedOption, setSelectedOption] = useState<string>('');
-  const [answerOperator, setAnswerOperator] = useState<string>('=');
-  const [answerValue, setAnswerValue] = useState<string>('');
+  const [selectedQuestion, setSelectedQuestion] = useState<string>("");
+  const [selectedOption, setSelectedOption] = useState<string>("");
+  const [answerOperator, setAnswerOperator] = useState<string>("=");
+  const [answerValue, setAnswerValue] = useState<string>("");
 
   // Score-based form state
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [scoreThreshold, setScoreThreshold] = useState<number>(0);
-  const [scoreOperator, setScoreOperator] = useState<string>('>=');
+  const [scoreOperator, setScoreOperator] = useState<string>(">=");
 
   // Common form state
-  const [toDoText, setToDoText] = useState<string>('');
+  const [toDoText, setToDoText] = useState<string>("");
   const [priority, setPriority] = useState<number>(1); // 0=low, 1=medium, 2=high
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,56 +49,62 @@ export default function RuleCreationForm({
 
       let rule: CreateToDoRule;
 
-      if (mode === 'answer') {
+      if (mode === "answer") {
         // Determine if the value is a number, text, or option reference
         const numValue = parseFloat(answerValue);
-        const isNumeric = !isNaN(numValue) && answerValue.trim() !== '';
+        const isNumeric = !isNaN(numValue) && answerValue.trim() !== "";
 
         rule = {
-          triggerType: 'Question',
+          triggerType: "Question",
           questionId: parseInt(selectedQuestion),
           operator: answerOperator as any,
           toDoText,
           priority,
-          ...(isNumeric ? { requiredValue: numValue } : { requiredText: answerValue })
+          ...(isNumeric
+            ? { requiredValue: numValue }
+            : { requiredText: answerValue }),
         } as CreateQuestionAnswerRule;
       } else {
         rule = {
-          triggerType: 'Category',
+          triggerType: "Category",
           categoryId: parseInt(selectedCategory),
           scoreThreshold: Math.floor(scoreThreshold),
           operator: scoreOperator as any,
           toDoText,
-          priority
+          priority,
         } as CreateCategoryScoreRule;
       }
 
       await onRuleCreated(rule);
 
       // Reset form
-      if (mode === 'answer') {
-        setSelectedQuestion('');
-        setSelectedOption('');
-        setAnswerOperator('=');
-        setAnswerValue('');
+      if (mode === "answer") {
+        setSelectedQuestion("");
+        setSelectedOption("");
+        setAnswerOperator("=");
+        setAnswerValue("");
       } else {
-        setSelectedCategory('');
+        setSelectedCategory("");
         setScoreThreshold(0);
-        setScoreOperator('>=');
+        setScoreOperator(">=");
       }
-      setToDoText('');
+      setToDoText("");
       setPriority(1);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create rule');
+      setError(err instanceof Error ? err.message : "Failed to create rule");
     } finally {
       setLoading(false);
     }
   };
 
-  if (mode === 'answer') {
+  if (mode === "answer") {
     return (
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && <div className="p-3 bg-red-50 border border-red-200 rounded text-red-800 text-sm">{error}</div>}
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded text-red-800 text-sm">
+            {error}
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-900 mb-1">
@@ -105,7 +117,7 @@ export default function RuleCreationForm({
             required
           >
             <option value="">Choose a question...</option>
-            {questions.map(q => (
+            {questions.map((q) => (
               <option key={q.questionId} value={q.questionId}>
                 {q.fallbackText}
               </option>
@@ -179,7 +191,7 @@ export default function RuleCreationForm({
           disabled={loading || !selectedQuestion || !answerValue || !toDoText}
           className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 transition"
         >
-          {loading ? 'Creating...' : 'Create Rule'}
+          {loading ? "Creating..." : "Create Rule"}
         </button>
       </form>
     );
@@ -188,7 +200,11 @@ export default function RuleCreationForm({
   // Score-based form
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <div className="p-3 bg-red-50 border border-red-200 rounded text-red-800 text-sm">{error}</div>}
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded text-red-800 text-sm">
+          {error}
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-900 mb-1">
@@ -201,7 +217,7 @@ export default function RuleCreationForm({
           required
         >
           <option value="">Choose a category...</option>
-          {categories.map(c => (
+          {categories.map((c) => (
             <option key={c.categoryId} value={c.categoryId}>
               {c.name}
             </option>
@@ -270,13 +286,17 @@ export default function RuleCreationForm({
         </select>
       </div>
 
-
       <button
         type="submit"
-        disabled={loading || !selectedCategory || scoreThreshold === undefined || !toDoText}
+        disabled={
+          loading ||
+          !selectedCategory ||
+          scoreThreshold === undefined ||
+          !toDoText
+        }
         className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 transition"
       >
-        {loading ? 'Creating...' : 'Create Rule'}
+        {loading ? "Creating..." : "Create Rule"}
       </button>
     </form>
   );

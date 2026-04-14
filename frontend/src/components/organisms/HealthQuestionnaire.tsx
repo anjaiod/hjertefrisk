@@ -194,7 +194,9 @@ export default function HealthQuestionnaire({
           name={name}
           options={question.options.map((option) => {
             const severity = severities.find(
-              (s) => s.questionId === question.questionId && s.requiredOption === option.questionOptionId
+              (s) =>
+                s.questionId === question.questionId &&
+                s.requiredOption === option.questionOptionId,
             );
             return {
               value: option.optionValue,

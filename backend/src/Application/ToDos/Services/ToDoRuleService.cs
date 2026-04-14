@@ -66,7 +66,7 @@ public class ToDoRuleService : IToDoRuleService
         foreach (var rule in rulesToUse)
         {
             Console.WriteLine($"[ToDoRuleService] Creating ToDo for CategoryScoreRule {rule.ToDoRuleId} with threshold {rule.ScoreThreshold}");
-            
+
             var todo = new ToDo
             {
                 PatientId = patientId,
@@ -110,7 +110,7 @@ public class ToDoRuleService : IToDoRuleService
     {
         if (rule is QuestionAnswerRule qr)
             return MatchesQuestionRule(response, qr);
-        
+
         if (rule is CategoryScoreRule cr)
             return MatchesCategoryRule(categoryScore, cr);
 
@@ -170,9 +170,9 @@ public class ToDoRuleService : IToDoRuleService
             ">=" => score >= rule.ScoreThreshold,
             _ => false
         };
-        
+
         Console.WriteLine($"[ToDoRuleService.MatchesCategoryRule] score={score}, operator='{rule.Operator}', threshold={rule.ScoreThreshold} -> matches={matches}");
-        
+
         return matches;
     }
 
