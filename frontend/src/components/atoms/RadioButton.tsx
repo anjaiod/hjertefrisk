@@ -5,6 +5,7 @@ interface RadioButtonProps {
   label: string;
   checked?: boolean;
   onChange: (value: string) => void;
+  score?: number;
 }
 
 export default function RadioButton({
@@ -14,6 +15,7 @@ export default function RadioButton({
   label,
   checked = false,
   onChange,
+  score,
 }: RadioButtonProps) {
   return (
     <div className="flex items-center gap-2">
@@ -28,6 +30,9 @@ export default function RadioButton({
       />
       <label htmlFor={id} className="text-lg cursor-pointer">
         {label}
+        {score !== undefined && (
+          <span className="text-gray-500 text-sm ml-2">({score} poeng)</span>
+        )}
       </label>
     </div>
   );

@@ -1,5 +1,6 @@
 using backend.src.Application.Responses.DTOs;
 using backend.src.Application.Responses.Interfaces;
+using backend.src.Application.ToDos.Interfaces;
 using backend.src.Domain.Models;
 using backend.src.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -9,10 +10,12 @@ namespace backend.src.Application.Responses.Services;
 public class ResponseService : IResponseService
 {
     private readonly AppDbContext _db;
+    private readonly IToDoRuleService _toDoRuleService;
 
-    public ResponseService(AppDbContext db)
+    public ResponseService(AppDbContext db, IToDoRuleService toDoRuleService)
     {
         _db = db;
+        _toDoRuleService = toDoRuleService;
     }
 
     public async Task<IEnumerable<ResponseDto>> GetAllAsync()
@@ -47,6 +50,9 @@ public class ResponseService : IResponseService
 
         _db.Responses.Add(entity);
         await _db.SaveChangesAsync();
+
+        // Process ToDoRules for this response
+        await _toDoRuleService.ProcessResponseAsync(entity);
 
         return new ResponseDto
         {
@@ -93,6 +99,54 @@ public class ResponseService : IResponseService
         await _db.SaveChangesAsync();
         await transaction.CommitAsync();
 
+        // Build a map of question IDs to their categories for score-based rules
+        var questionIds = entities.Select(e => e.QuestionId).Distinct().ToList();
+        var questionsWithCategories = await _db.Questions
+            .AsNoTracking()
+            .Where(q => questionIds.Contains(q.QuestionId))
+            .Select(q => new { q.QuestionId, q.CategoryId })
+            .ToListAsync();
+
+        // Pre-calculate category scores once per category
+        var categoryScoreMap = new Dictionary<int, int>();
+        var categoriesInBatch = questionsWithCategories
+            .Where(q => q.CategoryId.HasValue)
+            .Select(q => q.CategoryId.Value)
+            .Distinct()
+            .ToList();
+
+        foreach (var categoryId in categoriesInBatch)
+        {
+            // Get only the responses from the current batch for this category
+            var responsesForCategory = entities
+                .Where(e => questionsWithCategories.FirstOrDefault(q => q.QuestionId == e.QuestionId)?.CategoryId == categoryId)
+                .ToList();
+            
+            var score = await CalculateCategoryScoreAsync(categoryId, responsesForCategory);
+            categoryScoreMap[categoryId] = score;
+            Console.WriteLine($"[ResponseService] Pre-calculated category {categoryId} score: {score}");
+        }
+
+        // Process QuestionAnswerRules for each response
+        foreach (var entity in entities)
+        {
+            await _toDoRuleService.ProcessResponseAsync(entity);
+        }
+
+        // Process CategoryScoreRules once per category (not once per response)
+        var processedCategories = new HashSet<int>();
+        foreach (var categoryId in categoriesInBatch)
+        {
+            if (processedCategories.Contains(categoryId))
+                continue;
+
+            var categoryScore = categoryScoreMap[categoryId];
+            Console.WriteLine($"[ResponseService] Processing CategoryScoreRules for category {categoryId} with score {categoryScore}");
+            
+            await _toDoRuleService.ProcessCategoryRulesAsync(patientId, categoryId, categoryScore);
+            processedCategories.Add(categoryId);
+        }
+
         return entities.Select(r => new ResponseDto
         {
             AnsweredQueryId = r.AnsweredQueryId,
@@ -132,5 +186,123 @@ public class ResponseService : IResponseService
                     NumberValue = r.NumberValue,
                 }).ToList()
         });
+    }
+
+    /// <summary>
+    /// Calculates the cumulative score for a category based on responses from the current batch and Severity rules.
+    /// Matches responses against Severity rules for questions in the category and sums matching scores.
+    /// Only considers responses from the current submission, not historical responses.
+    /// </summary>
+    private async Task<int> CalculateCategoryScoreAsync(int categoryId, List<Response> currentBatchResponses)
+    {
+        // Get all questions in this category with their Severity rules
+        var questions = await _db.Questions
+            .AsNoTracking()
+            .Where(q => q.CategoryId == categoryId)
+            .Include(q => q.Severities)
+            .ToListAsync();
+
+        if (questions.Count == 0)
+        {
+            Console.WriteLine($"[CalculateCategoryScoreAsync] Category {categoryId}: No questions found");
+            return 0;
+        }
+
+        var questionIds = questions.Select(q => q.QuestionId).ToList();
+        
+        // Build a map of current batch responses by question ID
+        var responseMap = currentBatchResponses
+            .Where(r => questionIds.Contains(r.QuestionId))
+            .GroupBy(r => r.QuestionId)
+            .ToDictionary(g => g.Key, g => g.Last()); // Last in case multiple responses for same question
+
+        var totalScore = 0;
+        Console.WriteLine($"[CalculateCategoryScoreAsync] Category {categoryId} (current batch only):");
+
+        foreach (var question in questions)
+        {
+            if (!responseMap.TryGetValue(question.QuestionId, out var response))
+            {
+                Console.WriteLine($"  - Question {question.QuestionId}: No response in current batch");
+                continue;
+            }
+
+            foreach (var severity in question.Severities)
+            {
+                if (!MatchesSeverityRule(severity.RequiredOption, severity.RequiredText, severity.RequiredValue, severity.Operator, response))
+                {
+                    continue;
+                }
+
+                totalScore += severity.Score;
+                Console.WriteLine($"  - Question {question.QuestionId}: Matched severity rule, +{severity.Score} (total: {totalScore})");
+            }
+        }
+
+        Console.WriteLine($"  - Final score: {totalScore}");
+        return totalScore;
+    }
+
+    private static bool MatchesSeverityRule(int? requiredOption, string? requiredText, decimal? requiredValue, string? op, Response response)
+    {
+        if (requiredOption.HasValue && response.SelectedOptionId != requiredOption)
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(requiredText))
+        {
+            if (string.IsNullOrWhiteSpace(response.TextValue))
+            {
+                return false;
+            }
+
+            if (!EvaluateText(response.TextValue, requiredText, op))
+            {
+                return false;
+            }
+        }
+
+        if (requiredValue.HasValue)
+        {
+            if (!response.NumberValue.HasValue)
+            {
+                return false;
+            }
+
+            if (!EvaluateNumber(response.NumberValue.Value, requiredValue.Value, op))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool EvaluateNumber(decimal actual, decimal expected, string? op)
+    {
+        var operand = string.IsNullOrWhiteSpace(op) ? "==" : op.Trim().ToLowerInvariant();
+        return operand switch
+        {
+            ">" or "gt" => actual > expected,
+            ">=" or "gte" => actual >= expected,
+            "<" or "lt" => actual < expected,
+            "<=" or "lte" => actual <= expected,
+            "!=" or "<>" or "neq" => actual != expected,
+            _ => actual == expected
+        };
+    }
+
+    private static bool EvaluateText(string actual, string expected, string? op)
+    {
+        var operand = string.IsNullOrWhiteSpace(op) ? "==" : op.Trim().ToLowerInvariant();
+        return operand switch
+        {
+            "contains" => actual.Contains(expected, StringComparison.OrdinalIgnoreCase),
+            "startswith" => actual.StartsWith(expected, StringComparison.OrdinalIgnoreCase),
+            "endswith" => actual.EndsWith(expected, StringComparison.OrdinalIgnoreCase),
+            "!=" or "<>" or "neq" => !actual.Equals(expected, StringComparison.OrdinalIgnoreCase),
+            _ => actual.Equals(expected, StringComparison.OrdinalIgnoreCase)
+        };
     }
 }
