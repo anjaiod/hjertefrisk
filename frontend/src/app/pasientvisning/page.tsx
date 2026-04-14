@@ -13,12 +13,15 @@ import { apiClient } from "@/lib/apiClient";
 
 const PAGE_SIZE = 15;
 
-function formatDate(iso: string): string {
+function formatDate(iso: string | undefined): string {
+  if (!iso) return "Ikke besøkt";
   const d = new Date(iso);
-  return d.toLocaleDateString("nb-NO", {
+  return d.toLocaleString("nb-NO", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -48,8 +51,8 @@ async function fetchPage(
   const data = result.data.map((p) => ({
     id: String(p.id),
     name: p.name,
-    lastVisited: formatDate(p.createdAt),
-    lastVisitedRaw: p.createdAt,
+    lastVisited: formatDate(p.lastVisited),
+    lastVisitedRaw: p.lastVisited ?? "",
     riskLevel: (p.riskLevel as TagVariant) ?? "none",
   }));
 

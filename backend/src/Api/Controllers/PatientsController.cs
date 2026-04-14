@@ -108,7 +108,7 @@ public class PatientsController : ControllerBase
 
                 if (page > 0)
                 {
-                    var paged = await _service.GetPagedByIdsAsync(accessibleIds, page, pageSize, search, sortBy, sortDir, riskLevel);
+                    var paged = await _service.GetPagedByIdsAsync(accessibleIds, page, pageSize, search, sortBy, sortDir, riskLevel, personnelId.Value);
                     return Ok(paged);
                 }
 
@@ -182,6 +182,33 @@ public class PatientsController : ControllerBase
     {
         var created = await _service.CreateAsync(dto);
         return Created(string.Empty, created);
+    }
+
+    [HttpPatch("{id:int}/visit")]
+    public async Task<IActionResult> RecordVisit(int id)
+    {
+        try
+        {
+            var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
+            if (string.IsNullOrWhiteSpace(supabaseUserId))
+                return Unauthorized(new { error = "Missing Authorization header" });
+
+            var personnelId = await _authService.GetPersonnelIdBySupabaseIdAsync(supabaseUserId);
+            if (!personnelId.HasValue)
+                return Unauthorized(new { error = "Only personnel can record visits" });
+
+            var hasAccess = await _authService.CanAccessPatientAsync(personnelId.Value, id);
+            if (!hasAccess)
+                return StatusCode(403, new { error = "Access denied" });
+
+            await _service.RecordVisitAsync(id, personnelId.Value);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in RecordVisit: {ex}");
+            return StatusCode(500, new { error = "An error occurred while processing your request" });
+        }
     }
 
     [HttpGet("{id:int}/score")]

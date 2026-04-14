@@ -8,5 +8,6 @@ public class PatientDto
     public string Email { get; set; } = "";
     public string? Gender { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime? LastVisited { get; set; }
     public string? RiskLevel { get; set; }
 }

@@ -10,6 +10,7 @@ export type PatientDto = {
   name: string;
   email: string;
   createdAt: string;
+  lastVisited?: string;
   riskLevel?: string;
 };
 

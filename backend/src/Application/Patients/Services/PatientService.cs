@@ -58,7 +58,7 @@ public class PatientService : IPatientService
             .ToListAsync();
     }
 
-    public async Task<PagedResult<PatientDto>> GetPagedByIdsAsync(IEnumerable<int> ids, int page, int pageSize, string? search, string? sortBy, string? sortDir, string? riskLevel)
+    public async Task<PagedResult<PatientDto>> GetPagedByIdsAsync(IEnumerable<int> ids, int page, int pageSize, string? search, string? sortBy, string? sortDir, string? riskLevel, int? personnelId = null)
     {
         var idList = ids.ToList();
         if (idList.Count == 0)
@@ -94,6 +94,21 @@ public class PatientService : IPatientService
             })
             .ToListAsync();
 
+        if (personnelId.HasValue)
+        {
+            var accessRows = await _db.PatientAccesses
+                .AsNoTracking()
+                .Where(a => a.PersonnelId == personnelId.Value && idList.Contains(a.PatientId))
+                .ToListAsync();
+
+            var lastVisitedMap = accessRows.ToDictionary(a => a.PatientId, a => a.LastVisited);
+            foreach (var row in allRows)
+            {
+                if (lastVisitedMap.TryGetValue(row.Id, out var lv))
+                    row.LastVisited = lv;
+            }
+        }
+
         var totalCount = allRows.Count;
 
         IEnumerable<PatientDto> sorted = sortBy?.ToLower() switch
@@ -101,14 +116,26 @@ public class PatientService : IPatientService
             "name" => isDesc
                 ? allRows.OrderByDescending(p => p.Name.Split(' ').Last().ToLower())
                 : allRows.OrderBy(p => p.Name.Split(' ').Last().ToLower()),
+            "lastvisited" => isDesc
+                ? allRows.OrderByDescending(p => p.LastVisited ?? DateTime.MinValue)
+                : allRows.OrderBy(p => p.LastVisited ?? DateTime.MinValue),
             _ => isDesc
-                ? allRows.OrderByDescending(p => p.CreatedAt)
-                : allRows.OrderBy(p => p.CreatedAt)
+                ? allRows.OrderByDescending(p => p.LastVisited ?? DateTime.MinValue)
+                : allRows.OrderBy(p => p.LastVisited ?? DateTime.MinValue)
         };
 
         var data = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
         return new PagedResult<PatientDto> { Data = data, TotalCount = totalCount };
+    }
+
+    public async Task RecordVisitAsync(int patientId, int personnelId)
+    {
+        var access = await _db.PatientAccesses
+            .FirstOrDefaultAsync(a => a.PatientId == patientId && a.PersonnelId == personnelId);
+        if (access == null) return;
+        access.LastVisited = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
     }
 
     public async Task<PatientDto?> GetByIdAsync(int id)
