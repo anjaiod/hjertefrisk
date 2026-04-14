@@ -10,6 +10,7 @@ export type PatientDto = {
   name: string;
   email: string;
   createdAt: string;
+  riskLevel?: string;
 };
 
 export type PatientScoreDto = {

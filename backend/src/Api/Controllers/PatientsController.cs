@@ -5,8 +5,13 @@ using backend.src.Application.Responses.Interfaces;
 using backend.src.Application.Responses.DTOs;
 using backend.src.Application.MeasurementResults.Interfaces;
 using backend.src.Application.Authorization.Interfaces;
+using backend.src.Application.Measures.DTOs;
+using backend.src.Application.Measures.Interfaces;
+using backend.src.Application.Queries.Interfaces;
+using backend.src.Application.Categories.Interfaces;
 using backend.src.Infrastructure.Auth;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace backend.src.Api.Controllers;
 
@@ -18,21 +23,72 @@ public class PatientsController : ControllerBase
     private readonly IAccessAuthorizationService _authService;
     private readonly IResponseService _responseService;
     private readonly IMeasurementResultService _measurementResultService;
+    private readonly IMeasureEvaluationService _evaluationService;
+    private readonly IQueryService _queryService;
+    private readonly ICategoryService _categoryService;
+    private readonly IServiceScopeFactory _scopeFactory;
+
+    private static readonly Dictionary<string, (int High, int? Medium)> CategoryThresholds = new()
+    {
+        { "fysisk aktivitet", (9, 5) },
+        { "kosthold", (9, 5) },
+        { "rusmidler", (3, 1) },
+        { "alkohol", (15, 8) },
+        { "røyking", (2, 1) },
+        { "tannhelse", (1, null) },
+        { "kroppsdata", (2, 1) },
+        { "blodtrykk", (2, 1) },
+        { "glukose", (2, 1) },
+    };
 
     public PatientsController(
         IPatientService service,
         IAccessAuthorizationService authService,
         IResponseService responseService,
-        IMeasurementResultService measurementResultService)
+        IMeasurementResultService measurementResultService,
+        IMeasureEvaluationService evaluationService,
+        IQueryService queryService,
+        ICategoryService categoryService,
+        IServiceScopeFactory scopeFactory)
     {
         _service = service;
         _authService = authService;
         _responseService = responseService;
         _measurementResultService = measurementResultService;
+        _evaluationService = evaluationService;
+        _queryService = queryService;
+        _categoryService = categoryService;
+        _scopeFactory = scopeFactory;
+    }
+
+    private static string ComputeRiskLevel(IReadOnlyDictionary<int, int> categoryScores, IEnumerable<(int CategoryId, string Name)> categories)
+    {
+        var highest = "low";
+        foreach (var (categoryId, name) in categories)
+        {
+            var key = name.Trim().ToLowerInvariant();
+            if (!CategoryThresholds.TryGetValue(key, out var thresholds)) continue;
+            if (!categoryScores.TryGetValue(categoryId, out var score)) continue;
+
+            string level;
+            if (score >= thresholds.High) level = "high";
+            else if (thresholds.Medium.HasValue && score >= thresholds.Medium.Value) level = "medium";
+            else level = "low";
+
+            if (level == "high") return "high";
+            if (level == "medium") highest = "medium";
+        }
+        return highest;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 0,
+        [FromQuery] int pageSize = 15,
+        [FromQuery] string? search = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortDir = null,
+        [FromQuery] string? riskLevel = null)
     {
         try
         {
@@ -48,9 +104,16 @@ public class PatientsController : ControllerBase
                 var accessibleIds = await _authService.GetAccessiblePatientIdsAsync(personnelId.Value);
                 // Query at DB level instead of in-memory filtering
                 if (accessibleIds.Count == 0)
-                    return Ok(new List<PatientDto>());
-                var accessiblePatients = await _service.GetByIdsAsync(accessibleIds);
-                return Ok(accessiblePatients);
+                    return Ok(page > 0 ? (object)new { data = new List<PatientDto>(), totalCount = 0 } : new List<PatientDto>());
+
+                if (page > 0)
+                {
+                    var paged = await _service.GetPagedByIdsAsync(accessibleIds, page, pageSize, search, sortBy, sortDir, riskLevel);
+                    return Ok(paged);
+                }
+
+                var patients = await _service.GetByIdsAsync(accessibleIds);
+                return Ok(patients);
             }
 
             // Check if patient
@@ -67,6 +130,42 @@ public class PatientsController : ControllerBase
         {
             // Log exception server-side, return generic error to client
             System.Diagnostics.Debug.WriteLine($"Error in GetAll: {ex}");
+            return StatusCode(500, new { error = "An error occurred while processing your request" });
+        }
+    }
+
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        try
+        {
+            var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
+            if (string.IsNullOrWhiteSpace(supabaseUserId))
+                return Unauthorized(new { error = "Missing Authorization header" });
+
+            var personnelId = await _authService.GetPersonnelIdBySupabaseIdAsync(supabaseUserId);
+            if (personnelId.HasValue)
+            {
+                var hasAccess = await _authService.CanAccessPatientAsync(personnelId.Value, id);
+                if (!hasAccess)
+                    return StatusCode(403, new { error = "Access denied" });
+
+                var patient = await _service.GetByIdAsync(id);
+                return patient == null ? NotFound(new { error = "Patient not found" }) : Ok(patient);
+            }
+
+            var patientId = await _authService.GetPatientIdBySupabaseIdAsync(supabaseUserId);
+            if (patientId.HasValue && patientId.Value == id)
+            {
+                var patient = await _service.GetByIdAsync(id);
+                return patient == null ? NotFound(new { error = "Patient not found" }) : Ok(patient);
+            }
+
+            return Unauthorized(new { error = "User not found" });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in GetById: {ex}");
             return StatusCode(500, new { error = "An error occurred while processing your request" });
         }
     }
@@ -202,6 +301,44 @@ public class PatientsController : ControllerBase
             }
 
             var created = await _responseService.UpsertManyAsync(dtos);
+
+            // Recompute and store overall risk level
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var queryService = scope.ServiceProvider.GetRequiredService<IQueryService>();
+                    var categoryService = scope.ServiceProvider.GetRequiredService<ICategoryService>();
+                    var evaluationService = scope.ServiceProvider.GetRequiredService<IMeasureEvaluationService>();
+                    var patientService = scope.ServiceProvider.GetRequiredService<IPatientService>();
+
+                    var query = await queryService.GetByNameAsync("Helseskjema");
+                    if (query == null)
+                    {
+                        Console.WriteLine("Error updating risk level: query 'Helseskjema' not found");
+                        return;
+                    }
+
+                    var categories = await categoryService.GetAllAsync();
+                    var evalResult = await evaluationService.EvaluateAsync(new EvaluateMeasuresDto
+                    {
+                        PatientId = id,
+                        QueryId = query.Id,
+                        LanguageCode = "no"
+                    });
+
+                    var categoryLookup = categories.Select(c => (c.CategoryId, c.Name));
+                    var riskLevel = ComputeRiskLevel(evalResult.CategoryScores, categoryLookup);
+                    await patientService.UpdateRiskLevelAsync(id, riskLevel);
+                    Console.WriteLine($"RiskLevel updated for patient {id}: {riskLevel}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error updating risk level: {ex}");
+                }
+            });
+
             return Ok(created);
         }
         catch (Exception ex)

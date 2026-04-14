@@ -30,7 +30,8 @@ public class PatientService : IPatientService
                 Name = p.Name,
                 Email = p.Email,
                 Gender = p.Gender,
-                CreatedAt = p.CreatedAt
+                CreatedAt = p.CreatedAt,
+                RiskLevel = p.RiskLevel
             })
             .ToListAsync();
     }
@@ -51,9 +52,81 @@ public class PatientService : IPatientService
                 Name = p.Name,
                 Email = p.Email,
                 Gender = p.Gender,
-                CreatedAt = p.CreatedAt
+                CreatedAt = p.CreatedAt,
+                RiskLevel = p.RiskLevel
             })
             .ToListAsync();
+    }
+
+    public async Task<PagedResult<PatientDto>> GetPagedByIdsAsync(IEnumerable<int> ids, int page, int pageSize, string? search, string? sortBy, string? sortDir, string? riskLevel)
+    {
+        var idList = ids.ToList();
+        if (idList.Count == 0)
+            return new PagedResult<PatientDto> { Data = [], TotalCount = 0 };
+
+        var query = _db.Patients
+            .AsNoTracking()
+            .Where(p => idList.Contains(p.Id));
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var lower = search.Trim().ToLower();
+            query = query.Where(p => p.Name.ToLower().Contains(lower));
+        }
+
+        if (!string.IsNullOrWhiteSpace(riskLevel))
+        {
+            query = query.Where(p => p.RiskLevel == riskLevel);
+        }
+
+        var isDesc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
+
+        var allRows = await query
+            .Select(p => new PatientDto
+            {
+                Id = p.Id,
+                SupabaseUserId = p.SupabaseUserId,
+                Name = p.Name,
+                Email = p.Email,
+                Gender = p.Gender,
+                CreatedAt = p.CreatedAt,
+                RiskLevel = p.RiskLevel
+            })
+            .ToListAsync();
+
+        var totalCount = allRows.Count;
+
+        IEnumerable<PatientDto> sorted = sortBy?.ToLower() switch
+        {
+            "name" => isDesc
+                ? allRows.OrderByDescending(p => p.Name.Split(' ').Last().ToLower())
+                : allRows.OrderBy(p => p.Name.Split(' ').Last().ToLower()),
+            _ => isDesc
+                ? allRows.OrderByDescending(p => p.CreatedAt)
+                : allRows.OrderBy(p => p.CreatedAt)
+        };
+
+        var data = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        return new PagedResult<PatientDto> { Data = data, TotalCount = totalCount };
+    }
+
+    public async Task<PatientDto?> GetByIdAsync(int id)
+    {
+        return await _db.Patients
+            .AsNoTracking()
+            .Where(p => p.Id == id)
+            .Select(p => new PatientDto
+            {
+                Id = p.Id,
+                SupabaseUserId = p.SupabaseUserId,
+                Name = p.Name,
+                Email = p.Email,
+                Gender = p.Gender,
+                CreatedAt = p.CreatedAt,
+                RiskLevel = p.RiskLevel
+            })
+            .FirstOrDefaultAsync();
     }
 
     public async Task<PatientDto?> GetBySupabaseUserIdAsync(string supabaseUserId)
@@ -71,7 +144,8 @@ public class PatientService : IPatientService
                 Name = p.Name,
                 Email = p.Email,
                 Gender = p.Gender,
-                CreatedAt = p.CreatedAt
+                CreatedAt = p.CreatedAt,
+                RiskLevel = p.RiskLevel
             })
             .FirstOrDefaultAsync();
     }
@@ -97,6 +171,14 @@ public class PatientService : IPatientService
             Email = entity.Email,
             CreatedAt = entity.CreatedAt
         };
+    }
+
+    public async Task UpdateRiskLevelAsync(int patientId, string? riskLevel)
+    {
+        var patient = await _db.Patients.FindAsync(patientId);
+        if (patient == null) return;
+        patient.RiskLevel = riskLevel;
+        await _db.SaveChangesAsync();
     }
 
     public async Task<int> GetTotalScoreAsync(int patientId)
