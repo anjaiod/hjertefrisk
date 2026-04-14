@@ -29,7 +29,7 @@ public class ToDoRuleService : IToDoRuleService
         {
             if (await MatchesRuleAsync(response, rule))
             {
-                await CreateToDoFromRuleAsync(response, rule);
+                await CreateToDoFromRuleAsync(response.PatientId, rule);
             }
         }
     }
@@ -66,19 +66,8 @@ public class ToDoRuleService : IToDoRuleService
         foreach (var rule in rulesToUse)
         {
             Console.WriteLine($"[ToDoRuleService] Creating ToDo for CategoryScoreRule {rule.ToDoRuleId} with threshold {rule.ScoreThreshold}");
-            
-            var todo = new ToDo
-            {
-                PatientId = patientId,
-                PersonnelId = null,
-                ToDoText = rule.ToDoText,
-                Finished = false,
-                Public = true
-            };
-            _db.ToDos.Add(todo);
+            await CreateToDoFromRuleAsync(patientId, rule);
         }
-
-        await _db.SaveChangesAsync();
     }
 
     public async Task ProcessResponseWithScoreAsync(Response response, int? categoryScore)
@@ -101,7 +90,7 @@ public class ToDoRuleService : IToDoRuleService
             if (await MatchesRuleAsync(response, rule, categoryScore))
             {
                 Console.WriteLine($"[ToDoRuleService] QuestionAnswerRule {rule.ToDoRuleId} matched!");
-                await CreateToDoFromRuleAsync(response, rule);
+                await CreateToDoFromRuleAsync(response.PatientId, rule);
             }
         }
     }
@@ -176,18 +165,32 @@ public class ToDoRuleService : IToDoRuleService
         return matches;
     }
 
-    public async Task CreateToDoFromRuleAsync(Response response, ToDoRule rule)
+    public async Task CreateToDoFromRuleAsync(int patientId, ToDoRule rule)
     {
+        
+        // Check if an unfinished ToDo already exists for this rule and patient
+        var existingUnfinishedTodo = await _db.ToDos
+            .FirstOrDefaultAsync(t => 
+                t.ToDoRuleId == rule.ToDoRuleId && 
+                t.PatientId == patientId && 
+                !t.Finished);
+
+        if (existingUnfinishedTodo != null)
+        {
+            return;
+        }
+
         var todo = new ToDo
         {
-            PatientId = response.PatientId,
+            PatientId = patientId,
             PersonnelId = null,
             ToDoText = rule.ToDoText,
             Finished = false,
-            Public = true
+            Public = true,
+            ToDoRuleId = rule.ToDoRuleId
         };
-
+        
         _db.ToDos.Add(todo);
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(); 
     }
 }

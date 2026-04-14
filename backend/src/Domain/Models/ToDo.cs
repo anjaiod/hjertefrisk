@@ -7,6 +7,7 @@ public class ToDo
     public string ToDoText { get; set; } = "";
     public int PatientId { get; set; }        // FK -> Patient
     public int? PersonnelId { get; set; }      // FK -> Personnel
+    public int? ToDoRuleId { get; set; }      // FK -> ToDoRule (nullable for manually created todos)
     public bool Public { get; set; }
 
     public Patient Patient { get; set; } = null!;

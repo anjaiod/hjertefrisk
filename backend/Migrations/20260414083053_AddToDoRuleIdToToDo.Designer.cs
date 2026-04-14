@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.src.Infrastructure.Data;
@@ -11,9 +12,11 @@ using backend.src.Infrastructure.Data;
 namespace api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260414083053_AddToDoRuleIdToToDo")]
+    partial class AddToDoRuleIdToToDo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -806,8 +809,6 @@ namespace api.Migrations
 
                     b.HasIndex("PersonnelId");
 
-                    b.HasIndex("ToDoRuleId");
-
                     b.ToTable("ToDos");
                 });
 
@@ -1330,11 +1331,6 @@ namespace api.Migrations
                     b.HasOne("backend.src.Domain.Models.Personnel", "Personnel")
                         .WithMany("ToDos")
                         .HasForeignKey("PersonnelId");
-
-                    b.HasOne("backend.src.Domain.Models.ToDoRule", null)
-                        .WithMany()
-                        .HasForeignKey("ToDoRuleId")
-                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Patient");
 

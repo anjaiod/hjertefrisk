@@ -265,6 +265,14 @@ public class AppDbContext : DbContext
             .WithMany(p => p.ToDos)
             .HasForeignKey(x => x.PersonnelId);
 
+        // ToDo -> ToDoRule (optional, nullable FK for manually created todos)
+        modelBuilder.Entity<ToDo>()
+            .HasOne<ToDoRule>()
+            .WithMany()
+            .HasForeignKey(x => x.ToDoRuleId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // Question -> Measurement (optional)
         modelBuilder.Entity<Question>()
             .HasOne(x => x.Measurement)
