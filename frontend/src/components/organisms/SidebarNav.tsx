@@ -155,6 +155,28 @@ export function SidebarNav({
     },
   ];
 
+  const adminItems: NavItem[] = [
+    {
+      label: "TODO Rules",
+      href: "/dashboard/todo_rules",
+      active: isActive("/dashboard/todo_rules"),
+      icon: (
+        <svg
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      ),
+    },
+  ];
+
   return (
     <aside className="sticky top-0 hidden h-screen w-72 flex-col border-r border-brand-sky/30 bg-linear-to-b from-white to-brand-mist/10 p-6 md:flex">
       <div className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm">
@@ -189,6 +211,14 @@ export function SidebarNav({
           </nav>
         </>
       ) : null}
+
+      <div className="mt-auto border-t border-brand-sky/30 pt-6">
+        <nav className="flex flex-col space-y-2">
+          {adminItems.map((item) => (
+            <Item key={item.href} item={item} />
+          ))}
+        </nav>
+      </div>
     </aside>
   );
 }
