@@ -16,7 +16,10 @@ export default function RadioButton({
   onChange,
 }: RadioButtonProps) {
   return (
-    <div className="flex items-center gap-2">
+    <label
+      htmlFor={id}
+      className="flex items-center gap-3 py-3 px-4 rounded-xl border border-transparent hover:bg-slate-50 cursor-pointer touch-manipulation -mx-4"
+    >
       <input
         type="radio"
         id={id}
@@ -24,11 +27,9 @@ export default function RadioButton({
         value={value}
         checked={checked}
         onChange={(e) => onChange(e.target.value)}
-        className="w-5 h-5 text-brand-navy cursor-pointer"
+        className="w-6 h-6 md:w-7 md:h-7 text-brand-navy cursor-pointer shrink-0"
       />
-      <label htmlFor={id} className="text-lg cursor-pointer">
-        {label}
-      </label>
-    </div>
+      <span className="text-[clamp(1.1rem,2.5vw,1.5rem)]">{label}</span>
+    </label>
   );
 }

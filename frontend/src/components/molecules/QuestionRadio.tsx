@@ -35,7 +35,7 @@ export default function QuestionRadio({
     const triggersFollowUp =
       hasFollowUpQuestions && followUpTriggerValues.includes(newValue);
     if (onAnswer && !triggersFollowUp) {
-      setTimeout(() => onAnswer(), 300);
+      setTimeout(() => onAnswer(), 500);
     }
   };
 
