@@ -482,7 +482,7 @@ export default function PatientHealthQuestionnaire() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-brand-navy font-bold mt-0.5">•</span>
-                  Du kan navigere frem og tilbake mellom spørsmålene, og du kan trykke &quot;Hopp over&quot; på spørsmål du er usikker på, eller ikke ønsker å svare på.
+                  Du kan navigere frem og tilbake mellom spørsmålene, og du kan trykke &quot;Neste&quot; på spørsmål du er usikker på, eller ikke ønsker å svare på.
                 </li>
               </ul>
               <p className="text-sm text-gray-500">
