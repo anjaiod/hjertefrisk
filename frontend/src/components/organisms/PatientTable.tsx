@@ -31,8 +31,8 @@ function SortIcon({
   sortDir: SortDir;
 }) {
   if (sortKey !== col)
-    return <span className="ml-1 text-brand-navy/40">⇅</span>;
-  return <span className="ml-1">{sortDir === "asc" ? "↑" : "↓"}</span>;
+    return <span className="ml-1 text-lg">⇅</span>;
+  return <span className="ml-1 text-lg">{sortDir === "asc" ? "↑" : "↓"}</span>;
 }
 
 export default function PatientTable({
@@ -42,7 +42,7 @@ export default function PatientTable({
   onSort,
 }: PatientTableProps) {
   const thClass = "px-6 py-4 text-left text-brand-navy font-semibold";
-  const sortThClass = `${thClass} cursor-pointer select-none hover:text-brand-sky transition-colors`;
+  const sortThClass = `${thClass} cursor-pointer select-none group`;
 
   return (
     <div className="rounded-xl overflow-hidden border border-brand-mist/50 shadow-sm">
@@ -50,10 +50,11 @@ export default function PatientTable({
         <thead className="bg-brand-sky/30">
           <tr>
             <th className={sortThClass} onClick={() => onSort("name")}>
-              Navn <SortIcon col="name" sortKey={sortKey} sortDir={sortDir} />
+              <span className="group-hover:underline">Navn</span>
+              <SortIcon col="name" sortKey={sortKey} sortDir={sortDir} />
             </th>
             <th className={sortThClass} onClick={() => onSort("lastVisited")}>
-              Sist besøkt{" "}
+              <span className="group-hover:underline">Sist besøkt</span>{" "}
               <SortIcon col="lastVisited" sortKey={sortKey} sortDir={sortDir} />
             </th>
             <th className={thClass}>Status</th>

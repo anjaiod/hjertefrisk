@@ -22,7 +22,7 @@ const tagLabel: Record<TagVariant, string> = {
 };
 
 const btnClass =
-  "bg-brand-sky-lightest !text-brand-navy border-brand-sky-lightest hover:bg-brand-sky-lighter";
+  "bg-brand-sky-button !text-brand-navy border-brand-sky-button hover:bg-brand-sky-lightest";
 
 type ModalType = "todo" | "varsling" | null;
 
@@ -44,7 +44,7 @@ export default function PatientRow({
         onClick={() => router.push(dashboardHref)}
       >
         <td className="px-6 py-4">
-          <span className="text-brand-sky font-medium hover:underline">
+          <span className="text-brand-navy font-medium hover:underline">
             {name}
           </span>
         </td>

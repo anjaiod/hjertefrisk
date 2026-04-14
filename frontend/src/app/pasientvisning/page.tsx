@@ -117,7 +117,7 @@ export default function Page() {
                   : "opacity-100",
               ].join(" ")}
             >
-              <Tag variant={variant}>{label}</Tag>
+              <Tag variant={variant} showBorder>{label}</Tag>
             </button>
           ))}
           <SearchBar
