@@ -5,11 +5,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { PatientSidebarNav } from "../../../components/organisms/PatientSidebarNav";
 import { PatientHeader } from "../../../components/organisms/PatientHeader";
 import { Tag } from "../../../components/atoms/Tag";
-import type { TagVariant } from "../../../components/atoms/Tag";
 import { apiClient } from "../../../lib/apiClient";
 import type { CategoryDto } from "../../../types";
 import { useUser } from "@/context/UserContext";
-import { scoreToVariant, sleepVariantFromTitles } from "@/components/molecules/RiskList";
+import {
+  scoreToVariant,
+  sleepVariantFromTitles,
+  riskVariantToLabel,
+  riskVariantRank,
+} from "@/components/molecules/RiskList";
 
 type PatientMeasureResult = {
   patientMeasureId: number;
@@ -31,17 +35,6 @@ type QueryDto = {
   name: string;
 };
 
-function sleepTagVariant(measures: PatientMeasureResult[]): TagVariant | null {
-  if (measures.length === 0) return null;
-  return sleepVariantFromTitles(measures.map((m) => m.title ?? ""));
-}
-
-function tagTextFromVariant(variant: TagVariant): string {
-  if (variant === "high") return "Høy";
-  if (variant === "medium") return "Middels";
-  return "Lav";
-}
-
 export default function PasientTiltakside() {
   const { user, isAuthReady } = useUser();
   const router = useRouter();
@@ -62,7 +55,9 @@ export default function PasientTiltakside() {
   const [measuresByCategory, setMeasuresByCategory] = useState<
     Record<number, PatientMeasureResult[]>
   >({});
-  const [categoryScores, setCategoryScores] = useState<Record<number, number>>({});
+  const [categoryScores, setCategoryScores] = useState<Record<number, number>>(
+    {},
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -114,8 +109,6 @@ export default function PasientTiltakside() {
     loadData();
   }, [isAuthReady, user]);
 
-  const riskOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
-
   const sortedCategories = [...categories].sort((a, b) => {
     const isSleepA = a.name.toLowerCase().trim() === "søvn";
     const isSleepB = b.name.toLowerCase().trim() === "søvn";
@@ -128,15 +121,15 @@ export default function PasientTiltakside() {
     const variantA = !answeredA
       ? null
       : isSleepA
-        ? sleepTagVariant(measuresA)
+        ? sleepVariantFromTitles(measuresA.map((m) => m.title ?? ""))
         : scoreToVariant(a.name, scoreA ?? 0);
     const variantB = !answeredB
       ? null
       : isSleepB
-        ? sleepTagVariant(measuresB)
+        ? sleepVariantFromTitles(measuresB.map((m) => m.title ?? ""))
         : scoreToVariant(b.name, scoreB ?? 0);
-    const orderA = variantA != null ? (riskOrder[variantA] ?? 3) : 4;
-    const orderB = variantB != null ? (riskOrder[variantB] ?? 3) : 4;
+    const orderA = variantA != null ? riskVariantRank(variantA) : 4;
+    const orderB = variantB != null ? riskVariantRank(variantB) : 4;
     return orderA - orderB;
   });
 
@@ -172,7 +165,11 @@ export default function PasientTiltakside() {
                     const score = categoryScores[cat.categoryId];
                     const isSleep = cat.name.toLowerCase().trim() === "søvn";
                     const variant = isSleep
-                      ? sleepTagVariant(measuresByCategory[cat.categoryId] ?? [])
+                      ? sleepVariantFromTitles(
+                          (measuresByCategory[cat.categoryId] ?? []).map(
+                            (m) => m.title ?? "",
+                          ),
+                        )
                       : score !== undefined
                         ? scoreToVariant(cat.name, score)
                         : null;
@@ -193,7 +190,7 @@ export default function PasientTiltakside() {
                         </span>
                         {variant && (
                           <Tag variant={variant} className="text-sm">
-                            {tagTextFromVariant(variant)}
+                            {riskVariantToLabel(variant)}
                           </Tag>
                         )}
                       </button>
