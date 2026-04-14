@@ -5,20 +5,28 @@ import type { TagVariant } from "../atoms/Tag";
 export type RiskVariant = "high" | "medium" | "low";
 export type CategoryRisk = { name: string; variant: RiskVariant };
 
-export const CATEGORY_RISK_THRESHOLDS: Record<string, { high: number; medium: number | null }> = {
+export const CATEGORY_RISK_THRESHOLDS: Record<
+  string,
+  { high: number; medium: number | null }
+> = {
   "fysisk aktivitet": { high: 9, medium: 5 },
-  kosthold:           { high: 9, medium: 5 },
-  rusmidler:          { high: 3, medium: 1 },
-  alkohol:            { high: 15, medium: 8 },
-  røyking:            { high: 2, medium: 1 },
-  tannhelse:          { high: 1, medium: null },
-  kroppsdata:         { high: 2, medium: 1 },
-  blodtrykk:          { high: 2, medium: 1 },
-  glukose:            { high: 2, medium: 1 },
+  kosthold: { high: 9, medium: 5 },
+  rusmidler: { high: 3, medium: 1 },
+  alkohol: { high: 15, medium: 8 },
+  røyking: { high: 2, medium: 1 },
+  tannhelse: { high: 1, medium: null },
+  kroppsdata: { high: 2, medium: 1 },
+  blodtrykk: { high: 2, medium: 1 },
+  glukose: { high: 2, medium: 1 },
+  blodlipider: { high: 2, medium: 1 },
 };
 
-export function scoreToVariant(categoryName: string, score: number): RiskVariant | null {
-  const thresholds = CATEGORY_RISK_THRESHOLDS[categoryName.toLowerCase().trim()];
+export function scoreToVariant(
+  categoryName: string,
+  score: number,
+): RiskVariant | null {
+  const thresholds =
+    CATEGORY_RISK_THRESHOLDS[categoryName.toLowerCase().trim()];
   if (!thresholds) return null;
   if (score >= thresholds.high) return "high";
   if (thresholds.medium !== null && score >= thresholds.medium) return "medium";
@@ -80,10 +88,18 @@ function tagLabel(variant: TagVariant): string {
   return "Lav";
 }
 
-const RISK_ORDER: Record<RiskVariant, number> = { high: 0, medium: 1, low: 2 };
+export function riskVariantToLabel(variant: RiskVariant): string {
+  return tagLabel(variant);
+}
+
+export function riskVariantRank(variant: RiskVariant): number {
+  return { high: 0, medium: 1, low: 2 }[variant];
+}
 
 export function RiskList({ risks = [] }: { risks?: CategoryRisk[] }) {
-  const sorted = [...risks].sort((a, b) => RISK_ORDER[a.variant] - RISK_ORDER[b.variant]);
+  const sorted = [...risks].sort(
+    (a, b) => riskVariantRank(a.variant) - riskVariantRank(b.variant),
+  );
 
   if (sorted.length === 0) {
     return (
