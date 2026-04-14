@@ -13,6 +13,7 @@ import type {
   CreateResponseDto,
   QueryQuestionWithDetailsDto,
   QueryWithQuestionsDto,
+  SeverityDto,
 } from "@/types";
 
 function toPatientPerspective(text: string): string {
@@ -41,6 +42,7 @@ interface HealthQuestionnaireProps {
 export default function HealthQuestionnaire({ patientId }: HealthQuestionnaireProps) {
   const { user } = useUser();
   const [questions, setQuestions] = useState<QueryQuestionWithDetailsDto[]>([]);
+  const [severities, setSeverities] = useState<SeverityDto[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,12 +52,16 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
   const [formKey, setFormKey] = useState(0);
 
   useEffect(() => {
-    const fetchQuestions = async () => {
+    const fetchData = async () => {
       try {
-        const data = await apiClient.get<QueryWithQuestionsDto>(
-          "/api/Query/full/by-name/Helseskjema",
-        );
-        setQuestions(data.questions ?? []);
+        const [questionsData, severitiesData] = await Promise.all([
+          apiClient.get<QueryWithQuestionsDto>(
+            "/api/Query/full/by-name/Helseskjema",
+          ),
+          apiClient.get<SeverityDto[]>("/api/Severities"),
+        ]);
+        setQuestions(questionsData.questions ?? []);
+        setSeverities(severitiesData ?? []);
       } catch (err) {
         setError("Noe gikk galt ved henting av spørsmål.");
         console.error(err);
@@ -64,7 +70,7 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
       }
     };
 
-    void fetchQuestions();
+    void fetchData();
   }, []);
 
   const updateAnswer = (questionId: number, value: string) => {
@@ -176,10 +182,16 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
           key={question.questionId}
           question={questionText}
           name={name}
-          options={question.options.map((option) => ({
-            value: option.optionValue,
-            label: option.fallbackText,
-          }))}
+          options={question.options.map((option) => {
+            const severity = severities.find(
+              (s) => s.questionId === question.questionId && s.requiredOption === option.questionOptionId
+            );
+            return {
+              value: option.optionValue,
+              label: option.fallbackText,
+              score: severity?.score,
+            };
+          })}
           value={value}
           onChange={(val) => updateAnswer(question.questionId, val)}
           required={question.isRequired}

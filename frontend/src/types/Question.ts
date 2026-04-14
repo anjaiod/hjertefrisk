@@ -1,3 +1,5 @@
+import type { QuestionOptionDto } from './QuestionOption';
+
 export type CreateQuestionDto = {
   categoryId?: number | null;
   fallbackText: string;
@@ -14,4 +16,13 @@ export type QuestionDto = {
   questionType: string;
   isRequired: boolean;
   requiredRole?: string | null;
+  options?: QuestionOptionDto[];
+};
+
+export type Question = {
+  id: number;
+  categoryId?: number | null;
+  text: string;
+  type?: string;
+  isRequired?: boolean;
 };
