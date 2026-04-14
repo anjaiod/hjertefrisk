@@ -16,7 +16,7 @@ export default function NumberInput({
   onChange,
 }: NumberInputProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       <input
         type="number"
         id={id}
@@ -24,9 +24,9 @@ export default function NumberInput({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-navy"
+        className="w-36 md:w-48 px-4 py-3 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-navy touch-manipulation"
       />
-      {unit && <span className="text-sm text-gray-600">{unit}</span>}
+      {unit && <span className="text-base md:text-lg text-gray-600">{unit}</span>}
     </div>
   );
 }

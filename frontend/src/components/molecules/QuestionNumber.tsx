@@ -40,7 +40,7 @@ export default function QuestionNumber({
           <button
             type="button"
             onClick={onAnswer}
-            className="px-4 py-2 bg-brand-navy text-white rounded-md hover:opacity-90 whitespace-nowrap mt-0"
+            className="px-5 py-3 md:px-6 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl hover:opacity-90 whitespace-nowrap touch-manipulation"
           >
             Lagre svar
           </button>

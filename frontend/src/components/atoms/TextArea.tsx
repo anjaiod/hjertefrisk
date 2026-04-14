@@ -23,7 +23,7 @@ export default function TextArea({
       placeholder={placeholder}
       rows={rows}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-navy"
+      className="w-full px-4 py-3 text-base md:text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-navy"
     />
   );
 }
