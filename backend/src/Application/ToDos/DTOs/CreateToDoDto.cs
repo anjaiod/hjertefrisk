@@ -11,8 +11,7 @@ public class CreateToDoDto
     [Required]
     public int PatientId { get; set; }
 
-    [Required]
-    public int PersonnelId { get; set; }
+    public int? PersonnelId { get; set; }
 
     public bool Finished { get; set; }
     public bool Public { get; set; }
