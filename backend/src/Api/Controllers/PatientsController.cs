@@ -5,10 +5,6 @@ using backend.src.Application.Responses.Interfaces;
 using backend.src.Application.Responses.DTOs;
 using backend.src.Application.MeasurementResults.Interfaces;
 using backend.src.Application.Authorization.Interfaces;
-using backend.src.Application.Measures.DTOs;
-using backend.src.Application.Measures.Interfaces;
-using backend.src.Application.Queries.Interfaces;
-using backend.src.Application.Categories.Interfaces;
 using backend.src.Infrastructure.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,9 +19,6 @@ public class PatientsController : ControllerBase
     private readonly IAccessAuthorizationService _authService;
     private readonly IResponseService _responseService;
     private readonly IMeasurementResultService _measurementResultService;
-    private readonly IMeasureEvaluationService _evaluationService;
-    private readonly IQueryService _queryService;
-    private readonly ICategoryService _categoryService;
     private readonly IServiceScopeFactory _scopeFactory;
 
     private static readonly Dictionary<string, (int High, int? Medium)> CategoryThresholds = new()
@@ -46,18 +39,12 @@ public class PatientsController : ControllerBase
         IAccessAuthorizationService authService,
         IResponseService responseService,
         IMeasurementResultService measurementResultService,
-        IMeasureEvaluationService evaluationService,
-        IQueryService queryService,
-        ICategoryService categoryService,
         IServiceScopeFactory scopeFactory)
     {
         _service = service;
         _authService = authService;
         _responseService = responseService;
         _measurementResultService = measurementResultService;
-        _evaluationService = evaluationService;
-        _queryService = queryService;
-        _categoryService = categoryService;
         _scopeFactory = scopeFactory;
     }
 
@@ -83,7 +70,7 @@ public class PatientsController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
-        [FromQuery] int page = 0,
+        [FromQuery] int page = 1,
         [FromQuery] int pageSize = 15,
         [FromQuery] string? search = null,
         [FromQuery] string? sortBy = null,
@@ -102,18 +89,11 @@ public class PatientsController : ControllerBase
             {
                 // Personnel: return only accessible patients
                 var accessibleIds = await _authService.GetAccessiblePatientIdsAsync(personnelId.Value);
-                // Query at DB level instead of in-memory filtering
                 if (accessibleIds.Count == 0)
-                    return Ok(page > 0 ? (object)new { data = new List<PatientDto>(), totalCount = 0 } : new List<PatientDto>());
+                    return Ok(new { data = new List<PatientDto>(), totalCount = 0 });
 
-                if (page > 0)
-                {
-                    var paged = await _service.GetPagedByIdsAsync(accessibleIds, page, pageSize, search, sortBy, sortDir, riskLevel, personnelId.Value);
-                    return Ok(paged);
-                }
-
-                var patients = await _service.GetByIdsAsync(accessibleIds);
-                return Ok(patients);
+                var paged = await _service.GetPagedByIdsAsync(accessibleIds, page, pageSize, search, sortBy, sortDir, riskLevel, personnelId.Value);
+                return Ok(paged);
             }
 
             // Check if patient

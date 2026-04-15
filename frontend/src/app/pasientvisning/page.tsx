@@ -13,7 +13,7 @@ import { apiClient } from "@/lib/apiClient";
 
 const PAGE_SIZE = 15;
 
-function formatDate(iso: string | undefined): string {
+function formatDate(iso: string | null | undefined): string {
   if (!iso) return "Ikke besøkt";
   const d = new Date(iso);
   return d.toLocaleString("nb-NO", {
@@ -38,7 +38,7 @@ async function fetchPage(
   });
   if (search) params.set("search", search);
   if (sortBy) {
-    params.set("sortBy", sortBy === "lastVisited" ? "createdAt" : sortBy);
+    params.set("sortBy", sortBy);
     params.set("sortDir", sortDir);
   }
   if (riskLevel) params.set("riskLevel", riskLevel);
@@ -52,7 +52,6 @@ async function fetchPage(
     id: String(p.id),
     name: p.name,
     lastVisited: formatDate(p.lastVisited),
-    lastVisitedRaw: p.lastVisited ?? "",
     riskLevel: (p.riskLevel as TagVariant) ?? "none",
   }));
 

@@ -7,7 +7,6 @@ export interface Patient {
   id: string;
   name: string;
   lastVisited: string;
-  lastVisitedRaw: string;
   riskLevel: TagVariant;
 }
 
@@ -41,20 +40,30 @@ export default function PatientTable({
   onSort,
 }: PatientTableProps) {
   const thClass = "px-6 py-4 text-left text-brand-navy font-semibold";
-  const sortThClass = `${thClass} cursor-pointer select-none group`;
+  const sortThClass = `${thClass} select-none`;
 
   return (
     <div className="rounded-xl overflow-hidden border border-brand-mist/50 shadow-sm">
       <table className="w-full">
         <thead className="bg-brand-sky/30">
           <tr>
-            <th className={sortThClass} onClick={() => onSort("name")}>
-              <span className="group-hover:underline">Navn</span>
-              <SortIcon col="name" sortKey={sortKey} sortDir={sortDir} />
+            <th className={sortThClass}>
+              <button
+                className="flex items-center gap-1 cursor-pointer group"
+                onClick={() => onSort("name")}
+              >
+                <span className="group-hover:underline">Navn</span>
+                <SortIcon col="name" sortKey={sortKey} sortDir={sortDir} />
+              </button>
             </th>
-            <th className={sortThClass} onClick={() => onSort("lastVisited")}>
-              <span className="group-hover:underline">Sist besøkt</span>{" "}
-              <SortIcon col="lastVisited" sortKey={sortKey} sortDir={sortDir} />
+            <th className={sortThClass}>
+              <button
+                className="flex items-center gap-1 cursor-pointer group"
+                onClick={() => onSort("lastVisited")}
+              >
+                <span className="group-hover:underline">Sist besøkt</span>
+                <SortIcon col="lastVisited" sortKey={sortKey} sortDir={sortDir} />
+              </button>
             </th>
             <th className={thClass}>Status</th>
             <th className={thClass}>Handling</th>

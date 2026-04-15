@@ -10,8 +10,8 @@ export type PatientDto = {
   name: string;
   email: string;
   createdAt: string;
-  lastVisited?: string;
-  riskLevel?: string;
+  lastVisited?: string | null;
+  riskLevel?: string | null;
 };
 
 export type PatientScoreDto = {

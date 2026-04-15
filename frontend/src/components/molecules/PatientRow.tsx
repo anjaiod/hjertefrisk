@@ -40,8 +40,15 @@ export default function PatientRow({
   return (
     <>
       <tr
-        className="border-t border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+        className="border-t border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer focus-within:bg-gray-50 outline-none"
+        tabIndex={0}
         onClick={() => router.push(dashboardHref)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            router.push(dashboardHref);
+          }
+        }}
       >
         <td className="px-6 py-4">
           <span className="text-brand-navy font-medium hover:underline">

@@ -70,8 +70,8 @@ public class PatientService : IPatientService
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var lower = search.Trim().ToLower();
-            query = query.Where(p => p.Name.ToLower().Contains(lower));
+            var pattern = $"%{search.Trim()}%";
+            query = query.Where(p => EF.Functions.ILike(p.Name, pattern));
         }
 
         if (!string.IsNullOrWhiteSpace(riskLevel))
@@ -80,53 +80,74 @@ public class PatientService : IPatientService
         }
 
         var isDesc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
+        var isSortByName = string.Equals(sortBy, "name", StringComparison.OrdinalIgnoreCase);
 
-        var allRows = await query
-            .Select(p => new PatientDto
-            {
-                Id = p.Id,
-                SupabaseUserId = p.SupabaseUserId,
-                Name = p.Name,
-                Email = p.Email,
-                Gender = p.Gender,
-                CreatedAt = p.CreatedAt,
-                RiskLevel = p.RiskLevel
-            })
-            .ToListAsync();
-
-        if (personnelId.HasValue)
+        if (!isSortByName)
         {
-            var accessRows = await _db.PatientAccesses
-                .AsNoTracking()
-                .Where(a => a.PersonnelId == personnelId.Value && idList.Contains(a.PatientId))
+            // lastVisited sort: join with PatientAccess at DB level, paginate in DB
+            var dbQuery = query.Join(
+                _db.PatientAccesses.Where(a => a.PersonnelId == personnelId),
+                p => p.Id,
+                a => a.PatientId,
+                (p, a) => new PatientDto
+                {
+                    Id = p.Id,
+                    SupabaseUserId = p.SupabaseUserId,
+                    Name = p.Name,
+                    Email = p.Email,
+                    Gender = p.Gender,
+                    CreatedAt = p.CreatedAt,
+                    RiskLevel = p.RiskLevel,
+                    LastVisited = a.LastVisited
+                });
+
+            var ordered = isDesc
+                ? dbQuery.OrderByDescending(p => p.LastVisited)
+                : dbQuery.OrderBy(p => p.LastVisited);
+
+            var totalCount = await ordered.CountAsync();
+            var data = await ordered.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+            return new PagedResult<PatientDto> { Data = data, TotalCount = totalCount };
+        }
+        else
+        {
+            // Name sort: must be done in-memory due to last-name extraction
+            var allRows = await query
+                .Select(p => new PatientDto
+                {
+                    Id = p.Id,
+                    SupabaseUserId = p.SupabaseUserId,
+                    Name = p.Name,
+                    Email = p.Email,
+                    Gender = p.Gender,
+                    CreatedAt = p.CreatedAt,
+                    RiskLevel = p.RiskLevel
+                })
                 .ToListAsync();
 
-            var lastVisitedMap = accessRows.ToDictionary(a => a.PatientId, a => a.LastVisited);
-            foreach (var row in allRows)
+            if (personnelId.HasValue)
             {
-                if (lastVisitedMap.TryGetValue(row.Id, out var lv))
-                    row.LastVisited = lv;
+                var accessRows = await _db.PatientAccesses
+                    .AsNoTracking()
+                    .Where(a => a.PersonnelId == personnelId.Value && idList.Contains(a.PatientId))
+                    .ToListAsync();
+
+                var lastVisitedMap = accessRows.ToDictionary(a => a.PatientId, a => a.LastVisited);
+                foreach (var row in allRows)
+                {
+                    if (lastVisitedMap.TryGetValue(row.Id, out var lv))
+                        row.LastVisited = lv;
+                }
             }
-        }
 
-        var totalCount = allRows.Count;
-
-        IEnumerable<PatientDto> sorted = sortBy?.ToLower() switch
-        {
-            "name" => isDesc
+            var totalCount = allRows.Count;
+            var sorted = isDesc
                 ? allRows.OrderByDescending(p => p.Name.Split(' ').Last().ToLower())
-                : allRows.OrderBy(p => p.Name.Split(' ').Last().ToLower()),
-            "lastvisited" => isDesc
-                ? allRows.OrderByDescending(p => p.LastVisited ?? DateTime.MinValue)
-                : allRows.OrderBy(p => p.LastVisited ?? DateTime.MinValue),
-            _ => isDesc
-                ? allRows.OrderByDescending(p => p.LastVisited ?? DateTime.MinValue)
-                : allRows.OrderBy(p => p.LastVisited ?? DateTime.MinValue)
-        };
+                : allRows.OrderBy(p => p.Name.Split(' ').Last().ToLower());
 
-        var data = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-        return new PagedResult<PatientDto> { Data = data, TotalCount = totalCount };
+            var data = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            return new PagedResult<PatientDto> { Data = data, TotalCount = totalCount };
+        }
     }
 
     public async Task RecordVisitAsync(int patientId, int personnelId)

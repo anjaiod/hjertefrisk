@@ -61,6 +61,7 @@ export function SearchBar({
       />
       {hasValue && (
         <button
+          type="button"
           onClick={handleClear}
           aria-label="Tøm søk"
           className="shrink-0 text-slate-400 hover:text-slate-600 transition-colors"
