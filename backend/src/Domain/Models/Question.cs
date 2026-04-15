@@ -23,6 +23,7 @@ public class Question
 
     public ICollection<PatientMeasure> PatientMeasures { get; set; } = new List<PatientMeasure>();
     public ICollection<PersonnelMeasure> PersonnelMeasures { get; set; } = new List<PersonnelMeasure>();
+    public ICollection<QuickMeasure> QuickMeasures { get; set; } = new List<QuickMeasure>();
     public ICollection<Severity> Severities { get; set; } = new List<Severity>();
     public ICollection<QueryQuestion> QueryQuestions { get; set; } = new List<QueryQuestion>();
 }
