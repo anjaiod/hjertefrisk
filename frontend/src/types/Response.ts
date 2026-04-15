@@ -7,6 +7,7 @@ export type CreateResponseDto = {
 };
 
 export type ResponseDto = {
+  answeredQueryId: number;
   patientId: number;
   questionId: number;
   selectedOptionId?: number | null;

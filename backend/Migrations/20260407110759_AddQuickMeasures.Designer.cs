@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.src.Infrastructure.Data;
@@ -11,9 +12,11 @@ using backend.src.Infrastructure.Data;
 namespace api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260407110759_AddQuickMeasures")]
+    partial class AddQuickMeasures
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -184,9 +187,6 @@ namespace api.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Gender")
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
@@ -847,7 +847,7 @@ namespace api.Migrations
                     b.Property<int>("PatientId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("PersonnelId")
+                    b.Property<int>("PersonnelId")
                         .HasColumnType("integer");
 
                     b.Property<bool>("Public")
@@ -864,70 +864,6 @@ namespace api.Migrations
                     b.HasIndex("PersonnelId");
 
                     b.ToTable("ToDos");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.ToDoRule", b =>
-                {
-                    b.Property<int>("ToDoRuleId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ToDoRuleId"));
-
-                    b.Property<string>("Operator")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Priority")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ToDoText")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("ToDoRuleId");
-
-                    b.ToTable("ToDoRules", (string)null);
-
-                    b.UseTptMappingStrategy();
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.CategoryScoreRule", b =>
-                {
-                    b.HasBaseType("backend.src.Domain.Models.ToDoRule");
-
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ScoreThreshold")
-                        .HasColumnType("integer");
-
-                    b.HasIndex("CategoryId");
-
-                    b.ToTable("CategoryScoreRules", (string)null);
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.QuestionAnswerRule", b =>
-                {
-                    b.HasBaseType("backend.src.Domain.Models.ToDoRule");
-
-                    b.Property<int>("QuestionId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("RequiredOption")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("RequiredText")
-                        .HasColumnType("text");
-
-                    b.Property<decimal?>("RequiredValue")
-                        .HasColumnType("numeric");
-
-                    b.HasIndex("QuestionId");
-
-                    b.HasIndex("RequiredOption");
-
-                    b.ToTable("QuestionAnswerRules", (string)null);
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.AnsweredQuery", b =>
@@ -1408,52 +1344,13 @@ namespace api.Migrations
 
                     b.HasOne("backend.src.Domain.Models.Personnel", "Personnel")
                         .WithMany("ToDos")
-                        .HasForeignKey("PersonnelId");
+                        .HasForeignKey("PersonnelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Patient");
 
                     b.Navigation("Personnel");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.CategoryScoreRule", b =>
-                {
-                    b.HasOne("backend.src.Domain.Models.Category", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.src.Domain.Models.ToDoRule", null)
-                        .WithOne()
-                        .HasForeignKey("backend.src.Domain.Models.CategoryScoreRule", "ToDoRuleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Category");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.QuestionAnswerRule", b =>
-                {
-                    b.HasOne("backend.src.Domain.Models.Question", "Question")
-                        .WithMany()
-                        .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.src.Domain.Models.QuestionOption", "RequiredOptionNavigation")
-                        .WithMany()
-                        .HasForeignKey("RequiredOption")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("backend.src.Domain.Models.ToDoRule", null)
-                        .WithOne()
-                        .HasForeignKey("backend.src.Domain.Models.QuestionAnswerRule", "ToDoRuleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Question");
-
-                    b.Navigation("RequiredOptionNavigation");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.AnsweredQuery", b =>
