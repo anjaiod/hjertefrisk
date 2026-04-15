@@ -45,6 +45,8 @@ export default function PatientRow({
         onClick={() => router.push(dashboardHref)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
+            const target = e.target as HTMLElement;
+            if (target.closest("button") || target.closest("a")) return;
             e.preventDefault();
             router.push(dashboardHref);
           }

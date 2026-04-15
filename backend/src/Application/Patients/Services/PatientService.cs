@@ -102,8 +102,8 @@ public class PatientService : IPatientService
                 });
 
             var ordered = isDesc
-                ? dbQuery.OrderByDescending(p => p.LastVisited)
-                : dbQuery.OrderBy(p => p.LastVisited);
+                ? dbQuery.OrderByDescending(p => p.LastVisited.HasValue).ThenByDescending(p => p.LastVisited)
+                : dbQuery.OrderBy(p => p.LastVisited.HasValue ? 1 : 0).ThenBy(p => p.LastVisited);
 
             var totalCount = await ordered.CountAsync();
             var data = await ordered.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();

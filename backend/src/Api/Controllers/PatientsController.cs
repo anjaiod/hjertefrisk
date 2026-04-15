@@ -81,6 +81,9 @@ public class PatientsController : ControllerBase
         [FromQuery] string? sortDir = null,
         [FromQuery] string? riskLevel = null)
     {
+        if (page < 1) return BadRequest(new { error = "page must be >= 1" });
+        if (pageSize < 1 || pageSize > 100) return BadRequest(new { error = "pageSize must be between 1 and 100" });
+
         try
         {
             var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
