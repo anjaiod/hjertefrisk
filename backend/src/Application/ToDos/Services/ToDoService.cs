@@ -23,6 +23,7 @@ public class ToDoService : IToDoService
             {
                 ToDoId = t.ToDoId,
                 Finished = t.Finished,
+                FinishedAt = t.FinishedAt,
                 ToDoText = t.ToDoText,
                 PatientId = t.PatientId,
                 PersonnelId = t.PersonnelId,
@@ -39,6 +40,7 @@ public class ToDoService : IToDoService
             PatientId = dto.PatientId,
             PersonnelId = dto.PersonnelId,
             Finished = dto.Finished,
+            FinishedAt = dto.Finished ? DateTime.UtcNow : null,
             Public = dto.Public
         };
 
@@ -49,6 +51,45 @@ public class ToDoService : IToDoService
         {
             ToDoId = entity.ToDoId,
             Finished = entity.Finished,
+            FinishedAt = entity.FinishedAt,
+            ToDoText = entity.ToDoText,
+            PatientId = entity.PatientId,
+            PersonnelId = entity.PersonnelId,
+            Public = entity.Public
+        };
+    }
+
+    public async Task<ToDoDto?> UpdateAsync(int id, CreateToDoDto dto)
+    {
+        var entity = await _db.ToDos.FirstOrDefaultAsync(t => t.ToDoId == id);
+        if (entity == null)
+            return null;
+
+        var wasFinished = entity.Finished;
+        entity.ToDoText = dto.ToDoText.Trim();
+        entity.PersonnelId = dto.PersonnelId;
+        entity.Public = dto.Public;
+        entity.Finished = dto.Finished;
+
+        // Set FinishedAt when transitioning from not finished to finished
+        if (!wasFinished && dto.Finished)
+        {
+            entity.FinishedAt = DateTime.UtcNow;
+        }
+        // Clear FinishedAt if marking as unfinished again
+        else if (wasFinished && !dto.Finished)
+        {
+            entity.FinishedAt = null;
+        }
+
+        _db.ToDos.Update(entity);
+        await _db.SaveChangesAsync();
+
+        return new ToDoDto
+        {
+            ToDoId = entity.ToDoId,
+            Finished = entity.Finished,
+            FinishedAt = entity.FinishedAt,
             ToDoText = entity.ToDoText,
             PatientId = entity.PatientId,
             PersonnelId = entity.PersonnelId,

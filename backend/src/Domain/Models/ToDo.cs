@@ -4,6 +4,7 @@ public class ToDo
 {
     public int ToDoId { get; set; }           // PK
     public bool Finished { get; set; }
+    public DateTime? FinishedAt { get; set; } // When the todo was marked as finished
     public string ToDoText { get; set; } = "";
     public int PatientId { get; set; }        // FK -> Patient
     public int? PersonnelId { get; set; }      // FK -> Personnel

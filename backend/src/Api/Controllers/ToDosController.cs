@@ -28,4 +28,13 @@ public class ToDosController : ControllerBase
         var created = await _service.CreateAsync(dto);
         return Created(string.Empty, created);
     }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] CreateToDoDto dto)
+    {
+        var updated = await _service.UpdateAsync(id, dto);
+        if (updated == null)
+            return NotFound();
+        return Ok(updated);
+    }
 }

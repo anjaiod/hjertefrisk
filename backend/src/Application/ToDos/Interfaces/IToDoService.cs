@@ -6,4 +6,5 @@ public interface IToDoService
 {
     Task<IEnumerable<ToDoDto>> GetAllAsync();
     Task<ToDoDto> CreateAsync(CreateToDoDto dto);
+    Task<ToDoDto?> UpdateAsync(int id, CreateToDoDto dto);
 }
