@@ -253,7 +253,12 @@ export function SidebarNav({
         ) : null}
       </aside>
 
-      {showVarsling && <VarslingModal onClose={() => setShowVarsling(false)} />}
+      {showVarsling && (
+        <VarslingModal
+          onClose={() => setShowVarsling(false)}
+          patientId={Number(patientId)}
+        />
+      )}
     </>
   );
 }

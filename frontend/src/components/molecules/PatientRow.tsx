@@ -87,7 +87,11 @@ export default function PatientRow({
         />
       )}
       {openModal === "varsling" && (
-        <VarslingModal patientName={name} onClose={() => setOpenModal(null)} />
+        <VarslingModal
+          patientId={Number(id)}
+          patientName={name}
+          onClose={() => setOpenModal(null)}
+        />
       )}
     </>
   );
