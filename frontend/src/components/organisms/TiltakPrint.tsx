@@ -54,8 +54,11 @@ function groupByCategory(
 }
 
 export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
-  const sorted = [...measures].sort((a, b) => b.priority - a.priority);
+  const missingData = measures.filter((m) => m.isMissingData);
+  const actionable = measures.filter((m) => !m.isMissingData);
+  const sorted = [...actionable].sort((a, b) => b.priority - a.priority);
   const groups = groupByCategory(sorted);
+  const missingGroups = groupByCategory(missingData);
 
   const dateStr = new Date().toLocaleDateString("nb-NO", {
     day: "2-digit",
@@ -67,8 +70,25 @@ export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
     const printWindow = window.open("", "_blank", "width=900,height=700");
     if (!printWindow) return;
 
+    const missingHtml =
+      missingGroups.length === 0
+        ? ""
+        : `
+  <div class="missing-section">
+    <div class="missing-label">Kategorier uten svar</div>
+    ${missingGroups
+      .map(
+        ({ category }) => `
+    <div class="missing-item">
+      <span class="missing-category">${category}</span>
+      <span class="missing-tag">— manglende data</span>
+    </div>`,
+      )
+      .join("\n")}
+  </div>`;
+
     const groupsHtml =
-      sorted.length === 0
+      sorted.length === 0 && missingGroups.length === 0
         ? `<p class="empty">Ingen tiltak ble generert basert på svarene i skjemaet.</p>`
         : groups
             .map(
@@ -87,7 +107,7 @@ export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
       .join("\n")}
   </div>`,
             )
-            .join("\n");
+            .join("\n") + missingHtml;
 
     printWindow.document.write(`<!DOCTYPE html>
 <html lang="nb">
@@ -156,6 +176,24 @@ export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
       justify-content: space-between;
     }
     .empty { color: #888; font-style: italic; }
+    .missing-section { margin-top: 6mm; }
+    .missing-label {
+      font-size: 9pt;
+      font-weight: bold;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #999;
+      margin-bottom: 3mm;
+    }
+    .missing-item {
+      background: #f5f5f5;
+      border-left: 4px solid #ccc;
+      border-radius: 3px;
+      padding: 2mm 5mm;
+      margin-bottom: 2mm;
+    }
+    .missing-category { font-size: 10pt; color: #777; text-transform: capitalize; }
+    .missing-tag { font-size: 9pt; color: #aaa; font-style: italic; margin-left: 4px; }
     @media print {
       body { padding: 10mm 12mm; }
       .category-group { break-inside: avoid; }
@@ -174,7 +212,7 @@ export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
       Dato: ${dateStr}
     </div>
   </div>
-  <div class="section-label">Anbefalte tiltak (${sorted.length})</div>
+  <div class="section-label">Anbefalte tiltak (${sorted.length})${missingGroups.length > 0 ? ` · ${missingGroups.length} kategori${missingGroups.length === 1 ? "" : "er"} uten svar` : ""}</div>
   ${groupsHtml}
   <div class="footer">
     <span>Hjertefrisk – tiltaksplan</span>
@@ -238,9 +276,14 @@ export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
 
         <p className="text-xs font-bold uppercase tracking-widest text-brand-navy mb-4">
           Anbefalte tiltak ({sorted.length})
+          {missingGroups.length > 0 && (
+            <span className="ml-2 font-normal text-gray-400 normal-case tracking-normal">
+              · {missingGroups.length} kategori{missingGroups.length === 1 ? "" : "er"} uten svar
+            </span>
+          )}
         </p>
 
-        {sorted.length === 0 ? (
+        {sorted.length === 0 && missingData.length === 0 ? (
           <p className="text-gray-500 italic">
             Ingen tiltak ble generert basert på svarene i skjemaet.
           </p>
@@ -281,6 +324,29 @@ export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
                 </div>
               </div>
             ))}
+
+            {missingGroups.length > 0 && (
+              <div className="mt-4">
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">
+                  Kategorier uten svar
+                </p>
+                <div className="space-y-2">
+                  {missingGroups.map(({ category }) => (
+                    <div
+                      key={category}
+                      className="bg-gray-50 border-l-4 border-gray-300 rounded px-5 py-3 flex items-center gap-3"
+                    >
+                      <span className="text-sm font-medium text-gray-500 capitalize">
+                        {category}
+                      </span>
+                      <span className="text-xs text-gray-400 italic">
+                        — manglende data
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

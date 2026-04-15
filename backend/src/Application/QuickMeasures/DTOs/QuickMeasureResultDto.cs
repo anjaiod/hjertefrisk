@@ -8,4 +8,5 @@ public class QuickMeasureResultDto
     public string? ResourceUrl { get; set; }
     public int Priority { get; set; }
     public string? CategoryName { get; set; }
+    public bool IsMissingData { get; set; }
 }

@@ -5,6 +5,7 @@ export type QuickMeasureResultDto = {
   resourceUrl?: string | null;
   priority: number;
   categoryName?: string | null;
+  isMissingData?: boolean;
 };
 
 export type EvaluateQuickMeasuresDto = {

@@ -76,6 +76,12 @@ public class QuickMeasureService : IQuickMeasureService
         // Calculate category scores using Severities
         var categoryScores = CalculateCategoryScores(questions, responses);
 
+        // Track which categories have at least one answered question in this submission
+        var categoriesWithData = questions
+            .Where(q => q.CategoryId.HasValue && responses.ContainsKey(q.QuestionId))
+            .Select(q => q.CategoryId!.Value)
+            .ToHashSet();
+
         // Fetch all QuickMeasures linked to questions or categories in this query
         var categoryIds = questions
             .Where(q => q.CategoryId.HasValue)
@@ -122,6 +128,21 @@ public class QuickMeasureService : IQuickMeasureService
         // Only show tiltak at the HIGHEST matching threshold (e.g. medium risk, not also low risk)
         foreach (var group in categoryMeasures.GroupBy(m => m.CategoryId!.Value))
         {
+            // No questions in this category were answered — flag as missing data
+            if (!categoriesWithData.Contains(group.Key))
+            {
+                var representative = group.First();
+                results.Add(new QuickMeasureResultDto
+                {
+                    QuickMeasureId = 0,
+                    CategoryName = representative.Category?.Name,
+                    IsMissingData = true,
+                    FallbackText = "Manglende data",
+                    Priority = int.MinValue
+                });
+                continue;
+            }
+
             var categoryScore = categoryScores.GetValueOrDefault(group.Key);
 
             var maxApplicableThreshold = group
