@@ -10,6 +10,7 @@ interface QuestionTextAreaProps {
   placeholder?: string;
   rows?: number;
   required?: boolean;
+  compact?: boolean;
 }
 
 export default function QuestionTextArea({
@@ -21,10 +22,11 @@ export default function QuestionTextArea({
   placeholder,
   rows = 3,
   required = false,
+  compact = false,
 }: QuestionTextAreaProps) {
   return (
     <div className="mb-6">
-      <QuestionLabel text={question} required={required} />
+      <QuestionLabel text={question} required={required} compact={compact} />
       <TextArea
         id={name}
         name={name}

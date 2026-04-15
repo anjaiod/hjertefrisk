@@ -52,7 +52,7 @@ export default function Page() {
       </div>
 
       <div className="px-8 pb-8">
-        {tab === "ny" && <HealthQuestionnaire patientId={patientId} />}
+        {tab === "ny" && <HealthQuestionnaire patientId={patientId} compact />}
 
         {tab === "historikk" && (
           <QuestionnaireHistory
