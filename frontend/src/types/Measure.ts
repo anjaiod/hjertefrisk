@@ -10,6 +10,7 @@ export type QuickMeasureResultDto = {
 export type EvaluateQuickMeasuresDto = {
   patientId: number;
   queryId: number;
+  answeredQueryId: number;
 };
 
 export type PatientMeasureResultDto = {

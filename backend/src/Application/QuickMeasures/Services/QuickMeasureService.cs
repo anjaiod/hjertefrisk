@@ -63,11 +63,12 @@ public class QuickMeasureService : IQuickMeasureService
             .Include(q => q.Severities)
             .ToListAsync();
 
-        // Fetch latest response per question for this patient (a patient may have answered the same question multiple times)
+        // Fetch responses for this specific submission only
         var responses = (await _db.Responses
                 .AsNoTracking()
-                .Where(r => r.PatientId == dto.PatientId && questionIds.Contains(r.QuestionId))
-                .OrderByDescending(r => r.CreatedAt)
+                .Where(r => r.AnsweredQueryId == dto.AnsweredQueryId
+                            && r.PatientId == dto.PatientId
+                            && questionIds.Contains(r.QuestionId))
                 .ToListAsync())
             .GroupBy(r => r.QuestionId)
             .ToDictionary(g => g.Key, g => g.First());

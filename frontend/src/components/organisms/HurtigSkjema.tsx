@@ -14,6 +14,7 @@ import type {
   CreateResponseDto,
   QueryQuestionWithDetailsDto,
   QueryWithQuestionsDto,
+  ResponseDto,
 } from "@/types";
 
 const HWB_MEASUREMENT_IDS = new Set([1, 2, 10]);
@@ -406,7 +407,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
 
     try {
       setIsSubmitting(true);
-      await apiClient.post("/api/Responses/bulk", payload);
+      const savedResponses = await apiClient.post<ResponseDto[]>("/api/Responses/bulk", payload);
       if (measurementPayload.length > 0) {
         await apiClient.post(
           "/api/MeasurementResults/bulk",
@@ -414,9 +415,11 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
         );
       }
 
-      if (queryId != null) {
+      const answeredQueryId = savedResponses[0]?.answeredQueryId ?? null;
+
+      if (queryId != null && answeredQueryId != null) {
         router.push(
-          `/dashboard/hurtigskjema/tiltak?patientId=${patientId}&queryId=${queryId}`,
+          `/dashboard/hurtigskjema/tiltak?patientId=${patientId}&queryId=${queryId}&answeredQueryId=${answeredQueryId}`,
         );
       } else {
         setAnswers({});
