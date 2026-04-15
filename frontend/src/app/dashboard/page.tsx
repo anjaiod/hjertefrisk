@@ -194,6 +194,7 @@ export default function DashboardPage() {
             key={patientId ?? "no-patient"}
             title={`Oppgaver for ${patientName}:`}
             todos={todos}
+            patientId={patientId ? Number(patientId) : undefined}
           />
         </div>
       </div>

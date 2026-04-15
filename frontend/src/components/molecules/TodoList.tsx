@@ -10,12 +10,17 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 export function TodoList({
   title,
   todos: initialTodos = [],
+  patientId,
 }: {
   title?: string;
   todos?: Todo[];
+  patientId?: number;
 }) {
   const [todos, setTodos] = useState<Todo[]>(initialTodos);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newTodoText, setNewTodoText] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     setTodos(initialTodos);
@@ -70,6 +75,43 @@ export function TodoList({
     }
   };
 
+  const createTodo = async () => {
+    if (!newTodoText.trim()) return;
+
+    setIsCreating(true);
+    try {
+      const response = await fetch(`${API_URL}/api/todos`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          toDoText: newTodoText.trim(),
+          patientId: patientId || 0,
+          finished: false,
+          public: true,
+        }),
+      });
+
+      if (response.ok) {
+        const created = await response.json();
+        setTodos([...todos, {
+          id: created.toDoId,
+          text: created.toDoText,
+          completed: created.finished,
+        }]);
+        setNewTodoText("");
+        setShowCreateForm(false);
+      } else {
+        console.error("Failed to create todo");
+      }
+    } catch (error) {
+      console.error("Error creating todo:", error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const completedCount = todos.filter((todo) => todo.completed).length;
   const totalCount = todos.length;
   const percentage =
@@ -77,7 +119,50 @@ export function TodoList({
 
   return (
     <div className="w-full max-w-md  bg-white rounded-xl border border-brand-mist/30 shadow-sm p-8">
-      <h2 className="mb-6 text-lg font-semibold text-brand-navy">{title}</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-lg font-semibold text-brand-navy">{title}</h2>
+        <button
+          onClick={() => setShowCreateForm(true)}
+          className="px-3 py-1 text-sm font-medium text-white bg-brand-sage hover:bg-brand-sage/90 rounded-lg transition-colors"
+        >
+          + Ny
+        </button>
+      </div>
+
+      {/* Create Form */}
+      {showCreateForm && (
+        <div className="mb-6 p-3 bg-brand-mist/20 rounded-lg">
+          <input
+            type="text"
+            value={newTodoText}
+            onChange={(e) => setNewTodoText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") createTodo();
+              if (e.key === "Escape") setShowCreateForm(false);
+            }}
+            placeholder="Skriv ny oppgave..."
+            className="w-full px-3 py-2 border border-brand-mist rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-sage mb-2"
+            autoFocus
+            disabled={isCreating}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={createTodo}
+              disabled={isCreating || !newTodoText.trim()}
+              className="flex-1 px-3 py-2 text-sm font-medium text-white bg-brand-sage hover:bg-brand-sage/90 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCreating ? "Legger til..." : "Legg til"}
+            </button>
+            <button
+              onClick={() => setShowCreateForm(false)}
+              disabled={isCreating}
+              className="px-3 py-2 text-sm font-medium text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+            >
+              Avbryt
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Progress Bar */}
       <div className="mb-6">
