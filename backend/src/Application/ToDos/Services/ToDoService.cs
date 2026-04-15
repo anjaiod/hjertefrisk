@@ -17,8 +17,11 @@ public class ToDoService : IToDoService
 
     public async Task<IEnumerable<ToDoDto>> GetAllAsync()
     {
+        var today = DateTime.UtcNow.Date;
+        
         return await _db.ToDos
             .AsNoTracking()
+            .Where(t => !t.Finished || (t.FinishedAt != null && t.FinishedAt.Value.Date == today))
             .Select(t => new ToDoDto
             {
                 ToDoId = t.ToDoId,
