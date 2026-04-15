@@ -77,7 +77,8 @@ export async function getRisks(patientId: string): Promise<CategoryRisk[]> {
         return { name: cat.name, variant };
       })
       .filter((r): r is CategoryRisk => r !== null);
-  } catch {
+  } catch (error) {
+    console.error("Failed to fetch risks", error);
     return [];
   }
 }
