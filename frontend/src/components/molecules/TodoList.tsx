@@ -5,6 +5,8 @@ import { Checkbox } from "../atoms/Checkbox";
 
 type Todo = { id: number; text: string; completed: boolean };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+
 export function TodoList({
   title,
   todos: initialTodos = [],
@@ -13,17 +15,59 @@ export function TodoList({
   todos?: Todo[];
 }) {
   const [todos, setTodos] = useState<Todo[]>(initialTodos);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
 
   useEffect(() => {
     setTodos(initialTodos);
   }, [initialTodos]);
 
-  const toggleTodo = (id: number) => {
+  const toggleTodo = async (id: number) => {
+    const todo = todos.find((t) => t.id === id);
+    if (!todo) return;
+
+    // Update local state immediately for responsiveness
     setTodos(
-      todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo,
+      todos.map((t) =>
+        t.id === id ? { ...t, completed: !t.completed } : t,
       ),
     );
+
+    // Update database
+    setUpdatingId(id);
+    try {
+      const response = await fetch(`${API_URL}/api/todos/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          toDoText: todo.text,
+          patientId: todo.id, // This will be overridden by the backend
+          finished: !todo.completed,
+          public: true,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to update todo");
+        // Revert on error
+        setTodos(
+          todos.map((t) =>
+            t.id === id ? { ...t, completed: todo.completed } : t,
+          ),
+        );
+      }
+    } catch (error) {
+      console.error("Error updating todo:", error);
+      // Revert on error
+      setTodos(
+        todos.map((t) =>
+          t.id === id ? { ...t, completed: todo.completed } : t,
+        ),
+      );
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
   const completedCount = todos.filter((todo) => todo.completed).length;
@@ -55,11 +99,14 @@ export function TodoList({
         {todos.map((todo) => (
           <div
             key={todo.id}
-            className="flex items-center gap-3 rounded-lg p-2 hover:bg-brand-mist/20"
+            className={`flex items-center gap-3 rounded-lg p-2 hover:bg-brand-mist/20 ${
+              updatingId === todo.id ? "opacity-60" : ""
+            }`}
           >
             <Checkbox
               checked={todo.completed}
               onChange={() => toggleTodo(todo.id)}
+              disabled={updatingId === todo.id}
             />
             <span
               className={`text-base ${

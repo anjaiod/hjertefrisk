@@ -3,18 +3,23 @@ import React, { InputHTMLAttributes } from "react";
 interface CheckboxProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export function Checkbox({
   label,
   className = "",
+  disabled = false,
   ...props
 }: CheckboxProps) {
   return (
     <label className="flex items-center gap-3 cursor-pointer">
       <input
         type="checkbox"
-        className={`h-5 w-5 accent-brand-navy ${className}`}
+        disabled={disabled}
+        className={`h-5 w-5 accent-brand-navy ${
+          disabled ? "opacity-50 cursor-not-allowed" : ""
+        } ${className}`}
         {...props}
       />
       {label && (
