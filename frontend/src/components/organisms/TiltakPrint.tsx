@@ -239,7 +239,7 @@ export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex items-center gap-1 text-sm text-slate-600 hover:text-brand-navy transition-colors"
+            className="flex items-center gap-1 text-sm text-slate-600 hover:text-brand-navy transition-colors cursor-pointer"
             aria-label="Tilbake"
           >
             <svg
