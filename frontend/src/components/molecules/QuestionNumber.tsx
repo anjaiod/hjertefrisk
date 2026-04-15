@@ -10,6 +10,7 @@ interface QuestionNumberProps {
   placeholder?: string;
   unit?: string;
   required?: boolean;
+  compact?: boolean;
 }
 
 export default function QuestionNumber({
@@ -21,10 +22,11 @@ export default function QuestionNumber({
   placeholder,
   unit,
   required = false,
+  compact = false,
 }: QuestionNumberProps) {
   return (
     <div className="mb-6">
-      <QuestionLabel text={question} required={required} />
+      <QuestionLabel text={question} required={required} compact={compact} />
       <div className="flex gap-3 items-start">
         <div className="flex-1">
           <NumberInput
