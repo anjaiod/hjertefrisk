@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Checkbox } from "../atoms/Checkbox";
 
 type Todo = { id: number; text: string; completed: boolean };
 
@@ -52,15 +53,13 @@ export function TodoList({
       {/* Todo List */}
       <div className="space-y-2">
         {todos.map((todo) => (
-          <label
+          <div
             key={todo.id}
-            className="flex items-center gap-3 rounded-lg p-2 hover:bg-brand-mist/20 cursor-pointer"
+            className="flex items-center gap-3 rounded-lg p-2 hover:bg-brand-mist/20"
           >
-            <input
-              type="checkbox"
+            <Checkbox
               checked={todo.completed}
               onChange={() => toggleTodo(todo.id)}
-              className="h-5 w-5 accent-brand-navy"
             />
             <span
               className={`text-base ${
@@ -71,7 +70,7 @@ export function TodoList({
             >
               {todo.text}
             </span>
-          </label>
+          </div>
         ))}
       </div>
 
