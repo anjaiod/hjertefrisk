@@ -5,8 +5,13 @@ import { PatientSidebarNav } from "../../../components/organisms/PatientSidebarN
 import { PatientHeader } from "../../../components/organisms/PatientHeader";
 import { IconButton } from "@/components/atoms/IconButton";
 import { HealthCard } from "@/components/molecules/HealthCard";
+import {
+  scoreToVariant,
+  sleepVariantFromTitles,
+  riskVariantToLabel,
+  type RiskVariant,
+} from "@/components/molecules/RiskList";
 import { SectionWrapper } from "@/components/organisms/SectionWrapper";
-import type { TagVariant } from "../../../components/atoms/Tag";
 import { apiClient } from "../../../lib/apiClient";
 import type { CategoryDto } from "../../../types";
 import { useUser } from "@/context/UserContext";
@@ -18,51 +23,6 @@ type PatientMeasureResult = {
   categoryScore: number;
 };
 
-type RiskThreshold = {
-  high: number;
-  medium: number | null;
-};
-
-const CATEGORY_RISK_THRESHOLDS: Record<string, RiskThreshold> = {
-  "fysisk aktivitet": { high: 9, medium: 5 },
-  kosthold: { high: 9, medium: 5 },
-  rusmidler: { high: 3, medium: 1 },
-  alkohol: { high: 15, medium: 8 },
-  røyking: { high: 2, medium: 1 },
-  tannhelse: { high: 1, medium: null },
-  kroppsdata: { high: 2, medium: 1 },
-  blodtrykk: { high: 2, medium: 1 },
-  glukose: { high: 2, medium: 1 },
-  blodlipider: { high: 2, medium: 1 },
-};
-
-function tagVariantFromCategoryScore(
-  categoryName: string,
-  score: number,
-): TagVariant | null {
-  const key = categoryName.toLowerCase().trim();
-  const thresholds = CATEGORY_RISK_THRESHOLDS[key];
-  if (!thresholds) return null;
-  if (score >= thresholds.high) return "high";
-  if (thresholds.medium !== null && score >= thresholds.medium) return "medium";
-  return "low";
-}
-
-function sleepTagVariant(measures: PatientMeasureResult[]): TagVariant | null {
-  if (measures.length === 0) return null;
-  const titles = measures.map((m) => m.title ?? "");
-  if (titles.some((t) => t === "Betydelige søvnvansker")) return "high";
-  if (titles.some((t) => t === "Noen søvnproblemer")) return "medium";
-  if (titles.some((t) => t === "God søvn")) return "low";
-  return null;
-}
-
-function tagTextFromVariant(variant: TagVariant): string {
-  if (variant === "high") return "Høy";
-  if (variant === "medium") return "Middels";
-  return "Lav";
-}
-
 export default function PasientRisikoSide() {
   const { user, isAuthReady } = useUser();
   const [categories, setCategories] = useState<CategoryDto[]>([]);
@@ -72,7 +32,6 @@ export default function PasientRisikoSide() {
   const [measuresByCategory, setMeasuresByCategory] = useState<
     Record<number, PatientMeasureResult[]>
   >({});
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isAuthReady || !user) return;
@@ -115,8 +74,6 @@ export default function PasientRisikoSide() {
         setCategoryScores(result.categoryScores ?? {});
       } catch (e) {
         console.error(e);
-      } finally {
-        setLoading(false);
       }
     }
     loadData();
@@ -136,21 +93,17 @@ export default function PasientRisikoSide() {
       ? measures.length > 0
       : score !== undefined && score !== null;
 
-    let variant: TagVariant | null = null;
+    let variant: RiskVariant | null = null;
     if (hasData) {
       variant = isSleep
-        ? sleepTagVariant(measures)
-        : tagVariantFromCategoryScore(cat.name, score);
+        ? sleepVariantFromTitles(measures.map((m) => m.title ?? ""))
+        : scoreToVariant(cat.name, score);
     }
 
     return { id: cat.categoryId, variant };
   }
 
-  function renderHealthCard(
-    apiName: string,
-    displayTitle?: string,
-    description?: string,
-  ) {
+  function renderHealthCard(apiName: string, displayTitle?: string) {
     const info = getCategoryInfo(apiName);
     const variant = info?.variant ?? null;
     const categoryId = info?.id;
@@ -160,7 +113,7 @@ export default function PasientRisikoSide() {
         key={apiName}
         title={displayTitle ?? apiName}
         categoryId={categoryId}
-        tag={variant ? tagTextFromVariant(variant) : undefined}
+        tag={variant ? riskVariantToLabel(variant) : undefined}
         tagVariant={variant ?? undefined}
       />
     );

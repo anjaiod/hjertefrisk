@@ -7,12 +7,7 @@ import { SearchBar } from "@/components/atoms/SearchBar";
 import { TagVariant } from "@/components/atoms/Tag";
 import { PatientDto } from "@/types";
 import { apiClient } from "@/lib/apiClient";
-
-function scoreToRiskLevel(score: number): TagVariant {
-  if (score >= 7) return "high";
-  if (score >= 4) return "medium";
-  return "low";
-}
+import { totalScoreToVariant } from "@/components/molecules/RiskList";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -33,7 +28,7 @@ async function fetchPatients(): Promise<Patient[]> {
         const scoreData = await apiClient.get<{ patientId: number; totalScore: number }>(
           `/api/patients/${p.id}/score`
         );
-        riskLevel = scoreToRiskLevel(scoreData.totalScore);
+        riskLevel = totalScoreToVariant(scoreData.totalScore);
       } catch {
         // fallback to "low" if score fetch fails
       }
