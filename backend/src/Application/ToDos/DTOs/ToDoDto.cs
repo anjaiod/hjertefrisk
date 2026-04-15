@@ -6,6 +6,6 @@ public class ToDoDto
     public bool Finished { get; set; }
     public string ToDoText { get; set; } = "";
     public int PatientId { get; set; }
-    public int PersonnelId { get; set; }
+    public int? PersonnelId { get; set; }
     public bool Public { get; set; }
 }

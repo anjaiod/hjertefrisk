@@ -5,6 +5,7 @@ interface RadioButtonProps {
   label: string;
   checked?: boolean;
   onChange: (value: string) => void;
+  score?: number;
 }
 
 export default function RadioButton({
@@ -14,6 +15,7 @@ export default function RadioButton({
   label,
   checked = false,
   onChange,
+  score,
 }: RadioButtonProps) {
   return (
     <label
@@ -33,7 +35,12 @@ export default function RadioButton({
         onChange={(e) => onChange(e.target.value)}
         className="sr-only"
       />
-      <span className="text-[clamp(1.1rem,2.5vw,1.5rem)]">{label}</span>
-    </label>
+      <label htmlFor={id} className="text-lg cursor-pointer">
+        {label}
+        {score !== undefined && (
+          <span className="text-gray-500 text-sm ml-2">({score} poeng)</span>
+        )}
+      </label>
+    </div>
   );
 }

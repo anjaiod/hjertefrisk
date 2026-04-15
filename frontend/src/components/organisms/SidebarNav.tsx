@@ -153,6 +153,47 @@ export function SidebarNav({
         </svg>
       ),
     },
+    {
+      label: "Hurtigskjema",
+      href: withPatientId("/dashboard/hurtigskjema"),
+      active: isActive("/dashboard/hurtigskjema"),
+      icon: (
+        <svg
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+          />
+        </svg>
+      ),
+    },
+  ];
+
+  const adminItems: NavItem[] = [
+    {
+      label: "TODO Rules",
+      href: "/dashboard/todo_rules",
+      active: isActive("/dashboard/todo_rules"),
+      icon: (
+        <svg
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      ),
+    },
   ];
 
   return (
@@ -189,6 +230,14 @@ export function SidebarNav({
           </nav>
         </>
       ) : null}
+
+      <div className="mt-auto border-t border-brand-sky/30 pt-6">
+        <nav className="flex flex-col space-y-2">
+          {adminItems.map((item) => (
+            <Item key={item.href} item={item} />
+          ))}
+        </nav>
+      </div>
     </aside>
   );
 }

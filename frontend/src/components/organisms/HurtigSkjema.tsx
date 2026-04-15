@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactElement, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import CollapsibleSection from "../molecules/CollapsibleSection";
 import QuestionRadio from "../molecules/QuestionRadio";
 import QuestionNumber from "../molecules/QuestionNumber";
@@ -13,36 +14,65 @@ import type {
   CreateResponseDto,
   QueryQuestionWithDetailsDto,
   QueryWithQuestionsDto,
-  SeverityDto,
+  ResponseDto,
 } from "@/types";
 
-function toPatientPerspective(text: string): string {
-  return text
-    .replace(/\b[Dd]u\b/g, (match) =>
-      match === "Du" ? "Pasienten" : "pasienten",
-    )
-    .replace(/\b[Dd]eg\b/g, (match) =>
-      match === "Deg" ? "Pasienten" : "pasienten",
-    )
-    .replace(/\b[Dd]in\b/g, (match) =>
-      match === "Din" ? "Pasientens" : "pasientens",
-    )
-    .replace(/\b[Dd]itt\b/g, (match) =>
-      match === "Ditt" ? "Pasientens" : "pasientens",
-    )
-    .replace(/\b[Dd]ine\b/g, (match) =>
-      match === "Dine" ? "Pasientens" : "pasientens",
-    );
+const HWB_MEASUREMENT_IDS = new Set([1, 2, 10]);
+
+function groupIntoRows(
+  questions: QueryQuestionWithDetailsDto[],
+): QueryQuestionWithDetailsDto[][] {
+  const hwbIds = new Set(
+    questions
+      .filter(
+        (q) =>
+          q.measurementId != null && HWB_MEASUREMENT_IDS.has(q.measurementId),
+      )
+      .map((q) => q.questionId),
+  );
+  const bpIds = new Set(
+    questions
+      .filter((q) => {
+        const text = q.fallbackText.toLowerCase();
+        return text.includes("systolisk") || text.includes("diastolisk");
+      })
+      .map((q) => q.questionId),
+  );
+
+  const rows: QueryQuestionWithDetailsDto[][] = [];
+  let hwbRow: QueryQuestionWithDetailsDto[] | null = null;
+  let bpRow: QueryQuestionWithDetailsDto[] | null = null;
+
+  for (const q of questions) {
+    if (hwbIds.has(q.questionId)) {
+      if (!hwbRow) {
+        hwbRow = [];
+        rows.push(hwbRow);
+      }
+      hwbRow.push(q);
+    } else if (bpIds.has(q.questionId)) {
+      if (!bpRow) {
+        bpRow = [];
+        rows.push(bpRow);
+      }
+      bpRow.push(q);
+    } else {
+      rows.push([q]);
+    }
+  }
+
+  return rows;
 }
 
-interface HealthQuestionnaireProps {
+interface HurtigSkjemaProps {
   patientId: number | null;
 }
 
-export default function HealthQuestionnaire({ patientId }: HealthQuestionnaireProps) {
+export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
   const { user } = useUser();
+  const router = useRouter();
   const [questions, setQuestions] = useState<QueryQuestionWithDetailsDto[]>([]);
-  const [severities, setSeverities] = useState<SeverityDto[]>([]);
+  const [queryId, setQueryId] = useState<number | null>(null);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,16 +82,13 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
   const [formKey, setFormKey] = useState(0);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchQuestions = async () => {
       try {
-        const [questionsData, severitiesData] = await Promise.all([
-          apiClient.get<QueryWithQuestionsDto>(
-            "/api/Query/full/by-name/Helseskjema",
-          ),
-          apiClient.get<SeverityDto[]>("/api/Severities"),
-        ]);
-        setQuestions(questionsData.questions ?? []);
-        setSeverities(severitiesData ?? []);
+        const data = await apiClient.get<QueryWithQuestionsDto>(
+          "/api/Query/full/by-name/HurtigHjertefrisk",
+        );
+        setQueryId(data.id);
+        setQuestions(data.questions ?? []);
       } catch (err) {
         setError("Noe gikk galt ved henting av spørsmål.");
         console.error(err);
@@ -70,14 +97,43 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
       }
     };
 
-    void fetchData();
+    void fetchQuestions();
   }, []);
+
+  const heightQuestion = questions.find((q) => q.measurementId === 2);
+  const weightQuestion = questions.find((q) => q.measurementId === 1);
+  const bmiQuestion = questions.find((q) => q.measurementId === 10);
+
+  const heightRaw = heightQuestion
+    ? (answers[heightQuestion.questionId] ?? "")
+    : "";
+  const weightRaw = weightQuestion
+    ? (answers[weightQuestion.questionId] ?? "")
+    : "";
 
   const updateAnswer = (questionId: number, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  const shouldShowQuestion = (question: QueryQuestionWithDetailsDto): boolean => {
+  useEffect(() => {
+    if (!heightQuestion || !weightQuestion || !bmiQuestion) return;
+    if (!heightRaw || !weightRaw) return;
+
+    const height = Number(heightRaw.replace(",", "."));
+    const weight = Number(weightRaw.replace(",", "."));
+
+    if (!Number.isFinite(height) || !Number.isFinite(weight) || height <= 0)
+      return;
+
+    const heightM = height / 100;
+    const bmi = Math.round((weight / (heightM * heightM)) * 10) / 10;
+
+    setAnswers((prev) => ({ ...prev, [bmiQuestion.questionId]: String(bmi) }));
+  }, [heightRaw, weightRaw, bmiQuestion, heightQuestion, weightQuestion]);
+
+  const shouldShowQuestion = (
+    question: QueryQuestionWithDetailsDto,
+  ): boolean => {
     const isChild = questions.some((q) =>
       q.dependencies.some((d) => d.childQuestionId === question.questionId),
     );
@@ -136,7 +192,9 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
     return undefined;
   };
 
-  const getUnit = (question: QueryQuestionWithDetailsDto): string | undefined => {
+  const getUnit = (
+    question: QueryQuestionWithDetailsDto,
+  ): string | undefined => {
     const text = question.fallbackText.toLowerCase();
     if (text.includes("hvor høy")) return "cm";
     if (text.includes("hvor mye veier")) return "kg";
@@ -146,11 +204,12 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
     if (text.includes("fastende")) return "mmol/L";
     if (text.includes("kolesterol")) return "mmol/L";
     if (text.includes("triglyserider")) return "mmol/L";
-
     return undefined;
   };
 
-  const getRows = (question: QueryQuestionWithDetailsDto): number | undefined => {
+  const getRows = (
+    question: QueryQuestionWithDetailsDto,
+  ): number | undefined => {
     const text = question.fallbackText.toLowerCase();
     if (text.includes("hvor mye røyker")) return 2;
     if (text.includes("vekten din endret")) return 2;
@@ -158,10 +217,38 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
     return undefined;
   };
 
-  const renderQuestion = (question: QueryQuestionWithDetailsDto): ReactElement => {
+  const renderQuestion = (
+    question: QueryQuestionWithDetailsDto,
+  ): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
-    const questionText = toPatientPerspective(question.fallbackText);
+    const questionText = question.fallbackText;
+
+    if (bmiQuestion && question.questionId === bmiQuestion.questionId) {
+      return (
+        <div key={question.questionId} className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {questionText}
+            {question.isRequired && (
+              <span className="text-red-500 ml-1">*</span>
+            )}
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              name={name}
+              value={value}
+              readOnly
+              className="w-32 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-700 cursor-not-allowed"
+            />
+            <span className="text-sm text-gray-600">kg/m²</span>
+            <span className="text-xs text-gray-400 italic">
+              Beregnes automatisk
+            </span>
+          </div>
+        </div>
+      );
+    }
 
     if (question.questionType === "boolean") {
       return (
@@ -182,16 +269,10 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
           key={question.questionId}
           question={questionText}
           name={name}
-          options={question.options.map((option) => {
-            const severity = severities.find(
-              (s) => s.questionId === question.questionId && s.requiredOption === option.questionOptionId
-            );
-            return {
-              value: option.optionValue,
-              label: option.fallbackText,
-              score: severity?.score,
-            };
-          })}
+          options={question.options.map((option) => ({
+            value: option.optionValue,
+            label: option.fallbackText,
+          }))}
           value={value}
           onChange={(val) => updateAnswer(question.questionId, val)}
           required={question.isRequired}
@@ -230,30 +311,36 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
 
   const groupedQuestions = Array.from(
     visibleQuestions
-      .reduce((groups, question) => {
-        const categoryName = question.categoryName?.trim() || "Uten kategori";
-        const categoryKey =
-          question.categoryId != null
-            ? `category-${question.categoryId}`
-            : `category-name-${categoryName.toLowerCase()}`;
+      .reduce(
+        (groups, question) => {
+          const categoryName = question.categoryName?.trim() || "Uten kategori";
+          const categoryKey =
+            question.categoryId != null
+              ? `category-${question.categoryId}`
+              : `category-name-${categoryName.toLowerCase()}`;
 
-        const existingGroup = groups.get(categoryKey);
-        if (existingGroup) {
-          existingGroup.questions.push(question);
+          const existingGroup = groups.get(categoryKey);
+          if (existingGroup) {
+            existingGroup.questions.push(question);
+            return groups;
+          }
+
+          groups.set(categoryKey, {
+            categoryKey,
+            categoryName,
+            questions: [question],
+          });
           return groups;
-        }
-
-        groups.set(categoryKey, {
-          categoryKey,
-          categoryName,
-          questions: [question],
-        });
-        return groups;
-      }, new Map<string, {
-        categoryKey: string;
-        categoryName: string;
-        questions: QueryQuestionWithDetailsDto[];
-      }>())
+        },
+        new Map<
+          string,
+          {
+            categoryKey: string;
+            categoryName: string;
+            questions: QueryQuestionWithDetailsDto[];
+          }
+        >(),
+      )
       .values(),
   );
 
@@ -318,31 +405,28 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
       });
     }
 
-    if (personnelId != null && Number.isFinite(personnelId)) {
-      const heightEntry = measurementPayload.find((m) => m.measurementId === 2);
-      const weightEntry = measurementPayload.find((m) => m.measurementId === 1);
-      if (heightEntry && weightEntry && heightEntry.result > 0) {
-        const heightM = heightEntry.result / 100;
-        const bmi = weightEntry.result / (heightM * heightM);
-        measurementPayload.push({
-          measurementId: 10,
-          patientId,
-          result: Math.round(bmi * 10) / 10,
-          registeredBy: personnelId,
-        });
-      }
-    }
-
     try {
       setIsSubmitting(true);
-      await apiClient.post(`/api/patients/${patientId}/responses`, payload);
+      const savedResponses = await apiClient.post<ResponseDto[]>("/api/Responses/bulk", payload);
       if (measurementPayload.length > 0) {
-        await apiClient.post(`/api/patients/${patientId}/measurements`, measurementPayload);
+        await apiClient.post(
+          "/api/MeasurementResults/bulk",
+          measurementPayload,
+        );
       }
-      setAnswers({});
-      setFormKey((k) => k + 1);
-      setSubmitSuccess("Skjema sendt inn!");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      const answeredQueryId = savedResponses[0]?.answeredQueryId ?? null;
+
+      if (queryId != null && answeredQueryId != null) {
+        router.push(
+          `/dashboard/hurtigskjema/tiltak?patientId=${patientId}&queryId=${queryId}&answeredQueryId=${answeredQueryId}`,
+        );
+      } else {
+        setAnswers({});
+        setFormKey((k) => k + 1);
+        setSubmitSuccess("Skjema sendt inn!");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     } catch (err) {
       setSubmitError("Kunne ikke lagre svarene.");
       console.error(err);
@@ -355,11 +439,12 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
     <div className="flex">
       <main className="flex-1 bg-slate-50">
         <form
+          key={formKey}
           onSubmit={handleSubmit}
           className="max-w-4xl mx-auto p-6 space-y-8"
         >
           <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Helseskjema - Levevaner og Målinger
+            Hurtigskjema - Hjertefrisk
           </h1>
 
           {patientId == null && (
@@ -386,7 +471,19 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
                 defaultOpen={index === 0}
               >
                 <div className="px-6 py-4">
-                  {group.questions.map(renderQuestion)}
+                  {groupIntoRows(group.questions).map((row, rowIndex) =>
+                    row.length > 1 ? (
+                      <div key={rowIndex} className="flex gap-6 flex-wrap">
+                        {row.map((q) => (
+                          <div key={q.questionId} className="flex-1 min-w-40">
+                            {renderQuestion(q)}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      renderQuestion(row[0])
+                    ),
+                  )}
                 </div>
               </CollapsibleSection>
             ))}

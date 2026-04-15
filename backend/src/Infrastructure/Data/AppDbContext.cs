@@ -22,8 +22,11 @@ public class AppDbContext : DbContext
     public DbSet<QuestionDependency> QuestionDependencies => Set<QuestionDependency>();
     public DbSet<PatientAccess> PatientAccesses => Set<PatientAccess>();
     public DbSet<ToDo> ToDos => Set<ToDo>();
+    public DbSet<QuestionAnswerRule> QuestionAnswerRules => Set<QuestionAnswerRule>();
+    public DbSet<CategoryScoreRule> CategoryScoreRules => Set<CategoryScoreRule>();
     public DbSet<PatientMeasure> PatientMeasures => Set<PatientMeasure>();
     public DbSet<PersonnelMeasure> PersonnelMeasures => Set<PersonnelMeasure>();
+    public DbSet<QuickMeasure> QuickMeasures => Set<QuickMeasure>();
     public DbSet<Severity> Severities => Set<Severity>();
     public DbSet<PatientMeasureText> PatientMeasureTexts => Set<PatientMeasureText>();
     public DbSet<PersonnelMeasureText> PersonnelMeasureTexts => Set<PersonnelMeasureText>();
@@ -336,6 +339,37 @@ public class AppDbContext : DbContext
             .WithMany(l => l.PersonnelMeasureTexts)
             .HasForeignKey(x => x.LanguageCode);
 
+        // QuickMeasure
+        modelBuilder.Entity<QuickMeasure>()
+            .Property(x => x.TriggerType)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<QuickMeasure>()
+            .Property(x => x.FallbackText)
+            .HasColumnType("text");
+
+        modelBuilder.Entity<QuickMeasure>()
+            .Property(x => x.Title)
+            .HasColumnType("text");
+
+        modelBuilder.Entity<QuickMeasure>()
+            .HasOne(x => x.Question)
+            .WithMany(q => q.QuickMeasures)
+            .HasForeignKey(x => x.QuestionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<QuickMeasure>()
+            .HasOne(x => x.Category)
+            .WithMany(c => c.QuickMeasures)
+            .HasForeignKey(x => x.CategoryId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<QuickMeasure>()
+            .HasOne(x => x.RequiredOptionNavigation)
+            .WithMany()
+            .HasForeignKey(x => x.RequiredOption)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Severity
         modelBuilder.Entity<Severity>()
             .HasCheckConstraint("CK_Severity_QuestionOrMeasurement", "(\"QuestionId\" IS NOT NULL AND \"MeasurementId\" IS NULL) OR (\"QuestionId\" IS NULL AND \"MeasurementId\" IS NOT NULL)");
@@ -459,5 +493,35 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(x => x.TriggerQuestionId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // -------------------------
+        // TODORule Table Per Type (TPT) Inheritance
+        // -------------------------
+        modelBuilder.Entity<ToDoRule>().HasKey(x => x.ToDoRuleId);
+        modelBuilder.Entity<ToDoRule>().ToTable("ToDoRules");
+
+        modelBuilder.Entity<QuestionAnswerRule>()
+            .ToTable("QuestionAnswerRules");
+
+        modelBuilder.Entity<QuestionAnswerRule>()
+            .HasOne(x => x.Question)
+            .WithMany()
+            .HasForeignKey(x => x.QuestionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<QuestionAnswerRule>()
+            .HasOne(x => x.RequiredOptionNavigation)
+            .WithMany()
+            .HasForeignKey(x => x.RequiredOption)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<CategoryScoreRule>()
+            .ToTable("CategoryScoreRules");
+
+        modelBuilder.Entity<CategoryScoreRule>()
+            .HasOne(x => x.Category)
+            .WithMany()
+            .HasForeignKey(x => x.CategoryId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

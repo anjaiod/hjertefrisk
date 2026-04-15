@@ -4,6 +4,7 @@ import RadioButton from "../atoms/RadioButton";
 interface Option {
   value: string;
   label: string;
+  score?: number;
 }
 
 interface QuestionRadioProps {
@@ -52,6 +53,7 @@ export default function QuestionRadio({
             label={option.label}
             checked={value === option.value}
             onChange={handleChange}
+            score={option.score}
           />
         ))}
       </div>

@@ -22,6 +22,13 @@ public class QuestionOptionsController : ControllerBase
         return Ok(items);
     }
 
+    [HttpGet("question/{questionId}")]
+    public async Task<IActionResult> GetByQuestionId(int questionId)
+    {
+        var items = await _service.GetByQuestionIdAsync(questionId);
+        return Ok(items);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateQuestionOptionDto dto)
     {
