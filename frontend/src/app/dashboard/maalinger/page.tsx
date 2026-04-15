@@ -38,7 +38,9 @@ export default function Page() {
 
         const byId: Record<number, MeasurementResultDto> = {};
         for (const r of resultsData) {
-          byId[r.measurementId] = r;
+          if (!(r.measurementId in byId)) {
+            byId[r.measurementId] = r;
+          }
         }
         setResults(byId);
       } catch {
