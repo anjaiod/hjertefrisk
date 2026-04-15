@@ -161,7 +161,7 @@ export default function PasientRisikoSide() {
         title={displayTitle ?? apiName}
         categoryId={categoryId}
         tag={variant ? tagTextFromVariant(variant) : undefined}
-        tagVariant={variant ?? undefined}
+        tagVariant={variant && variant !== "none" ? variant : undefined}
       />
     );
   }

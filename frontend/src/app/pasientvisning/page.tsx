@@ -114,7 +114,7 @@ export default function Page() {
                 setCurrentPage(1);
               }}
               className={[
-                "transition-opacity",
+                "transition-opacity cursor-pointer",
                 statusFilter !== null && statusFilter !== variant
                   ? "opacity-40"
                   : "opacity-100",
