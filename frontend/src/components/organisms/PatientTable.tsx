@@ -62,7 +62,11 @@ export default function PatientTable({
                 onClick={() => onSort("lastVisited")}
               >
                 <span className="group-hover:underline">Sist besøkt</span>
-                <SortIcon col="lastVisited" sortKey={sortKey} sortDir={sortDir} />
+                <SortIcon
+                  col="lastVisited"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                />
               </button>
             </th>
             <th className={thClass}>Status</th>
