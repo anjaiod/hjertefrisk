@@ -12,6 +12,11 @@ import type {
   QueryWithQuestionsDto,
 } from "@/types";
 import QuestionWizard from "../molecules/QuestionWizard";
+import {
+  getQuestionUnit,
+  getQuestionValidationRange,
+  getQuestionRows,
+} from "@/lib/questionHelpers";
 import QuestionRadio from "../molecules/QuestionRadio";
 import QuestionNumber from "../molecules/QuestionNumber";
 import QuestionTextArea from "../molecules/QuestionTextArea";
@@ -165,7 +170,7 @@ export default function PatientHealthQuestionnaire() {
       const raw = (answers[q.questionId] ?? "").trim();
       if (!raw) return false;
       const val = Number(raw.replace(",", "."));
-      const { min, max } = getValidationRange(q);
+      const { min, max } = getQuestionValidationRange(q);
       return !Number.isFinite(val) || val < min || val > max;
     });
     if (invalidFields.length > 0) {
@@ -333,24 +338,6 @@ export default function PatientHealthQuestionnaire() {
     count: categoryCounts[i],
   }));
 
-  const getValidationRange = (
-    question: QueryQuestionWithDetailsDto,
-  ): { min: number; max: number } => {
-    const text = question.fallbackText.toLowerCase();
-    if (text.includes("hvor høy")) return { min: 0, max: 300 };
-    if (text.includes("hvor mye veier")) return { min: 0, max: 500 };
-    if (text.includes("livvidde")) return { min: 0, max: 300 };
-    if (text.includes("blodtrykk")) return { min: 0, max: 300 };
-    if (text.includes("hba1c")) return { min: 0, max: 200 };
-    if (
-      text.includes("fastende") ||
-      text.includes("kolesterol") ||
-      text.includes("triglyserider")
-    )
-      return { min: 0, max: 50 };
-    return { min: 0, max: 500 };
-  };
-
   const buildQuestionElement = (
     question: QueryQuestionWithDetailsDto,
   ): ReactElement => {
@@ -370,23 +357,6 @@ export default function PatientHealthQuestionnaire() {
         return "Beskriv dine fysiske begrensninger...";
       if (text.includes("barrierer") && text.includes("skriv"))
         return "Beskriv barrierer...";
-      return undefined;
-    };
-
-    const getUnit = (): string | undefined => {
-      const text = question.fallbackText.toLowerCase();
-      if (text.includes("hvor høy")) return "cm";
-      if (text.includes("hvor mye veier")) return "kg";
-      if (text.includes("livvidde")) return "cm";
-      return undefined;
-    };
-
-    const getRows = (): number | undefined => {
-      const text = question.fallbackText.toLowerCase();
-      if (text.includes("hvor mye røyker")) return 2;
-      if (text.includes("vekten din endret")) return 2;
-      if (text.includes("begrensninger") || text.includes("barrierer"))
-        return 3;
       return undefined;
     };
 
@@ -423,7 +393,7 @@ export default function PatientHealthQuestionnaire() {
     }
 
     if (question.questionType === "number") {
-      const { min, max } = getValidationRange(question);
+      const { min, max } = getQuestionValidationRange(question);
       return (
         <QuestionNumber
           key={question.questionId}
@@ -433,7 +403,7 @@ export default function PatientHealthQuestionnaire() {
           onChange={(val) => updateAnswer(question.questionId, val)}
           onAnswer={handleNext}
           placeholder={getPlaceholder()}
-          unit={getUnit()}
+          unit={getQuestionUnit(question)}
           required={question.isRequired}
           min={min}
           max={max}
@@ -450,7 +420,7 @@ export default function PatientHealthQuestionnaire() {
         onChange={(val) => updateAnswer(question.questionId, val)}
         onAnswer={handleNext}
         placeholder={getPlaceholder()}
-        rows={getRows()}
+        rows={getQuestionRows(question)}
         required={question.isRequired}
       />
     );

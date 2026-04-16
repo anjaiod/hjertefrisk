@@ -8,6 +8,11 @@ import QuestionTextArea from "../molecules/QuestionTextArea";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
 import { apiClient } from "@/lib/apiClient";
 import { useUser } from "@/context/UserContext";
+import {
+  getQuestionUnit,
+  getQuestionValidationRange,
+  getQuestionRows,
+} from "@/lib/questionHelpers";
 import type {
   CreateMeasurementResultDto,
   CreateResponseDto,
@@ -124,47 +129,6 @@ export default function HealthQuestionnaire({
     return undefined;
   };
 
-  const getUnit = (
-    question: QueryQuestionWithDetailsDto,
-  ): string | undefined => {
-    const text = question.fallbackText.toLowerCase();
-    if (text.includes("hvor høy")) return "cm";
-    if (text.includes("hvor mye veier")) return "kg";
-    if (text.includes("livvidde")) return "cm";
-    if (text.includes("blodtrykk")) return "mmHg";
-    if (text.includes("hba1c")) return "mmol/mol";
-    if (text.includes("fastende")) return "mmol/L";
-    if (text.includes("kolesterol")) return "mmol/L";
-    if (text.includes("triglyserider")) return "mmol/L";
-
-    return undefined;
-  };
-
-  const getValidationRange = (
-    question: QueryQuestionWithDetailsDto,
-  ): { min: number; max: number } => {
-    const text = question.fallbackText.toLowerCase();
-    if (text.includes("hvor høy")) return { min: 0, max: 300 };
-    if (text.includes("hvor mye veier")) return { min: 0, max: 500 };
-    if (text.includes("livvidde")) return { min: 0, max: 300 };
-    if (text.includes("blodtrykk")) return { min: 0, max: 300 };
-    if (text.includes("hba1c")) return { min: 0, max: 200 };
-    if (
-      text.includes("fastende") ||
-      text.includes("kolesterol") ||
-      text.includes("triglyserider")
-    )
-      return { min: 0, max: 50 };
-    return { min: 0, max: 500 };
-  };
-
-  const getRows = (question: QueryQuestionWithDetailsDto): number | undefined => {
-    const text = question.fallbackText.toLowerCase();
-    if (text.includes("hvor mye røyker")) return 2;
-    if (text.includes("vekten din endret")) return 2;
-    if (text.includes("begrensninger") || text.includes("barrierer")) return 3;
-    return undefined;
-  };
 
   const renderQuestion = (
     question: QueryQuestionWithDetailsDto,
@@ -214,7 +178,7 @@ export default function HealthQuestionnaire({
     }
 
     if (question.questionType === "number") {
-      const { min, max } = getValidationRange(question);
+      const { min, max } = getQuestionValidationRange(question);
       return (
         <QuestionNumber
           key={question.questionId}
@@ -223,7 +187,7 @@ export default function HealthQuestionnaire({
           value={value}
           onChange={(val) => updateAnswer(question.questionId, val)}
           placeholder={getPlaceholder(question)}
-          unit={getUnit(question)}
+          unit={getQuestionUnit(question)}
           required={question.isRequired}
           compact={compact}
           min={min}
@@ -240,7 +204,7 @@ export default function HealthQuestionnaire({
         value={value}
         onChange={(val) => updateAnswer(question.questionId, val)}
         placeholder={getPlaceholder(question)}
-        rows={getRows(question)}
+        rows={getQuestionRows(question)}
         required={question.isRequired}
         compact={compact}
       />
@@ -297,7 +261,7 @@ export default function HealthQuestionnaire({
       const raw = (answers[q.questionId] ?? "").trim();
       if (!raw) return false;
       const val = Number(raw.replace(",", "."));
-      const { min, max } = getValidationRange(q);
+      const { min, max } = getQuestionValidationRange(q);
       return !Number.isFinite(val) || val < min || val > max;
     });
     if (invalidFields.length > 0) {
