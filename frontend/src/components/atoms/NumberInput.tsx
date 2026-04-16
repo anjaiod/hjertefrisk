@@ -4,6 +4,7 @@ interface NumberInputProps {
   value: string;
   placeholder?: string;
   unit?: string;
+  compact?: boolean;
   onChange: (value: string) => void;
 }
 
@@ -13,6 +14,7 @@ export default function NumberInput({
   value,
   placeholder,
   unit,
+  compact,
   onChange,
 }: NumberInputProps) {
   return (
@@ -24,9 +26,17 @@ export default function NumberInput({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="w-36 md:w-48 px-4 py-3 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-navy touch-manipulation"
+        className={
+          compact
+            ? "w-24 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-navy touch-manipulation"
+            : "w-36 md:w-48 px-4 py-3 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-navy touch-manipulation"
+        }
       />
-      {unit && <span className="text-base md:text-lg text-gray-600">{unit}</span>}
+      {unit && (
+        <span className={compact ? "text-sm text-gray-600" : "text-base md:text-lg text-gray-600"}>
+          {unit}
+        </span>
+      )}
     </div>
   );
 }
