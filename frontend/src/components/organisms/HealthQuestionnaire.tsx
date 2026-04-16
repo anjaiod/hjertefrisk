@@ -401,7 +401,7 @@ export default function HealthQuestionnaire({
           <div className="flex gap-4 justify-end pt-6">
             <button
               type="button"
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.back()}
               className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
             >
               Avbryt
