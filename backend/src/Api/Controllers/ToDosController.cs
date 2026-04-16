@@ -64,7 +64,12 @@ public class ToDosController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var deleted = await _service.DeleteAsync(id);
+        var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
+        if (string.IsNullOrWhiteSpace(supabaseUserId))
+            return Unauthorized(new { error = "Missing Authorization header" });
+
+        var personnelId = await _authService.GetPersonnelIdBySupabaseIdAsync(supabaseUserId);
+        var deleted = await _service.DeleteAsync(id, personnelId);
         if (!deleted)
             return NotFound();
         return NoContent();

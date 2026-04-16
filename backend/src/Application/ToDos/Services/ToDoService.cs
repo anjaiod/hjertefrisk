@@ -120,10 +120,15 @@ public class ToDoService : IToDoService
         };
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int id, int? personnelId = null)
     {
         var entity = await _db.ToDos.FirstOrDefaultAsync(t => t.ToDoId == id);
         if (entity == null)
+            return false;
+
+        // Authorization: Only the creator (PersonnelId) can delete the todo
+        // This prevents unauthorized deletion of shared/public todos
+        if (personnelId.HasValue && entity.PersonnelId != personnelId.Value)
             return false;
 
         _db.ToDos.Remove(entity);
