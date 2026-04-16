@@ -17,6 +17,7 @@ export function TodoList({
 }) {
   const [todos, setTodos] = useState<Todo[]>(initialTodos);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newTodoText, setNewTodoText] = useState("");
   const [newTodoPublic, setNewTodoPublic] = useState(true);
@@ -89,6 +90,22 @@ export function TodoList({
       console.error("Error creating todo:", error);
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const deleteTodo = async (id: number) => {
+    if (!confirm("Er du sikker på at du vil slette denne oppgaven?")) {
+      return;
+    }
+
+    setDeletingId(id);
+    try {
+      await apiClient.delete(`/api/todos/${id}`);
+      setTodos(todos.filter((t) => t.id !== id));
+    } catch (error) {
+      console.error("Error deleting todo:", error);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -181,17 +198,17 @@ export function TodoList({
         {todos.map((todo) => (
           <div
             key={todo.id}
-            className={`flex items-center gap-3 rounded-lg p-2 hover:bg-brand-mist/20 ${
-              updatingId === todo.id ? "opacity-60" : ""
+            className={`flex items-center gap-3 rounded-lg p-2 hover:bg-brand-mist/20 group ${
+              updatingId === todo.id || deletingId === todo.id ? "opacity-60" : ""
             }`}
           >
             <Checkbox
               checked={todo.completed}
               onChange={() => toggleTodo(todo.id)}
-              disabled={updatingId === todo.id}
+              disabled={updatingId === todo.id || deletingId === todo.id}
             />
             <span
-              className={`text-base ${
+              className={`flex-1 text-base ${
                 todo.completed
                   ? "line-through text-slate-400"
                   : "text-slate-700"
@@ -199,6 +216,14 @@ export function TodoList({
             >
               {todo.text}
             </span>
+            <button
+              onClick={() => deleteTodo(todo.id)}
+              disabled={updatingId === todo.id || deletingId === todo.id}
+              className="opacity-0 group-hover:opacity-100 px-2 py-1 text-red-500 hover:text-red-700 transition-all disabled:opacity-50"
+              title="Slett oppgave"
+            >
+              ✕
+            </button>
           </div>
         ))}
       </div>

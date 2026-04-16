@@ -113,4 +113,15 @@ public class ToDoService : IToDoService
             Public = entity.Public
         };
     }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var entity = await _db.ToDos.FirstOrDefaultAsync(t => t.ToDoId == id);
+        if (entity == null)
+            return false;
+
+        _db.ToDos.Remove(entity);
+        await _db.SaveChangesAsync();
+        return true;
+    }
 }
