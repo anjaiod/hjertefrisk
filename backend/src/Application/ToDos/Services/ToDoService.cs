@@ -15,13 +15,27 @@ public class ToDoService : IToDoService
         _db = db;
     }
 
-    public async Task<IEnumerable<ToDoDto>> GetAllAsync()
+    public async Task<IEnumerable<ToDoDto>> GetAllAsync(int? currentPersonnelId = null)
     {
         var today = DateTime.UtcNow.Date;
         
-        return await _db.ToDos
+        var query = _db.ToDos
             .AsNoTracking()
-            .Where(t => !t.Finished || (t.FinishedAt != null && t.FinishedAt.Value.Date == today))
+            .Where(t => !t.Finished || (t.FinishedAt != null && t.FinishedAt.Value.Date == today));
+
+        // Filter based on Public flag and PersonnelId
+        if (currentPersonnelId.HasValue)
+        {
+            // If personnel is accessing: show all public todos + their own private todos
+            query = query.Where(t => t.Public || t.PersonnelId == currentPersonnelId.Value);
+        }
+        else
+        {
+            // If no personnel ID, only show public todos
+            query = query.Where(t => t.Public);
+        }
+
+        return await query
             .Select(t => new ToDoDto
             {
                 ToDoId = t.ToDoId,

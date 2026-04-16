@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Checkbox } from "../atoms/Checkbox";
+import { apiClient } from "@/lib/apiClient";
 
-type Todo = { id: number; text: string; completed: boolean };
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+type Todo = { id: number; text: string; completed: boolean; public: boolean };
 
 export function TodoList({
   title,
@@ -20,6 +19,7 @@ export function TodoList({
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newTodoText, setNewTodoText] = useState("");
+  const [newTodoPublic, setNewTodoPublic] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
@@ -40,28 +40,12 @@ export function TodoList({
     // Update database
     setUpdatingId(id);
     try {
-      const response = await fetch(`${API_URL}/api/todos/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          toDoText: todo.text,
-          patientId: todo.id, // This will be overridden by the backend
-          finished: !todo.completed,
-          public: true,
-        }),
+      await apiClient.put(`/api/todos/${id}`, {
+        toDoText: todo.text,
+        patientId: todo.id, // This will be overridden by the backend
+        finished: !todo.completed,
+        public: todo.public,
       });
-
-      if (!response.ok) {
-        console.error("Failed to update todo");
-        // Revert on error
-        setTodos(
-          todos.map((t) =>
-            t.id === id ? { ...t, completed: todo.completed } : t,
-          ),
-        );
-      }
     } catch (error) {
       console.error("Error updating todo:", error);
       // Revert on error
@@ -80,31 +64,27 @@ export function TodoList({
 
     setIsCreating(true);
     try {
-      const response = await fetch(`${API_URL}/api/todos`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          toDoText: newTodoText.trim(),
-          patientId: patientId || 0,
-          finished: false,
-          public: true,
-        }),
+      const created = await apiClient.post<{
+        toDoId: number;
+        toDoText: string;
+        finished: boolean;
+        public: boolean;
+      }>("/api/todos", {
+        toDoText: newTodoText.trim(),
+        patientId: patientId || 0,
+        finished: false,
+        public: newTodoPublic,
       });
 
-      if (response.ok) {
-        const created = await response.json();
-        setTodos([...todos, {
-          id: created.toDoId,
-          text: created.toDoText,
-          completed: created.finished,
-        }]);
-        setNewTodoText("");
-        setShowCreateForm(false);
-      } else {
-        console.error("Failed to create todo");
-      }
+      setTodos([...todos, {
+        id: created.toDoId,
+        text: created.toDoText,
+        completed: created.finished,
+        public: created.public,
+      }]);
+      setNewTodoText("");
+      setNewTodoPublic(true);
+      setShowCreateForm(false);
     } catch (error) {
       console.error("Error creating todo:", error);
     } finally {
@@ -141,10 +121,27 @@ export function TodoList({
               if (e.key === "Escape") setShowCreateForm(false);
             }}
             placeholder="Skriv ny oppgave..."
-            className="w-full px-3 py-2 border border-brand-mist rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-sage mb-2"
+            className="w-full px-3 py-2 border border-brand-mist rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-sage mb-3"
             autoFocus
             disabled={isCreating}
           />
+          
+          <div className="mb-3 flex items-center gap-2">
+            <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={newTodoPublic}
+                onChange={(e) => setNewTodoPublic(e.target.checked)}
+                disabled={isCreating}
+                className="w-4 h-4 accent-brand-sage"
+              />
+              {newTodoPublic ? "🔓 Offentlig" : "🔒 Privat"}
+            </label>
+            <span className="text-xs text-slate-500">
+              {newTodoPublic ? "(alle kan se)" : "(bare du)"}
+            </span>
+          </div>
+          
           <div className="flex gap-2">
             <button
               onClick={createTodo}
