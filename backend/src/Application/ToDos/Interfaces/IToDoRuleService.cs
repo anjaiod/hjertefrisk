@@ -26,7 +26,8 @@ public interface IToDoRuleService
     Task<bool> MatchesRuleAsync(Response response, ToDoRule rule, int? categoryScore = null);
     
     /// <summary>
-    /// Creates a ToDo from a matching ToDoRule.
+    /// Creates a ToDo from a matching ToDoRule with deduplication logic.
+    /// Checks if an unfinished ToDo already exists for this rule and patient.
     /// </summary>
-    Task CreateToDoFromRuleAsync(Response response, ToDoRule rule);
+    Task CreateToDoFromRuleAsync(int patientId, ToDoRule rule);
 }

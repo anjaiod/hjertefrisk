@@ -83,7 +83,6 @@ export default function PatientRow({
       {openModal === "todo" && (
         <TodoModal
           patientId={id}
-          patientName={name}
           onClose={() => setOpenModal(null)}
         />
       )}
