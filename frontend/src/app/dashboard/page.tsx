@@ -15,27 +15,16 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
   const patientId = searchParams.get("patientId");
 
-  const [selectedPatient, setSelectedPatient] = useState<PatientDto | null>(
-    null,
-  );
-  const [todos, setTodos] = useState<
-    { id: number; text: string; completed: boolean }[]
-  >([]);
-  const [latestMeasurements, setLatestMeasurements] = useState<
-    LatestMeasurementResultDto[]
-  >([]);
+  const [selectedPatient, setSelectedPatient] = useState<PatientDto | null>(null);
+  const [todos, setTodos] = useState<{ id: number; text: string; completed: boolean; public: boolean }[]>([]);
+  const [latestMeasurements, setLatestMeasurements] = useState<LatestMeasurementResultDto[]>([]);
   const [risks, setRisks] = useState<CategoryRisk[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!patientId || patientId.trim() === "") {
       setSelectedPatient(null);
-      setTodos([
-        { id: 1, text: "Måle blodtrykk", completed: false },
-        { id: 2, text: "Ta blodprøve", completed: true },
-        { id: 3, text: "Henvise til frisklivssentralen", completed: false },
-        { id: 4, text: "Logge vekt", completed: false },
-      ]);
+      setTodos([]);
       setLatestMeasurements([]);
       setRisks([]);
       setLoading(false);
@@ -66,11 +55,7 @@ export default function DashboardPage() {
 
         const filteredTodos = allTodos
           .filter((t) => String(t.patientId) === patientId)
-          .map((t) => ({
-            id: t.toDoId,
-            text: t.toDoText,
-            completed: t.finished,
-          }));
+          .map((t) => ({ id: t.toDoId, text: t.toDoText, completed: t.finished, public: t.public }));
         setTodos(filteredTodos || []);
 
         setLatestMeasurements(measurements || []);
@@ -146,6 +131,7 @@ export default function DashboardPage() {
             key={patientId ?? "no-patient"}
             title={`Oppgaver for ${patientName}:`}
             todos={todos}
+            patientId={patientId ? Number(patientId) : undefined}
           />
         </div>
       </div>

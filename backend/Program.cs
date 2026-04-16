@@ -131,6 +131,22 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Apply pending migrations automatically on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        db.Database.Migrate();
+        Console.WriteLine("[Startup] Database migrations applied successfully");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Startup] Error applying migrations: {ex.Message}");
+        throw;
+    }
+}
+
 // Swagger only in development
 if (app.Environment.IsDevelopment())
 {
