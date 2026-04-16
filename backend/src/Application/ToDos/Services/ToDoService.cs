@@ -41,6 +41,7 @@ public class ToDoService : IToDoService
                 ToDoId = t.ToDoId,
                 Finished = t.Finished,
                 FinishedAt = t.FinishedAt,
+                FinishedBy = t.FinishedBy,
                 ToDoText = t.ToDoText,
                 PatientId = t.PatientId,
                 PersonnelId = t.PersonnelId,
@@ -58,6 +59,7 @@ public class ToDoService : IToDoService
             PersonnelId = dto.PersonnelId,
             Finished = dto.Finished,
             FinishedAt = dto.Finished ? DateTime.UtcNow : null,
+            FinishedBy = dto.Finished ? dto.PersonnelId : null,
             Public = dto.Public
         };
 
@@ -69,6 +71,7 @@ public class ToDoService : IToDoService
             ToDoId = entity.ToDoId,
             Finished = entity.Finished,
             FinishedAt = entity.FinishedAt,
+            FinishedBy = entity.FinishedBy,
             ToDoText = entity.ToDoText,
             PatientId = entity.PatientId,
             PersonnelId = entity.PersonnelId,
@@ -76,7 +79,7 @@ public class ToDoService : IToDoService
         };
     }
 
-    public async Task<ToDoDto?> UpdateAsync(int id, CreateToDoDto dto)
+    public async Task<ToDoDto?> UpdateAsync(int id, CreateToDoDto dto, int? personnelId = null)
     {
         var entity = await _db.ToDos.FirstOrDefaultAsync(t => t.ToDoId == id);
         if (entity == null)
@@ -88,15 +91,17 @@ public class ToDoService : IToDoService
         entity.Public = dto.Public;
         entity.Finished = dto.Finished;
 
-        // Set FinishedAt when transitioning from not finished to finished
+        // Set FinishedAt and FinishedBy when transitioning from not finished to finished
         if (!wasFinished && dto.Finished)
         {
             entity.FinishedAt = DateTime.UtcNow;
+            entity.FinishedBy = personnelId;
         }
-        // Clear FinishedAt if marking as unfinished again
+        // Clear FinishedAt and FinishedBy if marking as unfinished again
         else if (wasFinished && !dto.Finished)
         {
             entity.FinishedAt = null;
+            entity.FinishedBy = null;
         }
 
         _db.ToDos.Update(entity);
@@ -107,6 +112,7 @@ public class ToDoService : IToDoService
             ToDoId = entity.ToDoId,
             Finished = entity.Finished,
             FinishedAt = entity.FinishedAt,
+            FinishedBy = entity.FinishedBy,
             ToDoText = entity.ToDoText,
             PatientId = entity.PatientId,
             PersonnelId = entity.PersonnelId,

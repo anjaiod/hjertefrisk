@@ -5,9 +5,10 @@ public class ToDo
     public int ToDoId { get; set; }           // PK
     public bool Finished { get; set; }
     public DateTime? FinishedAt { get; set; } // When the todo was marked as finished
+    public int? FinishedBy { get; set; }      // FK -> Personnel (who marked it finished)
     public string ToDoText { get; set; } = "";
     public int PatientId { get; set; }        // FK -> Patient
-    public int? PersonnelId { get; set; }      // FK -> Personnel
+    public int? PersonnelId { get; set; }      // FK -> Personnel 
     public int? ToDoRuleId { get; set; }      // FK -> ToDoRule (nullable for manually created todos)
     public bool Public { get; set; }
 

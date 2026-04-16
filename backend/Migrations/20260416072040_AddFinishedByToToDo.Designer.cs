@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.src.Infrastructure.Data;
@@ -11,9 +12,11 @@ using backend.src.Infrastructure.Data;
 namespace api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260416072040_AddFinishedByToToDo")]
+    partial class AddFinishedByToToDo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -808,8 +811,6 @@ namespace api.Migrations
 
                     b.HasKey("ToDoId");
 
-                    b.HasIndex("FinishedBy");
-
                     b.HasIndex("PatientId");
 
                     b.HasIndex("PersonnelId");
@@ -1329,11 +1330,6 @@ namespace api.Migrations
 
             modelBuilder.Entity("backend.src.Domain.Models.ToDo", b =>
                 {
-                    b.HasOne("backend.src.Domain.Models.Personnel", null)
-                        .WithMany()
-                        .HasForeignKey("FinishedBy")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("backend.src.Domain.Models.Patient", "Patient")
                         .WithMany("ToDos")
                         .HasForeignKey("PatientId")

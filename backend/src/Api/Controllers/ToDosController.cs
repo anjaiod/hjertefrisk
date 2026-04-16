@@ -50,7 +50,12 @@ public class ToDosController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] CreateToDoDto dto)
     {
-        var updated = await _service.UpdateAsync(id, dto);
+        var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
+        if (string.IsNullOrWhiteSpace(supabaseUserId))
+            return Unauthorized(new { error = "Missing Authorization header" });
+
+        var personnelId = await _authService.GetPersonnelIdBySupabaseIdAsync(supabaseUserId);
+        var updated = await _service.UpdateAsync(id, dto, personnelId);
         if (updated == null)
             return NotFound();
         return Ok(updated);

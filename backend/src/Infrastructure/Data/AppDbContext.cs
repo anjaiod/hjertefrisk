@@ -265,6 +265,14 @@ public class AppDbContext : DbContext
             .WithMany(p => p.ToDos)
             .HasForeignKey(x => x.PersonnelId);
 
+        // ToDo -> Personnel (FinishedBy - who marked it as finished)
+        modelBuilder.Entity<ToDo>()
+            .HasOne<Personnel>()
+            .WithMany()
+            .HasForeignKey(x => x.FinishedBy)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // ToDo -> ToDoRule (optional, nullable FK for manually created todos)
         modelBuilder.Entity<ToDo>()
             .HasOne<ToDoRule>()
