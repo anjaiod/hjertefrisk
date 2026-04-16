@@ -101,6 +101,7 @@ export default function TiltakPage() {
   useEffect(() => {
     if (!hasPatientId) return;
     if (!user || !isAuthReady) return;
+    const userId = user.id;
 
     let cancelled = false;
 
@@ -118,7 +119,7 @@ export default function TiltakPage() {
 
         setCategories(fetchedCategories);
 
-        const resolvedPersonnelId = Number.parseInt(user.id, 10);
+        const resolvedPersonnelId = Number.parseInt(userId, 10);
         const payload: EvaluatePayload = {
           patientId: patientId!,
           queryId: query.id,
