@@ -9,4 +9,5 @@ public class Category
     public ICollection<Measurement> Measurements { get; set; } = new List<Measurement>();
     public ICollection<PatientMeasure> PatientMeasures { get; set; } = new List<PatientMeasure>();
     public ICollection<PersonnelMeasure> PersonnelMeasures { get; set; } = new List<PersonnelMeasure>();
+    public ICollection<QuickMeasure> QuickMeasures { get; set; } = new List<QuickMeasure>();
 }
