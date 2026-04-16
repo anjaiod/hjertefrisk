@@ -36,7 +36,23 @@ public class NotificationService : INotificationService
     {
         var n = await _db.Notifications.FirstOrDefaultAsync(x => x.Id == notificationId && x.PersonnelId == personnelId);
         if (n == null) return;
-        n.Read = true;
-        await _db.SaveChangesAsync();
+
+        var changed = false;
+        if (!n.Read)
+        {
+            n.Read = true;
+            changed = true;
+        }
+
+        if (n.ReadAt == null)
+        {
+            n.ReadAt = DateTime.UtcNow;
+            changed = true;
+        }
+
+        if (changed)
+        {
+            await _db.SaveChangesAsync();
+        }
     }
 }

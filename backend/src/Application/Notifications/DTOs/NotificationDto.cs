@@ -8,4 +8,5 @@ public class NotificationDto
     public string Message { get; set; } = "";
     public DateTime CreatedAt { get; set; }
     public bool Read { get; set; }
+    public DateTime? ReadAt { get; set; }
 }

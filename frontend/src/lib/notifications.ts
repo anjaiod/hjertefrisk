@@ -11,4 +11,5 @@ export type NotificationDto = {
   message: string;
   createdAt: string;
   read: boolean;
+  readAt?: string | null;
 };
