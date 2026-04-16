@@ -194,7 +194,7 @@ export function TodoList({
       </div>
 
       {/* Todo List */}
-      <div className="space-y-2">
+      <div className="max-h-64 overflow-y-auto space-y-2 pr-2">
         {todos.map((todo) => (
           <div
             key={todo.id}
