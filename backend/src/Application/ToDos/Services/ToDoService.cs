@@ -85,6 +85,10 @@ public class ToDoService : IToDoService
         if (entity == null)
             return null;
 
+        // Authorization: Only the creator (PersonnelId owner) can update the todo
+        if (personnelId.HasValue && entity.PersonnelId != personnelId.Value)
+            return null;
+
         var wasFinished = entity.Finished;
         entity.ToDoText = dto.ToDoText.Trim();
         entity.PersonnelId = dto.PersonnelId;

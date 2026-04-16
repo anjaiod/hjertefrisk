@@ -55,6 +55,11 @@ public class ToDosController : ControllerBase
             return Unauthorized(new { error = "Missing Authorization header" });
 
         var personnelId = await _authService.GetPersonnelIdBySupabaseIdAsync(supabaseUserId);
+        if (!personnelId.HasValue)
+            return BadRequest(new { error = "Could not identify personnel" });
+
+        // Set PersonnelId from authenticated user, preventing client from spoofing ownership
+        dto.PersonnelId = personnelId.Value;
         var updated = await _service.UpdateAsync(id, dto, personnelId);
         if (updated == null)
             return NotFound();
