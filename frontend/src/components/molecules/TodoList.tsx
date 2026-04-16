@@ -10,10 +10,12 @@ export function TodoList({
   title,
   todos: initialTodos = [],
   patientId,
+  maxHeight = "max-h-64",
 }: {
   title?: string;
   todos?: Todo[];
   patientId?: number;
+  maxHeight?: string;
 }) {
   const [todos, setTodos] = useState<Todo[]>(initialTodos);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
@@ -194,7 +196,7 @@ export function TodoList({
       </div>
 
       {/* Todo List */}
-      <div className="max-h-64 overflow-y-auto space-y-2 pr-2">
+      <div className={`${maxHeight} overflow-y-auto space-y-2 pr-2`}>
         {todos.map((todo) => (
           <div
             key={todo.id}
