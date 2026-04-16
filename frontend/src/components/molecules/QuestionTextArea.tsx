@@ -33,6 +33,7 @@ export default function QuestionTextArea({
         value={value}
         placeholder={placeholder}
         rows={rows}
+        compact={compact}
         onChange={onChange}
       />
       {onAnswer && (

@@ -4,6 +4,7 @@ interface TextAreaProps {
   value: string;
   placeholder?: string;
   rows?: number;
+  compact?: boolean;
   onChange: (value: string) => void;
 }
 
@@ -13,6 +14,7 @@ export default function TextArea({
   value,
   placeholder,
   rows = 3,
+  compact = false,
   onChange,
 }: TextAreaProps) {
   return (
@@ -23,7 +25,11 @@ export default function TextArea({
       placeholder={placeholder}
       rows={rows}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-4 py-3 text-base md:text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-navy"
+      className={
+        compact
+          ? "w-full px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-navy"
+          : "w-full px-4 py-3 text-base md:text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-navy"
+      }
     />
   );
 }
