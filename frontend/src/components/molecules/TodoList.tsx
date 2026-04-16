@@ -213,6 +213,8 @@ export function TodoList({
             <Checkbox
               checked={todo.completed}
               onChange={() => toggleTodo(todo.id)}
+              aria-label={todo.text}
+              className="h-5 w-5 accent-brand-navy"
               disabled={updatingId === todo.id || deletingId === todo.id}
             />
             <span
