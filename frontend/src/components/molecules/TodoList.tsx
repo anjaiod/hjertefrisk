@@ -45,7 +45,7 @@ export function TodoList({
     try {
       await apiClient.put(`/api/todos/${id}`, {
         toDoText: todo.text,
-        patientId: todo.id, // This will be overridden by the backend
+        patientId: patientId, // Use the actual patient ID from props
         finished: !todo.completed,
         public: todo.public,
       });
