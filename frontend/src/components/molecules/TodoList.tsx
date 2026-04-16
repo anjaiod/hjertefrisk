@@ -64,6 +64,10 @@ export function TodoList({
 
   const createTodo = async () => {
     if (!newTodoText.trim()) return;
+    if (!patientId) {
+      alert("Pasienten må være valgt for å opprette en oppgave");
+      return;
+    }
 
     setIsCreating(true);
     try {
@@ -74,7 +78,7 @@ export function TodoList({
         public: boolean;
       }>("/api/todos", {
         toDoText: newTodoText.trim(),
-        patientId: patientId || 0,
+        patientId: patientId,
         finished: false,
         public: newTodoPublic,
       });
@@ -122,7 +126,9 @@ export function TodoList({
         <h2 className="text-lg font-semibold text-brand-navy">{title}</h2>
         <button
           onClick={() => setShowCreateForm(true)}
-          className="px-3 py-1 text-sm font-medium text-white bg-brand-sage hover:bg-brand-sage/90 rounded-lg transition-colors"
+          disabled={!patientId}
+          className="px-3 py-1 text-sm font-medium text-white bg-brand-sage hover:bg-brand-sage/90 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+          title={!patientId ? "Velg pasient for å opprette oppgave" : ""}
         >
           + Ny
         </button>
