@@ -35,6 +35,7 @@ export default function QuestionNumber({
             value={value}
             placeholder={placeholder}
             unit={unit}
+            compact={compact}
             onChange={onChange}
           />
         </div>
