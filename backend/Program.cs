@@ -166,55 +166,64 @@ static string NormalizePostgresConnectionString(string input)
         throw new InvalidOperationException("Connection string cannot be empty.");
     }
 
-    if (!Uri.TryCreate(input, UriKind.Absolute, out var uri) ||
-        (uri.Scheme != "postgres" && uri.Scheme != "postgresql"))
-    {
-        return input;
-    }
+    NpgsqlConnectionStringBuilder builder;
 
-    var userInfo = uri.UserInfo.Split(':', 2, StringSplitOptions.None);
-    var username = userInfo.Length > 0 ? Uri.UnescapeDataString(userInfo[0]) : "";
-    var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
-
-    var databaseName = uri.AbsolutePath.Trim('/');
-    if (string.IsNullOrWhiteSpace(databaseName))
+    if (Uri.TryCreate(input, UriKind.Absolute, out var uri) &&
+        (uri.Scheme == "postgres" || uri.Scheme == "postgresql"))
     {
-        databaseName = "postgres";
-    }
+        var userInfo = uri.UserInfo.Split(':', 2, StringSplitOptions.None);
+        var username = userInfo.Length > 0 ? Uri.UnescapeDataString(userInfo[0]) : "";
+        var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
 
-    var sslModeValue = "require";
-    var query = uri.Query.TrimStart('?');
-    if (!string.IsNullOrWhiteSpace(query))
-    {
-        foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        var databaseName = uri.AbsolutePath.Trim('/');
+        if (string.IsNullOrWhiteSpace(databaseName))
         {
-            var keyValue = pair.Split('=', 2, StringSplitOptions.None);
-            var key = keyValue[0];
+            databaseName = "postgres";
+        }
 
-            if (key.Equals("sslmode", StringComparison.OrdinalIgnoreCase))
+        var sslModeValue = "require";
+        var query = uri.Query.TrimStart('?');
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
             {
-                sslModeValue = keyValue.Length > 1 && !string.IsNullOrWhiteSpace(keyValue[1])
-                    ? Uri.UnescapeDataString(keyValue[1])
-                    : "require";
-                break;
+                var keyValue = pair.Split('=', 2, StringSplitOptions.None);
+                var key = keyValue[0];
+
+                if (key.Equals("sslmode", StringComparison.OrdinalIgnoreCase))
+                {
+                    sslModeValue = keyValue.Length > 1 && !string.IsNullOrWhiteSpace(keyValue[1])
+                        ? Uri.UnescapeDataString(keyValue[1])
+                        : "require";
+                    break;
+                }
             }
         }
+
+        if (!Enum.TryParse<SslMode>(sslModeValue, ignoreCase: true, out var sslMode))
+        {
+            sslMode = SslMode.Require;
+        }
+
+        builder = new NpgsqlConnectionStringBuilder
+        {
+            Host = uri.Host,
+            Port = uri.IsDefaultPort ? 5432 : uri.Port,
+            Database = databaseName,
+            Username = username,
+            Password = password,
+            SslMode = sslMode,
+        };
+    }
+    else
+    {
+        builder = new NpgsqlConnectionStringBuilder(input);
     }
 
-    if (!Enum.TryParse<SslMode>(sslModeValue, ignoreCase: true, out var sslMode))
-    {
-        sslMode = SslMode.Require;
-    }
-
-    var builder = new NpgsqlConnectionStringBuilder
-    {
-        Host = uri.Host,
-        Port = uri.IsDefaultPort ? 5432 : uri.Port,
-        Database = databaseName,
-        Username = username,
-        Password = password,
-        SslMode = sslMode
-    };
+    // Limit pool size to avoid exceeding Supabase's max client connections.
+    builder.MaxPoolSize = 10;
+    builder.MinPoolSize = 0;
+    builder.ConnectionIdleLifetime = 60;
 
     return builder.ConnectionString;
 }

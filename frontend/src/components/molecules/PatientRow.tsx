@@ -35,6 +35,7 @@ export default function PatientRow({
   const router = useRouter();
 
   const dashboardHref = `/dashboard?patientId=${encodeURIComponent(id)}`;
+  const teamvisningHref = `/dashboard/teamvisning?patientId=${encodeURIComponent(id)}`;
 
   return (
     <>
@@ -72,7 +73,7 @@ export default function PatientRow({
             <Button
               variant="primary"
               className={btnClass}
-              onClick={() => router.push(dashboardHref)}
+              onClick={() => router.push(teamvisningHref)}
             >
               Presentasjon
             </Button>

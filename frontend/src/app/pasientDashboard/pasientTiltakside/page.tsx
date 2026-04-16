@@ -5,10 +5,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { PatientSidebarNav } from "../../../components/organisms/PatientSidebarNav";
 import { PatientHeader } from "../../../components/organisms/PatientHeader";
 import { Tag } from "../../../components/atoms/Tag";
-import type { TagVariant } from "../../../components/atoms/Tag";
 import { apiClient } from "../../../lib/apiClient";
 import type { CategoryDto } from "../../../types";
 import { useUser } from "@/context/UserContext";
+import {
+  scoreToVariant,
+  sleepVariantFromTitles,
+  riskVariantToLabel,
+  riskVariantRank,
+} from "@/components/molecules/RiskList";
 
 type PatientMeasureResult = {
   patientMeasureId: number;
@@ -30,50 +35,6 @@ type QueryDto = {
   name: string;
 };
 
-type RiskThreshold = {
-  high: number;
-  medium: number | null;
-};
-
-const CATEGORY_RISK_THRESHOLDS: Record<string, RiskThreshold> = {
-  "fysisk aktivitet": { high: 9, medium: 5 },
-  "kosthold":         { high: 9, medium: 5 },
-  "rusmidler":        { high: 3, medium: 1 },
-  "alkohol":          { high: 15, medium: 8 },
-  "røyking":          { high: 2, medium: 1 },
-  "tannhelse":        { high: 1, medium: null },
-  "kroppsdata":       { high: 2, medium: 1 },
-  "blodtrykk":        { high: 2, medium: 1 },
-  "glukose":          { high: 2, medium: 1 },
-};
-
-function tagVariantFromCategoryScore(
-  categoryName: string,
-  score: number,
-): TagVariant | null {
-  const key = categoryName.toLowerCase().trim();
-  const thresholds = CATEGORY_RISK_THRESHOLDS[key];
-  if (!thresholds) return null;
-  if (score >= thresholds.high) return "high";
-  if (thresholds.medium !== null && score >= thresholds.medium) return "medium";
-  return "low";
-}
-
-function sleepTagVariant(measures: PatientMeasureResult[]): TagVariant | null {
-  if (measures.length === 0) return null;
-  const titles = measures.map((m) => m.title ?? "");
-  if (titles.some((t) => t === "Betydelige søvnvansker")) return "high";
-  if (titles.some((t) => t === "Noen søvnproblemer")) return "medium";
-  if (titles.some((t) => t === "God søvn")) return "low";
-  return null;
-}
-
-function tagTextFromVariant(variant: TagVariant): string {
-  if (variant === "high") return "Høy";
-  if (variant === "medium") return "Middels";
-  return "Lav";
-}
-
 export default function PasientTiltakside() {
   const { user, isAuthReady } = useUser();
   const router = useRouter();
@@ -94,7 +55,9 @@ export default function PasientTiltakside() {
   const [measuresByCategory, setMeasuresByCategory] = useState<
     Record<number, PatientMeasureResult[]>
   >({});
-  const [categoryScores, setCategoryScores] = useState<Record<number, number>>({});
+  const [categoryScores, setCategoryScores] = useState<Record<number, number>>(
+    {},
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -146,8 +109,6 @@ export default function PasientTiltakside() {
     loadData();
   }, [isAuthReady, user]);
 
-  const riskOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
-
   const sortedCategories = [...categories].sort((a, b) => {
     const isSleepA = a.name.toLowerCase().trim() === "søvn";
     const isSleepB = b.name.toLowerCase().trim() === "søvn";
@@ -160,15 +121,15 @@ export default function PasientTiltakside() {
     const variantA = !answeredA
       ? null
       : isSleepA
-        ? sleepTagVariant(measuresA)
-        : tagVariantFromCategoryScore(a.name, scoreA ?? 0);
+        ? sleepVariantFromTitles(measuresA.map((m) => m.title ?? ""))
+        : scoreToVariant(a.name, scoreA ?? 0);
     const variantB = !answeredB
       ? null
       : isSleepB
-        ? sleepTagVariant(measuresB)
-        : tagVariantFromCategoryScore(b.name, scoreB ?? 0);
-    const orderA = variantA != null ? (riskOrder[variantA] ?? 3) : 4;
-    const orderB = variantB != null ? (riskOrder[variantB] ?? 3) : 4;
+        ? sleepVariantFromTitles(measuresB.map((m) => m.title ?? ""))
+        : scoreToVariant(b.name, scoreB ?? 0);
+    const orderA = variantA != null ? riskVariantRank(variantA) : 4;
+    const orderB = variantB != null ? riskVariantRank(variantB) : 4;
     return orderA - orderB;
   });
 
@@ -189,7 +150,28 @@ export default function PasientTiltakside() {
         <PatientHeader />
 
         <main className="flex-1 bg-slate-50 p-8">
-          <div className="max-w-7xl mx-auto flex gap-6">
+          <div className="max-w-7xl mx-auto flex flex-col gap-6">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="flex items-center gap-1 text-sm text-slate-600 hover:text-brand-navy transition-colors cursor-pointer"
+                aria-label="Tilbake"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Tilbake
+              </button>
+            </div>
+          <div className="flex gap-6">
             {/* Left panel: category list */}
             <div className="w-80 shrink-0 bg-white rounded-xl border border-slate-200 shadow-sm p-6">
               <h2 className="text-lg font-bold text-brand-navy mb-4">
@@ -204,9 +186,13 @@ export default function PasientTiltakside() {
                     const score = categoryScores[cat.categoryId];
                     const isSleep = cat.name.toLowerCase().trim() === "søvn";
                     const variant = isSleep
-                      ? sleepTagVariant(measuresByCategory[cat.categoryId] ?? [])
+                      ? sleepVariantFromTitles(
+                          (measuresByCategory[cat.categoryId] ?? []).map(
+                            (m) => m.title ?? "",
+                          ),
+                        )
                       : score !== undefined
-                        ? tagVariantFromCategoryScore(cat.name, score)
+                        ? scoreToVariant(cat.name, score)
                         : null;
 
                     return (
@@ -225,7 +211,7 @@ export default function PasientTiltakside() {
                         </span>
                         {variant && (
                           <Tag variant={variant} className="text-sm">
-                            {tagTextFromVariant(variant)}
+                            {riskVariantToLabel(variant)}
                           </Tag>
                         )}
                       </button>
@@ -301,6 +287,7 @@ export default function PasientTiltakside() {
                 )}
               </div>
             )}
+          </div>
           </div>
         </main>
       </div>
