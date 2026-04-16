@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactElement, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import CollapsibleSection from "../molecules/CollapsibleSection";
 import QuestionRadio from "../molecules/QuestionRadio";
 import QuestionNumber from "../molecules/QuestionNumber";
@@ -31,6 +32,7 @@ export default function HealthQuestionnaire({
   patientId,
   compact = false,
 }: HealthQuestionnaireProps) {
+  const router = useRouter();
   const { user } = useUser();
   const [questions, setQuestions] = useState<QueryQuestionWithDetailsDto[]>([]);
   const [severities, setSeverities] = useState<SeverityDto[]>([]);
@@ -399,6 +401,7 @@ export default function HealthQuestionnaire({
           <div className="flex gap-4 justify-end pt-6">
             <button
               type="button"
+              onClick={() => router.push("/dashboard")}
               className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
             >
               Avbryt
