@@ -16,24 +16,6 @@ import type {
   SeverityDto,
 } from "@/types";
 
-function toPatientPerspective(text: string): string {
-  return text
-    .replace(/\b[Dd]u\b/g, (match) =>
-      match === "Du" ? "Pasienten" : "pasienten",
-    )
-    .replace(/\b[Dd]eg\b/g, (match) =>
-      match === "Deg" ? "Pasienten" : "pasienten",
-    )
-    .replace(/\b[Dd]in\b/g, (match) =>
-      match === "Din" ? "Pasientens" : "pasientens",
-    )
-    .replace(/\b[Dd]itt\b/g, (match) =>
-      match === "Ditt" ? "Pasientens" : "pasientens",
-    )
-    .replace(/\b[Dd]ine\b/g, (match) =>
-      match === "Dine" ? "Pasientens" : "pasientens",
-    );
-}
 
 interface HealthQuestionnaireProps {
   patientId: number | null;
@@ -158,9 +140,25 @@ export default function HealthQuestionnaire({
     return undefined;
   };
 
-  const getRows = (
+  const getValidationRange = (
     question: QueryQuestionWithDetailsDto,
-  ): number | undefined => {
+  ): { min: number; max: number } => {
+    const text = question.fallbackText.toLowerCase();
+    if (text.includes("hvor høy")) return { min: 0, max: 300 };
+    if (text.includes("hvor mye veier")) return { min: 0, max: 500 };
+    if (text.includes("livvidde")) return { min: 0, max: 300 };
+    if (text.includes("blodtrykk")) return { min: 0, max: 300 };
+    if (text.includes("hba1c")) return { min: 0, max: 200 };
+    if (
+      text.includes("fastende") ||
+      text.includes("kolesterol") ||
+      text.includes("triglyserider")
+    )
+      return { min: 0, max: 50 };
+    return { min: 0, max: 500 };
+  };
+
+  const getRows = (question: QueryQuestionWithDetailsDto): number | undefined => {
     const text = question.fallbackText.toLowerCase();
     if (text.includes("hvor mye røyker")) return 2;
     if (text.includes("vekten din endret")) return 2;
@@ -173,7 +171,7 @@ export default function HealthQuestionnaire({
   ): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
-    const questionText = toPatientPerspective(question.fallbackText);
+    const questionText = question.fallbackText;
 
     if (question.questionType === "boolean") {
       return (
@@ -216,6 +214,7 @@ export default function HealthQuestionnaire({
     }
 
     if (question.questionType === "number") {
+      const { min, max } = getValidationRange(question);
       return (
         <QuestionNumber
           key={question.questionId}
@@ -227,6 +226,8 @@ export default function HealthQuestionnaire({
           unit={getUnit(question)}
           required={question.isRequired}
           compact={compact}
+          min={min}
+          max={max}
         />
       );
     }
@@ -288,6 +289,19 @@ export default function HealthQuestionnaire({
 
     if (patientId == null) {
       setSubmitError("Ingen pasient er valgt. Gå tilbake og velg en pasient.");
+      return;
+    }
+
+    const invalidFields = visibleQuestions.filter((q) => {
+      if (q.questionType !== "number") return false;
+      const raw = (answers[q.questionId] ?? "").trim();
+      if (!raw) return false;
+      const val = Number(raw.replace(",", "."));
+      const { min, max } = getValidationRange(q);
+      return !Number.isFinite(val) || val < min || val > max;
+    });
+    if (invalidFields.length > 0) {
+      setSubmitError("Noen tall-svar er ugyldige. Sjekk de markerte feltene.");
       return;
     }
 

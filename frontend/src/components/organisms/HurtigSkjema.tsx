@@ -217,6 +217,24 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
     return undefined;
   };
 
+  const getValidationRange = (
+    question: QueryQuestionWithDetailsDto,
+  ): { min: number; max: number } => {
+    const text = question.fallbackText.toLowerCase();
+    if (text.includes("hvor høy")) return { min: 0, max: 300 };
+    if (text.includes("hvor mye veier")) return { min: 0, max: 500 };
+    if (text.includes("livvidde")) return { min: 0, max: 300 };
+    if (text.includes("blodtrykk")) return { min: 0, max: 300 };
+    if (text.includes("hba1c")) return { min: 0, max: 200 };
+    if (
+      text.includes("fastende") ||
+      text.includes("kolesterol") ||
+      text.includes("triglyserider")
+    )
+      return { min: 0, max: 50 };
+    return { min: 0, max: 500 };
+  };
+
   const renderQuestion = (
     question: QueryQuestionWithDetailsDto,
     compact = false,
@@ -288,6 +306,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
     }
 
     if (question.questionType === "number") {
+      const { min, max } = getValidationRange(question);
       return (
         <QuestionNumber
           key={question.questionId}
@@ -299,6 +318,8 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
           unit={getUnit(question)}
           required={question.isRequired}
           compact={compact}
+          min={min}
+          max={max}
         />
       );
     }
@@ -360,6 +381,19 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
 
     if (patientId == null) {
       setSubmitError("Ingen pasient er valgt. Gå tilbake og velg en pasient.");
+      return;
+    }
+
+    const invalidFields = visibleQuestions.filter((q) => {
+      if (q.questionType !== "number") return false;
+      const raw = (answers[q.questionId] ?? "").trim();
+      if (!raw) return false;
+      const val = Number(raw.replace(",", "."));
+      const { min, max } = getValidationRange(q);
+      return !Number.isFinite(val) || val < min || val > max;
+    });
+    if (invalidFields.length > 0) {
+      setSubmitError("Noen tall-svar er ugyldige. Sjekk de markerte feltene.");
       return;
     }
 
