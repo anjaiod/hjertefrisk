@@ -296,34 +296,6 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     Priority = measure.Priority
                 });
             }
-
-            var lipidPersonnelMeasures = await _db.PersonnelMeasures
-                .AsNoTracking()
-                .Include(m => m.Texts)
-                .Where(m => m.TriggerType == MeasureTriggerType.Custom
-                         && m.CategoryId == blodlipiderResult.CategoryId
-                         && m.Title != null
-                         && blodlipiderResult.Titles.Contains(m.Title))
-                .ToListAsync();
-
-            foreach (var measure in lipidPersonnelMeasures)
-            {
-                personnelResults.Add(new PersonnelMeasureResultDto
-                {
-                    PersonnelMeasureId = measure.PersonnelMeasureId,
-                    Source = MeasureResultSource.CategoryScore,
-                    CategoryId = measure.CategoryId,
-                    TriggerQuestionId = null,
-                    CategoryScore = updatedScore,
-                    Text = ResolvePersonnelText(measure, languageCode),
-                    Title = ResolvePersonnelTitle(measure, languageCode),
-                    ResourceUrl = measure.ResourceUrl,
-                    GeneratedAt = generatedAt,
-                    ScoreThreshold = measure.ScoreThreshold,
-                    IsExclusive = measure.IsExclusive,
-                    Priority = measure.Priority
-                });
-            }
         }
 
         return new MeasureEvaluationResultDto
