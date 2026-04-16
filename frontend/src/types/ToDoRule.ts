@@ -1,9 +1,14 @@
 /**
+ * Operator type for rule conditions
+ */
+export type Operator = '=' | '!=' | '<' | '>' | '<=' | '>=';
+
+/**
  * Base interface for all ToDoRule types
  */
 export interface ToDoRuleBase {
   toDoRuleId: number;
-  operator: '=' | '!=' | '<' | '>' | '<=' | '>=';
+  operator: Operator;
   toDoText: string;
   priority: number; // 0 = low, 1 = medium, 2 = high
   createdAt?: string;
@@ -41,7 +46,7 @@ export interface CreateQuestionAnswerRule {
   requiredOption?: number;
   requiredText?: string;
   requiredValue?: number;
-  operator: '=' | '!=' | '<' | '>' | '<=' | '>=';
+  operator: Operator;
   toDoText: string;
   priority: number;
 }
@@ -53,7 +58,7 @@ export interface CreateCategoryScoreRule {
   triggerType: 'Category';
   categoryId: number;
   scoreThreshold: number;
-  operator: '=' | '!=' | '<' | '>' | '<=' | '>=';
+  operator: Operator;
   toDoText: string;
   priority: number;
 }
