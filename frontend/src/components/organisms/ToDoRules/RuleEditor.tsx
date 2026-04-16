@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import type { CreateQuestionAnswerRule, QuestionDto } from '@/types';
+import type { CreateQuestionAnswerRule, QuestionDto, Operator } from '@/types';
 import { Modal } from '@/components/atoms/Modal';
 
 interface RuleEditorProps {
@@ -19,7 +19,7 @@ export default function RuleEditor({
 }: RuleEditorProps) {
   const [toDoText, setToDoText] = useState('');
   const [priority, setPriority] = useState(1);
-  const [operator, setOperator] = useState('=');
+  const [operator, setOperator] = useState<Operator>('=');
   const [requiredValue, setRequiredValue] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -51,7 +51,7 @@ export default function RuleEditor({
         questionId: question.questionId,
         toDoText: toDoText.trim(),
         priority,
-        operator: operator as any,
+        operator: operator,
         triggerType: 'Question'
       };
 
@@ -156,7 +156,7 @@ export default function RuleEditor({
               <label className="block text-sm font-medium text-gray-700">Operator</label>
               <select
                 value={operator}
-                onChange={(e) => setOperator(e.target.value as any)}
+                onChange={(e) => setOperator(e.target.value as Operator)}
                 className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={loading}
               >

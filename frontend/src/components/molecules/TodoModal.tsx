@@ -9,13 +9,11 @@ type Todo = { id: number; text: string; completed: boolean; public: boolean };
 
 interface TodoModalProps {
   patientId: string;
-  patientName: string;
   onClose: () => void;
 }
 
-export function TodoModal({ patientId, patientName, onClose }: TodoModalProps) {
+export function TodoModal({ patientId, onClose }: TodoModalProps) {
   const [todos, setTodos] = useState<Todo[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchTodos = async () => {
@@ -37,8 +35,6 @@ export function TodoModal({ patientId, patientName, onClose }: TodoModalProps) {
       } catch (error) {
         console.error("Error fetching todos:", error);
         setTodos([]);
-      } finally {
-        setLoading(false);
       }
     };
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import type { ToDoRule, CategoryDto, QuestionDto, CreateToDoRule } from '@/types';
+import type { ToDoRule, CategoryDto, QuestionDto, CreateToDoRule, QuestionAnswerRule, CategoryScoreRule } from '@/types';
 
 interface RulesListProps {
   rules: ToDoRule[];
@@ -26,23 +26,28 @@ export default function RulesList({
 
   const startEdit = (rule: ToDoRule) => {
     setEditingId(rule.toDoRuleId);
-    setEditData({
-      toDoText: rule.toDoText,
-      priority: rule.priority,
-      triggerType: rule.triggerType,
-      ...(rule.triggerType === 'Question'
-        ? {
-          questionId: (rule as any).questionId,
-          requiredOption: (rule as any).requiredOption,
-          requiredValue: (rule as any).requiredValue,
-          operator: rule.operator
-        }
-        : {
-          categoryId: (rule as any).categoryId,
-          scoreThreshold: (rule as any).scoreThreshold,
-          operator: rule.operator
-        })
-    });
+    if (rule.triggerType === 'Question') {
+      const qRule = rule as QuestionAnswerRule;
+      setEditData({
+        toDoText: qRule.toDoText,
+        priority: qRule.priority,
+        triggerType: 'Question',
+        questionId: qRule.questionId,
+        requiredOption: qRule.requiredOption,
+        requiredValue: qRule.requiredValue,
+        operator: qRule.operator
+      });
+    } else {
+      const cRule = rule as CategoryScoreRule;
+      setEditData({
+        toDoText: cRule.toDoText,
+        priority: cRule.priority,
+        triggerType: 'Category',
+        categoryId: cRule.categoryId,
+        scoreThreshold: cRule.scoreThreshold,
+        operator: cRule.operator
+      });
+    }
   };
 
   const saveEdit = async (ruleId: number) => {
@@ -113,14 +118,14 @@ export default function RulesList({
                       <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs mr-2">
                         Answer
                       </span>
-                      Question: {getQuestionText((rule as any).questionId)}
+                      Question: {getQuestionText((rule as QuestionAnswerRule).questionId)}
                     </div>
                   ) : (
                     <div>
                       <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded text-xs mr-2">
                         Score
                       </span>
-                      Category: {getCategoryName((rule as any).categoryId)}
+                      Category: {getCategoryName((rule as CategoryScoreRule).categoryId)}
                     </div>
                   )}
                 </div>
