@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import type { CategoryDto, QuestionDto, CreateQuestionAnswerRule, CreateCategoryScoreRule, CreateToDoRule } from '@/types';
+import type { CategoryDto, QuestionDto, CreateQuestionAnswerRule, CreateCategoryScoreRule, CreateToDoRule, Operator } from '@/types';
 
 interface RuleCreationFormProps {
   mode: 'answer' | 'score';
@@ -21,14 +21,13 @@ export default function RuleCreationForm({
 
   // Answer-based form state
   const [selectedQuestion, setSelectedQuestion] = useState<string>('');
-  const [selectedOption, setSelectedOption] = useState<string>('');
-  const [answerOperator, setAnswerOperator] = useState<string>('=');
+  const [answerOperator, setAnswerOperator] = useState<Operator>('=');
   const [answerValue, setAnswerValue] = useState<string>('');
 
   // Score-based form state
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [scoreThreshold, setScoreThreshold] = useState<number>(0);
-  const [scoreOperator, setScoreOperator] = useState<string>('>=');
+  const [scoreOperator, setScoreOperator] = useState<Operator>('>=');
 
   // Common form state
   const [toDoText, setToDoText] = useState<string>('');
@@ -51,7 +50,7 @@ export default function RuleCreationForm({
         rule = {
           triggerType: 'Question',
           questionId: parseInt(selectedQuestion),
-          operator: answerOperator as any,
+          operator: answerOperator,
           toDoText,
           priority,
           ...(isNumeric ? { requiredValue: numValue } : { requiredText: answerValue })
@@ -61,7 +60,7 @@ export default function RuleCreationForm({
           triggerType: 'Category',
           categoryId: parseInt(selectedCategory),
           scoreThreshold: Math.floor(scoreThreshold),
-          operator: scoreOperator as any,
+          operator: scoreOperator,
           toDoText,
           priority
         } as CreateCategoryScoreRule;
@@ -72,7 +71,6 @@ export default function RuleCreationForm({
       // Reset form
       if (mode === 'answer') {
         setSelectedQuestion('');
-        setSelectedOption('');
         setAnswerOperator('=');
         setAnswerValue('');
       } else {
@@ -119,7 +117,7 @@ export default function RuleCreationForm({
           </label>
           <select
             value={answerOperator}
-            onChange={(e) => setAnswerOperator(e.target.value)}
+            onChange={(e) => setAnswerOperator(e.target.value as Operator)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="=">=</option>
@@ -215,7 +213,7 @@ export default function RuleCreationForm({
         </label>
         <select
           value={scoreOperator}
-          onChange={(e) => setScoreOperator(e.target.value)}
+          onChange={(e) => setScoreOperator(e.target.value as Operator)}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value=">=">&gt;=</option>

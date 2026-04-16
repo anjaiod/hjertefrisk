@@ -298,67 +298,6 @@ public class MeasureEvaluationService : IMeasureEvaluationService
             }
         }
 
-        if (blodlipiderResult is not null)
-        {
-            var updatedScore = categoryScores.GetValueOrDefault(blodlipiderResult.CategoryId);
-
-            var lipidPatientMeasures = await _db.PatientMeasures
-                .AsNoTracking()
-                .Include(m => m.Texts)
-                .Where(m => m.TriggerType == MeasureTriggerType.Custom
-                         && m.CategoryId == blodlipiderResult.CategoryId
-                         && m.Title != null
-                         && blodlipiderResult.Titles.Contains(m.Title))
-                .ToListAsync();
-
-            foreach (var measure in lipidPatientMeasures)
-            {
-                patientResults.Add(new PatientMeasureResultDto
-                {
-                    PatientMeasureId  = measure.PatientMeasureId,
-                    Source            = MeasureResultSource.CategoryScore,
-                    CategoryId        = measure.CategoryId,
-                    TriggerQuestionId = null,
-                    CategoryScore     = updatedScore,
-                    Text              = ResolvePatientText(measure, languageCode),
-                    Title             = ResolvePatientTitle(measure, languageCode),
-                    ResourceUrl       = measure.ResourceUrl,
-                    GeneratedAt       = generatedAt,
-                    ScoreThreshold    = measure.ScoreThreshold,
-                    IsExclusive       = measure.IsExclusive,
-                    Priority          = measure.Priority
-                });
-            }
-
-            var lipidPersonnelMeasures = await _db.PersonnelMeasures
-                .AsNoTracking()
-                .Include(m => m.Texts)
-                .Where(m => m.TriggerType == MeasureTriggerType.Custom
-                         && m.CategoryId == blodlipiderResult.CategoryId
-                         && m.Title != null
-                         && blodlipiderResult.Titles.Contains(m.Title))
-                .ToListAsync();
-
-            foreach (var measure in lipidPersonnelMeasures)
-            {
-                personnelResults.Add(new PersonnelMeasureResultDto
-                {
-                    PersonnelMeasureId = measure.PersonnelMeasureId,
-                    Source             = MeasureResultSource.CategoryScore,
-                    CategoryId         = measure.CategoryId,
-                    TriggerQuestionId  = null,
-                    CategoryScore      = updatedScore,
-                    Text               = ResolvePersonnelText(measure, languageCode),
-                    Title              = ResolvePersonnelTitle(measure, languageCode),
-                    ResourceUrl        = measure.ResourceUrl,
-                    GeneratedAt        = generatedAt,
-                    ScoreThreshold     = measure.ScoreThreshold,
-                    IsExclusive        = measure.IsExclusive,
-                    Priority           = measure.Priority
-                });
-            }
-        }
-
         return new MeasureEvaluationResultDto
         {
             PatientMeasures = patientResults,

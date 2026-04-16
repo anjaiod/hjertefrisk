@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import type { CreateCategoryScoreRule, CategoryDto } from '@/types';
+import type { CreateCategoryScoreRule, CategoryDto, Operator } from '@/types';
 import { Modal } from '@/components/atoms/Modal';
 
 interface ScoreRuleEditorProps {
@@ -19,7 +19,7 @@ export default function ScoreRuleEditor({
 }: ScoreRuleEditorProps) {
   const [toDoText, setToDoText] = useState('');
   const [priority, setPriority] = useState(1);
-  const [operator, setOperator] = useState('>=');
+  const [operator, setOperator] = useState<Operator>('>=');
   const [scoreThreshold, setScoreThreshold] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +43,7 @@ export default function ScoreRuleEditor({
         scoreThreshold: parseInt(scoreThreshold),
         toDoText: toDoText.trim(),
         priority,
-        operator: operator as any,
+        operator: operator,
         triggerType: 'Category'
       };
 
@@ -77,7 +77,7 @@ export default function ScoreRuleEditor({
               <label className="block text-sm font-medium text-gray-700">Operator *</label>
               <select
                 value={operator}
-                onChange={(e) => setOperator(e.target.value as any)}
+                onChange={(e) => setOperator(e.target.value as Operator)}
                 className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={loading}
               >

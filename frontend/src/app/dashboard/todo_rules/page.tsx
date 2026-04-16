@@ -189,7 +189,6 @@ export default function ToDoRulesPage() {
             questions={questions}
             rules={rules}
             onRuleCreated={handleRuleCreated}
-            onRuleUpdated={handleRuleUpdated}
             onRuleDeleted={handleRuleDeleted}
           />
         </div>

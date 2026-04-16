@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import type { CategoryDto, QuestionDto, ToDoRule, CreateToDoRule } from '@/types';
+import type { CategoryDto, QuestionDto, ToDoRule, CreateToDoRule, QuestionAnswerRule, CategoryScoreRule } from '@/types';
 import RuleEditor from './RuleEditor';
 import ScoreRuleEditor from './ScoreRuleEditor';
 
@@ -10,7 +10,6 @@ interface CategoryTreeProps {
   questions: QuestionDto[];
   rules: ToDoRule[];
   onRuleCreated: (rule: CreateToDoRule) => Promise<void>;
-  onRuleUpdated: (id: number, rule: CreateToDoRule) => Promise<void>;
   onRuleDeleted: (id: number) => Promise<void>;
 }
 
@@ -19,7 +18,6 @@ export default function CategoryTree({
   questions,
   rules,
   onRuleCreated,
-  onRuleUpdated,
   onRuleDeleted
 }: CategoryTreeProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(
@@ -42,29 +40,19 @@ export default function CategoryTree({
     setExpandedCategories(newExpanded);
   };
 
-  const toggleQuestion = (questionId: number) => {
-    const newExpanded = new Set(expandedQuestions);
-    if (newExpanded.has(questionId)) {
-      newExpanded.delete(questionId);
-    } else {
-      newExpanded.add(questionId);
-    }
-    setExpandedQuestions(newExpanded);
-  };
-
   const getRulesForOption = (questionId: number, optionId: number) => {
-    return rules.filter(rule => {
-      if ((rule as any).triggerType !== 'Question') return false;
-      if ((rule as any).questionId !== questionId) return false;
-      if ((rule as any).requiredOption !== optionId) return false;
+    return rules.filter((rule): rule is QuestionAnswerRule => {
+      if (rule.triggerType !== 'Question') return false;
+      if (rule.questionId !== questionId) return false;
+      if (rule.requiredOption !== optionId) return false;
       return true;
     });
   };
 
   const getScoreRulesForCategory = (categoryId: number) => {
-    return rules.filter(rule => {
-      if ((rule as any).triggerType !== 'Category') return false;
-      if ((rule as any).categoryId !== categoryId) return false;
+    return rules.filter((rule): rule is CategoryScoreRule => {
+      if (rule.triggerType !== 'Category') return false;
+      if (rule.categoryId !== categoryId) return false;
       return true;
     });
   };
@@ -289,7 +277,7 @@ export default function CategoryTree({
                               {rule.toDoText}
                             </div>
                             <div className="text-xs text-purple-700 mt-1">
-                              Score {(rule as any).operator} {(rule as any).scoreThreshold} • Priority: {rule.priority}
+                              Score {rule.operator} {rule.scoreThreshold} • Priority: {rule.priority}
                             </div>
                           </div>
                           <div className="flex gap-1 flex-shrink-0">
