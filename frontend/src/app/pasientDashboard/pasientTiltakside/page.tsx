@@ -150,7 +150,28 @@ export default function PasientTiltakside() {
         <PatientHeader />
 
         <main className="flex-1 bg-slate-50 p-8">
-          <div className="max-w-7xl mx-auto flex gap-6">
+          <div className="max-w-7xl mx-auto flex flex-col gap-6">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="flex items-center gap-1 text-sm text-slate-600 hover:text-brand-navy transition-colors cursor-pointer"
+                aria-label="Tilbake"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Tilbake
+              </button>
+            </div>
+          <div className="flex gap-6">
             {/* Left panel: category list */}
             <div className="w-80 shrink-0 bg-white rounded-xl border border-slate-200 shadow-sm p-6">
               <h2 className="text-lg font-bold text-brand-navy mb-4">
@@ -266,6 +287,7 @@ export default function PasientTiltakside() {
                 )}
               </div>
             )}
+          </div>
           </div>
         </main>
       </div>

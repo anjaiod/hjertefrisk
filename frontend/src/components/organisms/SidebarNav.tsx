@@ -54,6 +54,26 @@ export function SidebarNav({
   const isActive = (href: string) =>
     currentPath === href || currentPath.startsWith(`${href}/`);
 
+  const dashboardItem: NavItem = {
+    label: "Dashboard",
+    href: withPatientId("/dashboard"),
+    active: currentPath === "/dashboard",
+    icon: (
+      <svg
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+        />
+      </svg>
+    ),
+  };
+
   const primaryItems: NavItem[] = [
     {
       label: "Varslinger",
@@ -215,11 +235,13 @@ export function SidebarNav({
         </div>
       </div>
 
-      {hasSelectedPatient ? (
-        <>
-          <div className="my-6 h-px bg-linear-to-r from-transparent via-brand-sky to-transparent" />
+      <div className="my-6 h-px bg-linear-to-r from-transparent via-brand-sky to-transparent" />
 
-          <nav className="flex flex-col space-y-2">
+      <nav className="flex flex-col space-y-2">
+        <Item key={dashboardItem.href} item={dashboardItem} />
+
+        {hasSelectedPatient ? (
+          <>
             {primaryItems.map((item) => (
               <Item key={item.href} item={item} />
             ))}
@@ -227,9 +249,9 @@ export function SidebarNav({
             {secondaryItems.map((item) => (
               <Item key={item.href} item={item} />
             ))}
-          </nav>
-        </>
-      ) : null}
+          </>
+        ) : null}
+      </nav>
 
       <div className="mt-auto border-t border-brand-sky/30 pt-6">
         <nav className="flex flex-col space-y-2">

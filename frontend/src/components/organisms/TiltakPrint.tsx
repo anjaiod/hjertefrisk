@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import type { QuickMeasureResultDto } from "@/types";
 
 interface TiltakPrintProps {
@@ -54,6 +55,7 @@ function groupByCategory(
 }
 
 export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
+  const router = useRouter();
   const missingData = measures.filter((m) => m.isMissingData);
   const actionable = measures.filter((m) => !m.isMissingData);
   const sorted = [...actionable].sort((a, b) => b.priority - a.priority);
@@ -233,9 +235,29 @@ export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
     <div className="min-h-screen bg-white">
       {/* Screen toolbar */}
       <div className="flex items-center justify-between px-8 py-4 border-b border-gray-200 bg-slate-50 print:hidden">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Tiltak – Hjertefrisk
-        </h1>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex items-center gap-1 text-sm text-slate-600 hover:text-brand-navy transition-colors cursor-pointer"
+            aria-label="Tilbake"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Tilbake
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Tiltak – Hjertefrisk
+          </h1>
+        </div>
         <button
           type="button"
           onClick={handlePrint}

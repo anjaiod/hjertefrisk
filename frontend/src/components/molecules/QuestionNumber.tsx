@@ -10,6 +10,7 @@ interface QuestionNumberProps {
   placeholder?: string;
   unit?: string;
   required?: boolean;
+  compact?: boolean;
 }
 
 export default function QuestionNumber({
@@ -21,10 +22,11 @@ export default function QuestionNumber({
   placeholder,
   unit,
   required = false,
+  compact = false,
 }: QuestionNumberProps) {
   return (
     <div className="mb-6">
-      <QuestionLabel text={question} required={required} />
+      <QuestionLabel text={question} required={required} compact={compact} />
       <div className="flex gap-3 items-start">
         <div className="flex-1">
           <NumberInput
@@ -33,6 +35,7 @@ export default function QuestionNumber({
             value={value}
             placeholder={placeholder}
             unit={unit}
+            compact={compact}
             onChange={onChange}
           />
         </div>
@@ -40,7 +43,7 @@ export default function QuestionNumber({
           <button
             type="button"
             onClick={onAnswer}
-            className="px-4 py-2 bg-brand-navy text-white rounded-md hover:opacity-90 whitespace-nowrap mt-0"
+            className="px-5 py-3 md:px-6 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl hover:opacity-90 whitespace-nowrap touch-manipulation"
           >
             Lagre svar
           </button>
