@@ -1,6 +1,10 @@
 import { supabase } from "@/lib/supabaseClient";
 import { apiClient } from "@/lib/apiClient";
-import type { LoginCredentials, RegisterRole, RegisterUserInput } from "@/types/Auth";
+import type {
+  LoginCredentials,
+  RegisterRole,
+  RegisterUserInput,
+} from "@/types/Auth";
 
 function getLocalUserEndpoint(role: RegisterRole) {
   return role === "patient" ? "/api/Patients" : "/api/Personnel";

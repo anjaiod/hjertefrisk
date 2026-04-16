@@ -9,9 +9,9 @@ public class QuestionDependency
     public int ChildQuestionId { get; set; }      // PK part, FK -> Question
 
     public int? TriggerOptionId { get; set; }     // FK -> QuestionOption
-    public string? TriggerTextValue { get; set; } 
-    public decimal? TriggerNumberValue { get; set; } 
-    public string Operator { get; set; } = "";    
+    public string? TriggerTextValue { get; set; }
+    public decimal? TriggerNumberValue { get; set; }
+    public string Operator { get; set; } = "";
 
     public Query ParentQuery { get; set; } = null!;
     public Question ParentQuestion { get; set; } = null!;

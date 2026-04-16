@@ -47,7 +47,9 @@ export default function CategorizedProgressBar({
               type="button"
               onClick={() => onCategoryClick?.(index)}
               className="flex-1 relative text-left"
-              style={{ flexBasis: `${(categoryWithCount.count / totalSteps) * 100}%` }}
+              style={{
+                flexBasis: `${(categoryWithCount.count / totalSteps) * 100}%`,
+              }}
             >
               {/* Background */}
               <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">

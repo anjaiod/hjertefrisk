@@ -250,7 +250,11 @@ export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
               stroke="currentColor"
               strokeWidth={2}
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             Tilbake
           </button>
@@ -300,7 +304,8 @@ export default function TiltakPrint({ measures, patientId }: TiltakPrintProps) {
           Anbefalte tiltak ({sorted.length})
           {missingGroups.length > 0 && (
             <span className="ml-2 font-normal text-gray-400 normal-case tracking-normal">
-              · {missingGroups.length} kategori{missingGroups.length === 1 ? "" : "er"} uten svar
+              · {missingGroups.length} kategori
+              {missingGroups.length === 1 ? "" : "er"} uten svar
             </span>
           )}
         </p>

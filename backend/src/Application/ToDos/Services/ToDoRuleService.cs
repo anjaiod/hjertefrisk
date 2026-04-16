@@ -99,7 +99,7 @@ public class ToDoRuleService : IToDoRuleService
     {
         if (rule is QuestionAnswerRule qr)
             return MatchesQuestionRule(response, qr);
-        
+
         if (rule is CategoryScoreRule cr)
             return MatchesCategoryRule(categoryScore, cr);
 
@@ -159,20 +159,20 @@ public class ToDoRuleService : IToDoRuleService
             ">=" => score >= rule.ScoreThreshold,
             _ => false
         };
-        
+
         Console.WriteLine($"[ToDoRuleService.MatchesCategoryRule] score={score}, operator='{rule.Operator}', threshold={rule.ScoreThreshold} -> matches={matches}");
-        
+
         return matches;
     }
 
     public async Task CreateToDoFromRuleAsync(int patientId, ToDoRule rule)
     {
-        
+
         // Check if an unfinished ToDo already exists for this rule and patient
         var existingUnfinishedTodo = await _db.ToDos
-            .FirstOrDefaultAsync(t => 
-                t.ToDoRuleId == rule.ToDoRuleId && 
-                t.PatientId == patientId && 
+            .FirstOrDefaultAsync(t =>
+                t.ToDoRuleId == rule.ToDoRuleId &&
+                t.PatientId == patientId &&
                 !t.Finished);
 
         if (existingUnfinishedTodo != null)
@@ -189,8 +189,8 @@ public class ToDoRuleService : IToDoRuleService
             Public = true,
             ToDoRuleId = rule.ToDoRuleId
         };
-        
+
         _db.ToDos.Add(todo);
-        await _db.SaveChangesAsync(); 
+        await _db.SaveChangesAsync();
     }
 }

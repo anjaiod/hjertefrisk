@@ -38,7 +38,9 @@ export default async function TiltakPage({ searchParams }: PageProps) {
 
   const patientId = patientIdStr ? parseInt(patientIdStr, 10) : null;
   const queryId = queryIdStr ? parseInt(queryIdStr, 10) : null;
-  const answeredQueryId = answeredQueryIdStr ? parseInt(answeredQueryIdStr, 10) : null;
+  const answeredQueryId = answeredQueryIdStr
+    ? parseInt(answeredQueryIdStr, 10)
+    : null;
 
   if (
     patientId == null ||
@@ -50,7 +52,8 @@ export default async function TiltakPage({ searchParams }: PageProps) {
   ) {
     return (
       <div className="p-8 text-red-600">
-        Manglende pasient-ID, skjema-ID eller innleveringsøkt-ID. Gå tilbake og send inn skjemaet på nytt.
+        Manglende pasient-ID, skjema-ID eller innleveringsøkt-ID. Gå tilbake og
+        send inn skjemaet på nytt.
       </div>
     );
   }
@@ -59,7 +62,11 @@ export default async function TiltakPage({ searchParams }: PageProps) {
   let fetchError: string | null = null;
 
   try {
-    const payload: EvaluateQuickMeasuresDto = { patientId, queryId, answeredQueryId };
+    const payload: EvaluateQuickMeasuresDto = {
+      patientId,
+      queryId,
+      answeredQueryId,
+    };
     measures = await apiClient.post<QuickMeasureResultDto[]>(
       "/api/QuickMeasures/evaluate",
       payload,

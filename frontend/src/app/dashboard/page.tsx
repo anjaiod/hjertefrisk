@@ -33,17 +33,24 @@ export default function DashboardPage() {
 
     const loadData = async () => {
       try {
-        // Fetch patient data, todos, measurements, and risks in parallel
-        const [patients, allTodos, measurements, categoryRisks] = await Promise.all([
-          apiClient.get<PatientDto[]>("/api/patients"),
-          apiClient.get<ToDoDto[]>("/api/todos"),
-          apiClient.get<LatestMeasurementResultDto[]>(
-            `/api/patients/${encodeURIComponent(patientId)}/latest-measurements`
-          ),
-          getRisks(patientId),
-        ]);
+        // Record visit (fire and forget)
+        apiClient
+          .patch(`/api/patients/${encodeURIComponent(patientId)}/visit`)
+          .catch(() => {});
 
-        const patient = patients.find((p) => String(p.id) === patientId) ?? null;
+        // Fetch patient data, todos, measurements, and risks in parallel
+        const [patient, allTodos, measurements, categoryRisks] =
+          await Promise.all([
+            apiClient.get<PatientDto>(
+              `/api/patients/${encodeURIComponent(patientId)}`,
+            ),
+            apiClient.get<ToDoDto[]>("/api/todos"),
+            apiClient.get<LatestMeasurementResultDto[]>(
+              `/api/patients/${encodeURIComponent(patientId)}/latest-measurements`,
+            ),
+            getRisks(patientId),
+          ]);
+
         setSelectedPatient(patient);
 
         const filteredTodos = allTodos
@@ -72,7 +79,10 @@ export default function DashboardPage() {
   const highRisks = risks.filter((r) => r.variant === "high");
   const mediumRisks = risks.filter((r) => r.variant === "medium");
   const remaining = Math.max(0, 3 - highRisks.length);
-  const risksToShow = [...highRisks, ...mediumRisks.slice(0, remaining)].slice(0, 3);
+  const risksToShow = [...highRisks, ...mediumRisks.slice(0, remaining)].slice(
+    0,
+    3,
+  );
 
   const heightResult = latestMeasurements.find((m) => m.measurementId === 2);
   const weightResult = latestMeasurements.find((m) => m.measurementId === 1);
@@ -80,7 +90,11 @@ export default function DashboardPage() {
   const weight = weightResult ? Number(weightResult.result) : null;
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
   }
 
   return (

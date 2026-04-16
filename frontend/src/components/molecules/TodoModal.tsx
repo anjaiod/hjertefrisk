@@ -30,7 +30,6 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
             completed: t.finished,
             public: t.public,
           }));
-        
         setTodos(filtered);
       } catch (error) {
         console.error("Error fetching todos:", error);

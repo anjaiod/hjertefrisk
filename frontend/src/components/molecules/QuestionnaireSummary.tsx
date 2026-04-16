@@ -97,7 +97,8 @@ function buildSentence(
     return optionLower === "aldri"
       ? "Du hopper aldri over måltider"
       : `Du hopper over måltider ${optionLower}`;
-  if (lower.includes("appetitten din")) return `Appetitten din er ${optionLower}`;
+  if (lower.includes("appetitten din"))
+    return `Appetitten din er ${optionLower}`;
   if (lower.includes("har vekten din vært stabil")) return optionText;
 
   // Sleep

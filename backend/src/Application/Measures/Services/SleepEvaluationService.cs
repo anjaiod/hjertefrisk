@@ -20,10 +20,10 @@ namespace backend.src.Application.Measures.Services;
 /// </summary>
 public class SleepEvaluationService
 {
-    private static readonly int[] NattligIds     = { 124, 125, 126, 127 };
-    private static readonly int[] DagtidIds      = { 128, 129, 130, 131 };
-    private static readonly int   HyppighetId    = 132;
-    private static readonly int   VarighetId     = 133;
+    private static readonly int[] NattligIds = { 124, 125, 126, 127 };
+    private static readonly int[] DagtidIds = { 128, 129, 130, 131 };
+    private static readonly int HyppighetId = 132;
+    private static readonly int VarighetId = 133;
     private static readonly int[] DifferensialIds = { 134, 135, 136, 137, 138, 139 };
 
     private static readonly HashSet<int> AllSleepIds = new(
@@ -46,13 +46,13 @@ public class SleepEvaluationService
             .Where(q => AllSleepIds.Contains(q.QuestionId))
             .ToDictionary(q => q.QuestionId);
 
-        int nattligScore  = NattligIds.Sum(id     => GetScore(questionMap, responses, id));
-        int dagtidScore   = DagtidIds.Sum(id      => GetScore(questionMap, responses, id));
+        int nattligScore = NattligIds.Sum(id => GetScore(questionMap, responses, id));
+        int dagtidScore = DagtidIds.Sum(id => GetScore(questionMap, responses, id));
         bool hasDifferensial = DifferensialIds.Any(id => GetScore(questionMap, responses, id) >= 1);
 
-        bool nattligFlag  = nattligScore >= 2;
-        bool dagtidFlag   = dagtidScore  >= 2;
-        bool insomniFlag  = nattligFlag && dagtidFlag; // utslag på spm 1-10
+        bool nattligFlag = nattligScore >= 2;
+        bool dagtidFlag = dagtidScore >= 2;
+        bool insomniFlag = nattligFlag && dagtidFlag; // utslag på spm 1-10
 
         // Høy: utslag på både spm 1-10 og differensialdiagnose
         if (insomniFlag && hasDifferensial)

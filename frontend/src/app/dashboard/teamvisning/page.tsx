@@ -62,14 +62,16 @@ export default function TeamvisningPage() {
     }
     const load = async () => {
       try {
-        const [patients, measurements, categoryRisks] = await Promise.all([
-          apiClient.get<PatientDto[]>("/api/patients"),
+        const [patient, measurements, categoryRisks] = await Promise.all([
+          apiClient.get<PatientDto>(
+            `/api/patients/${encodeURIComponent(patientId)}`,
+          ),
           apiClient.get<LatestMeasurementResultDto[]>(
             `/api/patients/${encodeURIComponent(patientId)}/latest-measurements`,
           ),
           getRisks(patientId),
         ]);
-        setPatient(patients.find((p) => String(p.id) === patientId) ?? null);
+        setPatient(patient);
         const h = measurements.find((m) => m.measurementId === 2);
         const w = measurements.find((m) => m.measurementId === 1);
         setHeight(h ? Number(h.result) : null);
@@ -103,8 +105,19 @@ export default function TeamvisningPage() {
           className="flex items-center gap-1 text-sm text-slate-600 hover:text-brand-navy transition-colors cursor-pointer"
           aria-label="Tilbake"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Tilbake
         </button>
