@@ -52,7 +52,11 @@ async function fetchPage(
     id: String(p.id),
     name: p.name,
     lastVisited: formatDate(p.lastVisited),
-    riskLevel: (p.riskLevel as TagVariant) ?? "none",
+    riskLevel: (["high", "medium", "low"] as TagVariant[]).includes(
+      p.riskLevel as TagVariant,
+    )
+      ? (p.riskLevel as TagVariant)
+      : "none",
   }));
 
   return { data, totalCount: result.totalCount };

@@ -459,10 +459,10 @@ export default function PatientHealthQuestionnaire() {
 
   if (showIntro) {
     return (
-      <div className="flex">
-        <main className="flex-1 bg-slate-50 p-8">
-          <div className="max-w-2xl mx-auto">
-            <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">
+      <div className="flex min-h-screen">
+        <main className="flex-1 bg-slate-50 p-[clamp(1rem,3vw,2rem)]">
+          <div className="w-full max-w-4xl mx-auto">
+            <h1 className="font-bold text-gray-900 mb-6 text-center text-[clamp(1.75rem,4vw,3rem)]">
               Hjertefrisk helseskjema
             </h1>
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-6">
@@ -486,8 +486,8 @@ export default function PatientHealthQuestionnaire() {
                 <li className="flex items-start gap-2">
                   <span className="text-brand-navy font-bold mt-0.5">•</span>
                   Du kan navigere frem og tilbake mellom spørsmålene, og du kan
-                  trykke &quot;Hopp over&quot; på spørsmål du er usikker på,
-                  eller ikke ønsker å svare på.
+                  trykke &quot;Neste&quot; på spørsmål du er usikker på, eller
+                  ikke ønsker å svare på.
                 </li>
               </ul>
               <p className="text-sm text-gray-500">
@@ -498,13 +498,13 @@ export default function PatientHealthQuestionnaire() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowIntro(false)}
-                className="px-6 py-3 bg-brand-navy text-white rounded-xl font-medium hover:bg-brand-navy/90 transition"
+                className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl font-medium hover:bg-brand-navy/90 transition touch-manipulation"
               >
                 Start skjema
               </button>
               <button
                 onClick={() => router.back()}
-                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition"
+                className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition touch-manipulation"
               >
                 Avbryt
               </button>
@@ -516,10 +516,10 @@ export default function PatientHealthQuestionnaire() {
   }
 
   return (
-    <div className="flex">
-      <main className="flex-1 bg-slate-50 p-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+    <div className="flex min-h-screen">
+      <main className="flex-1 bg-slate-50 p-[clamp(1rem,3vw,2rem)]">
+        <div className="w-full max-w-6xl mx-auto">
+          <h1 className="font-bold text-gray-900 mb-8 text-center text-[clamp(1.75rem,4vw,3rem)]">
             Helseskjema
           </h1>
           {submitError && !showSummary && (

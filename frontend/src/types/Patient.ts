@@ -11,7 +11,7 @@ export type PatientDto = {
   email: string;
   createdAt: string;
   lastVisited?: string | null;
-  riskLevel?: string | null;
+  riskLevel?: "high" | "medium" | "low" | null;
 };
 
 export type PatientScoreDto = {

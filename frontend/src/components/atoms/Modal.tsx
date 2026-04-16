@@ -20,6 +20,7 @@ export function Modal({ onClose, children, title }: ModalProps) {
       <div
         className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30"
         onClick={onClose}
+        onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
       >
         <div
           className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg relative"

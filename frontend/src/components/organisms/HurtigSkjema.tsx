@@ -219,6 +219,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
 
   const renderQuestion = (
     question: QueryQuestionWithDetailsDto,
+    compact = false,
   ): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
@@ -226,7 +227,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
 
     if (bmiQuestion && question.questionId === bmiQuestion.questionId) {
       return (
-        <div key={question.questionId} className="mb-6">
+        <div key={question.questionId} className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             {questionText}
             {question.isRequired && (
@@ -239,7 +240,11 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
               name={name}
               value={value}
               readOnly
-              className="w-32 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-700 cursor-not-allowed"
+              className={
+                compact
+                  ? "w-20 px-2 py-1 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-700 cursor-not-allowed"
+                  : "w-32 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-700 cursor-not-allowed"
+              }
             />
             <span className="text-sm text-gray-600">kg/m²</span>
             <span className="text-xs text-gray-400 italic">
@@ -259,6 +264,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
           value={value as "ja" | "nei" | ""}
           onChange={(val) => updateAnswer(question.questionId, val)}
           required={question.isRequired}
+          compact={compact}
         />
       );
     }
@@ -276,6 +282,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
           value={value}
           onChange={(val) => updateAnswer(question.questionId, val)}
           required={question.isRequired}
+          compact={compact}
         />
       );
     }
@@ -291,6 +298,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
           placeholder={getPlaceholder(question)}
           unit={getUnit(question)}
           required={question.isRequired}
+          compact={compact}
         />
       );
     }
@@ -305,6 +313,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
         placeholder={getPlaceholder(question)}
         rows={getRows(question)}
         required={question.isRequired}
+        compact={compact}
       />
     );
   };
@@ -344,7 +353,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
       .values(),
   );
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitError(null);
     setSubmitSuccess(null);
@@ -479,12 +488,12 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
                       <div key={rowIndex} className="flex gap-6 flex-wrap">
                         {row.map((q) => (
                           <div key={q.questionId} className="flex-1 min-w-40">
-                            {renderQuestion(q)}
+                            {renderQuestion(q, true)}
                           </div>
                         ))}
                       </div>
                     ) : (
-                      renderQuestion(row[0])
+                      renderQuestion(row[0], true)
                     ),
                   )}
                 </div>

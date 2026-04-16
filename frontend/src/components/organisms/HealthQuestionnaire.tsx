@@ -37,10 +37,12 @@ function toPatientPerspective(text: string): string {
 
 interface HealthQuestionnaireProps {
   patientId: number | null;
+  compact?: boolean;
 }
 
 export default function HealthQuestionnaire({
   patientId,
+  compact = false,
 }: HealthQuestionnaireProps) {
   const { user } = useUser();
   const [questions, setQuestions] = useState<QueryQuestionWithDetailsDto[]>([]);
@@ -182,6 +184,7 @@ export default function HealthQuestionnaire({
           value={value as "ja" | "nei" | ""}
           onChange={(val) => updateAnswer(question.questionId, val)}
           required={question.isRequired}
+          compact={compact}
         />
       );
     }
@@ -207,6 +210,7 @@ export default function HealthQuestionnaire({
           value={value}
           onChange={(val) => updateAnswer(question.questionId, val)}
           required={question.isRequired}
+          compact={compact}
         />
       );
     }
@@ -222,6 +226,7 @@ export default function HealthQuestionnaire({
           placeholder={getPlaceholder(question)}
           unit={getUnit(question)}
           required={question.isRequired}
+          compact={compact}
         />
       );
     }
@@ -236,6 +241,7 @@ export default function HealthQuestionnaire({
         placeholder={getPlaceholder(question)}
         rows={getRows(question)}
         required={question.isRequired}
+        compact={compact}
       />
     );
   };

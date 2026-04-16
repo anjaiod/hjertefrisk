@@ -9,7 +9,7 @@ export function IconButton({ onClick, children, ariaLabel }: IconButtonProps) {
     <button
       onClick={onClick}
       aria-label={ariaLabel}
-      className="text-brand-navy text-sm hover:bg-brand-mist-lightest rounded px-1 transition"
+      className="text-brand-navy text-sm hover:bg-brand-mist-lightest rounded px-1 transition cursor-pointer"
     >
       {children}
     </button>
