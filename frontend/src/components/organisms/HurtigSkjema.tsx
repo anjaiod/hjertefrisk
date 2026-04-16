@@ -407,7 +407,10 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
 
     try {
       setIsSubmitting(true);
-      const savedResponses = await apiClient.post<ResponseDto[]>("/api/Responses/bulk", payload);
+      const savedResponses = await apiClient.post<ResponseDto[]>(
+        "/api/Responses/bulk",
+        payload,
+      );
       if (measurementPayload.length > 0) {
         await apiClient.post(
           "/api/MeasurementResults/bulk",

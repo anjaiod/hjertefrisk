@@ -61,14 +61,16 @@ export default function TeamvisningPage() {
     }
     const load = async () => {
       try {
-        const [patients, measurements, categoryRisks] = await Promise.all([
-          apiClient.get<PatientDto[]>("/api/patients"),
+        const [patient, measurements, categoryRisks] = await Promise.all([
+          apiClient.get<PatientDto>(
+            `/api/patients/${encodeURIComponent(patientId)}`,
+          ),
           apiClient.get<LatestMeasurementResultDto[]>(
             `/api/patients/${encodeURIComponent(patientId)}/latest-measurements`,
           ),
           getRisks(patientId),
         ]);
-        setPatient(patients.find((p) => String(p.id) === patientId) ?? null);
+        setPatient(patient);
         const h = measurements.find((m) => m.measurementId === 2);
         const w = measurements.find((m) => m.measurementId === 1);
         setHeight(h ? Number(h.result) : null);
