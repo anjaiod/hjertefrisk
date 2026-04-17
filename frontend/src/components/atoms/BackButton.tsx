@@ -7,7 +7,10 @@ interface BackButtonProps {
   onClick?: () => void;
 }
 
-export default function BackButton({ className = "", onClick }: BackButtonProps) {
+export default function BackButton({
+  className = "",
+  onClick,
+}: BackButtonProps) {
   const router = useRouter();
 
   return (
