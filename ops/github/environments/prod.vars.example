@@ -1,0 +1,22 @@
+# Non-sensitive values for the prod GitHub environment.
+# Copy to prod.vars and replace placeholders.
+
+GCP_PROJECT_ID=<gcp-project-id>
+GCP_REGION=europe-west1
+GCP_ARTIFACT_REGION=europe-west1
+GCP_ARTIFACT_REPOSITORY=hjertefrisk
+GCP_WORKLOAD_IDENTITY_PROVIDER=projects/<project-number>/locations/global/workloadIdentityPools/<pool>/providers/<provider>
+GCP_SERVICE_ACCOUNT_EMAIL=github-actions@<gcp-project-id>.iam.gserviceaccount.com
+GCP_BACKEND_SERVICE=hjertefrisk-backend-prod
+GCP_FRONTEND_SERVICE=hjertefrisk-frontend-prod
+GCP_BACKEND_IMAGE=hjertefrisk-backend
+GCP_FRONTEND_IMAGE=hjertefrisk-frontend
+GCP_BACKEND_MEMORY=1Gi
+GCP_FRONTEND_MEMORY=512Mi
+GCP_BACKEND_CPU=1
+GCP_FRONTEND_CPU=1
+FRONTEND_ORIGINS=https://hjertefrisk.naerverk.no
+NEXT_PUBLIC_API_URL=https://hjertefrisk.naerverk.no
+API_URL_INTERNAL=https://hjertefrisk.naerverk.no
+NEXT_PUBLIC_SUPABASE_URL=https://mfbnsodwfqygrxyrayjr.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_9l7jtC1vjBvM-cy573q2Kg_k18vMMLJ

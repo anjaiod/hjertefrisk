@@ -41,12 +41,22 @@ using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 const string CorsPolicyName = "FrontendDev";
+var frontendOrigins = GetAllowedOrigins(builder.Configuration["FRONTEND_ORIGINS"]);
 
 // Add services to the container
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(CorsPolicyName, policy =>
     {
+        if (frontendOrigins.Length > 0)
+        {
+            policy
+                .WithOrigins(frontendOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+            return;
+        }
+
         policy
             .WithOrigins(
                 "http://localhost:3000",
@@ -241,4 +251,18 @@ static string NormalizePostgresConnectionString(string input)
     builder.ConnectionIdleLifetime = 60;
 
     return builder.ConnectionString;
+}
+
+static string[] GetAllowedOrigins(string? configuredOrigins)
+{
+    if (string.IsNullOrWhiteSpace(configuredOrigins))
+    {
+        return [];
+    }
+
+    return configuredOrigins
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Where(origin => !string.IsNullOrWhiteSpace(origin))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
 }

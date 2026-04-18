@@ -29,10 +29,10 @@ jobs:
             exit 1
           fi
 
-          if [ -z "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" ] || \
-             [ -z "${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" ] || \
-             [ -z "${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" ]; then
-            echo "::error::Frontend Supabase secrets are not fully configured." >&2
+          if [ -z "${{ vars.NEXT_PUBLIC_SUPABASE_URL }}" ] || \
+             [ -z "${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" ] || \
+             [ -z "${{ secrets.Supabase__AnonKey }}" ]; then
+            echo "::error::Frontend Supabase vars/secrets are not fully configured." >&2
             exit 1
           fi
 
@@ -41,9 +41,9 @@ jobs:
           EOF
 
           cat <<EOF > ${{ env.FRONTEND_DIR }}/.env
-          NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.Supabase__AnonKey }}
           EOF
 
       - name: Set up .NET
@@ -70,7 +70,7 @@ jobs:
         working-directory: ${{ env.BACKEND_DIR }}
         env:
           ASPNETCORE_URLS: http://0.0.0.0:8080
-          ConnectionStrings__Default: ${{ secrets.SUPABASE_DB_URL }}
+          ConnectionStrings__Default: ${{ secrets.ConnectionStrings__Default || secrets.SUPABASE_DB_URL }}
         run: |
           set -euo pipefail
           dotnet run --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build -- --urls http://0.0.0.0:8080 &
