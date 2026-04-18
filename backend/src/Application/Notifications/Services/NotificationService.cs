@@ -16,9 +16,14 @@ public class NotificationService : INotificationService
 
     public async Task<IEnumerable<NotificationDto>> GetForPersonnelAsync(int personnelId)
     {
+        // Show notifications that are either unread, or were read today.
+        var startOfTodayUtc = DateTime.UtcNow.Date;
+
         return await _db.Notifications
             .AsNoTracking()
-            .Where(n => n.PersonnelId == personnelId)
+            .Where(n => n.PersonnelId == personnelId && (
+                !n.Read || n.ReadAt == null || n.ReadAt >= startOfTodayUtc
+            ))
             .OrderByDescending(n => n.CreatedAt)
             .Select(n => new NotificationDto
             {
@@ -27,7 +32,8 @@ public class NotificationService : INotificationService
                 AnsweredQueryId = n.AnsweredQueryId,
                 Message = n.Message,
                 CreatedAt = n.CreatedAt,
-                Read = n.Read
+                Read = n.Read,
+                ReadAt = n.ReadAt
             })
             .ToListAsync();
     }
