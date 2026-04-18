@@ -141,9 +141,13 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Apply pending migrations automatically on startup
-using (var scope = app.Services.CreateScope())
+var shouldRunMigrations = ShouldRunMigrations(app.Configuration, app.Environment);
+
+// Avoid blocking production startup on database migrations. In Cloud Run the
+// service should start listening even if schema management is handled elsewhere.
+if (shouldRunMigrations)
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
@@ -265,4 +269,16 @@ static string[] GetAllowedOrigins(string? configuredOrigins)
         .Where(origin => !string.IsNullOrWhiteSpace(origin))
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .ToArray();
+}
+
+static bool ShouldRunMigrations(IConfiguration configuration, IWebHostEnvironment environment)
+{
+    var configured = configuration["RUN_DB_MIGRATIONS"];
+    if (!string.IsNullOrWhiteSpace(configured) &&
+        bool.TryParse(configured, out var parsed))
+    {
+        return parsed;
+    }
+
+    return environment.IsDevelopment();
 }

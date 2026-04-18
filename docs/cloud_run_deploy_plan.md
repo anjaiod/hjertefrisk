@@ -20,6 +20,7 @@ These are separate from the current development Dockerfiles so local Docker Comp
 - `Supabase__Url`
 - `Supabase__AnonKey`
 - `FRONTEND_ORIGINS`
+- optional: `RUN_DB_MIGRATIONS=true` if you deliberately want schema migrations during startup
 
 ### Frontend build-time values
 - `NEXT_PUBLIC_API_URL`
@@ -29,6 +30,11 @@ These are separate from the current development Dockerfiles so local Docker Comp
 
 ## Important Note About Frontend Variables
 `NEXT_PUBLIC_*` variables are embedded into the frontend build. That means the frontend image should be built per environment if the public API or Supabase values differ between `dev`, `staging`, and `prod`.
+
+## Database Migrations
+Automatic EF Core migrations are enabled by default in development only.
+
+For Cloud Run, the backend now starts without running migrations unless `RUN_DB_MIGRATIONS=true` is set explicitly. This avoids Cloud Run startup failures when database connectivity or schema changes are not ready yet.
 
 ## Registry
 Use Google Artifact Registry as the container registry for Cloud Run deploys.
