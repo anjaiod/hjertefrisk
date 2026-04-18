@@ -164,7 +164,8 @@ jobs:
             NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.Supabase__AnonKey }}
 
-      - name: Render backend env file
+      - name: Prepare backend env values
+        id: backend_env
         shell: bash
         run: |
           set -euo pipefail
@@ -174,12 +175,11 @@ jobs:
             connection_string="${{ secrets.SUPABASE_DB_URL }}"
           fi
 
-          cat > backend-cloudrun.env.yaml <<EOF
-          ConnectionStrings__Default: "${connection_string}"
-          Supabase__Url: "${NEXT_PUBLIC_SUPABASE_URL}"
-          Supabase__AnonKey: "${{ secrets.Supabase__AnonKey }}"
-          FRONTEND_ORIGINS: "${FRONTEND_ORIGINS}"
-          EOF
+          {
+            echo "connection_string=${connection_string}"
+            echo "supabase_url=${NEXT_PUBLIC_SUPABASE_URL}"
+            echo "frontend_origins=${FRONTEND_ORIGINS}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Deploy backend to Cloud Run
         id: deploy_backend
@@ -197,7 +197,10 @@ jobs:
             --port 8080 \
             --memory "${BACKEND_MEMORY}" \
             --cpu "${BACKEND_CPU}" \
-            --env-vars-file backend-cloudrun.env.yaml
+            --set-env-vars "ConnectionStrings__Default=${{ steps.backend_env.outputs.connection_string }}" \
+            --set-env-vars "Supabase__Url=${{ steps.backend_env.outputs.supabase_url }}" \
+            --set-env-vars "Supabase__AnonKey=${{ secrets.Supabase__AnonKey }}" \
+            --set-env-vars "FRONTEND_ORIGINS=${{ steps.backend_env.outputs.frontend_origins }}"
 
       - name: Fetch backend startup logs on failure
         if: ${{ steps.deploy_backend.outcome == 'failure' }}
