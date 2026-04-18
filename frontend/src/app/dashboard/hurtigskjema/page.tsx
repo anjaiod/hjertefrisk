@@ -9,8 +9,11 @@ type PageProps = {
 export default async function Page({ searchParams }: PageProps) {
   const sp = await Promise.resolve(searchParams ?? {});
   const raw = sp.patientId;
-  const patientIdStr = typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : undefined;
+  const patientIdStr =
+    typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : undefined;
   const patientId = patientIdStr ? parseInt(patientIdStr, 10) : null;
 
-  return <HurtigSkjema patientId={Number.isFinite(patientId) ? patientId : null} />;
+  return (
+    <HurtigSkjema patientId={Number.isFinite(patientId) ? patientId : null} />
+  );
 }

@@ -18,7 +18,7 @@ public class ToDoService : IToDoService
     public async Task<IEnumerable<ToDoDto>> GetAllAsync(int? currentPersonnelId = null)
     {
         var today = DateTime.UtcNow.Date;
-        
+
         var query = _db.ToDos
             .AsNoTracking()
             .Where(t => !t.Finished || (t.FinishedAt != null && t.FinishedAt.Value.Date == today));

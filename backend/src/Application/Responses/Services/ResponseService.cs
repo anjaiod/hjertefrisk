@@ -155,7 +155,7 @@ public class ResponseService : IResponseService
             var responsesForCategory = entities
                 .Where(e => questionsWithCategories.FirstOrDefault(q => q.QuestionId == e.QuestionId)?.CategoryId == categoryId)
                 .ToList();
-            
+
             var score = await CalculateCategoryScoreAsync(categoryId, responsesForCategory);
             categoryScoreMap[categoryId] = score;
             Console.WriteLine($"[ResponseService] Pre-calculated category {categoryId} score: {score}");
@@ -176,7 +176,7 @@ public class ResponseService : IResponseService
 
             var categoryScore = categoryScoreMap[categoryId];
             Console.WriteLine($"[ResponseService] Processing CategoryScoreRules for category {categoryId} with score {categoryScore}");
-            
+
             await _toDoRuleService.ProcessCategoryRulesAsync(patientId, categoryId, categoryScore);
             processedCategories.Add(categoryId);
         }
@@ -243,7 +243,7 @@ public class ResponseService : IResponseService
         }
 
         var questionIds = questions.Select(q => q.QuestionId).ToList();
-        
+
         // Build a map of current batch responses by question ID
         var responseMap = currentBatchResponses
             .Where(r => questionIds.Contains(r.QuestionId))

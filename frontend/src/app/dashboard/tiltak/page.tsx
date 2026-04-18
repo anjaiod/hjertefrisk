@@ -204,7 +204,7 @@ export default function TiltakPage() {
     };
   }, [hasPatientId, patientId]);
 
-  const riskOrder: Record<TagVariant, number> = { high: 0, medium: 1, low: 2 };
+  const riskOrder: Record<TagVariant, number> = { high: 0, medium: 1, low: 2, none: 3 };
 
   const categoryVariant = useCallback(
     (cat: CategoryDto): TagVariant | null => {

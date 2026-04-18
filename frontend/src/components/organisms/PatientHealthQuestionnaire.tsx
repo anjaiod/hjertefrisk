@@ -232,7 +232,10 @@ export default function PatientHealthQuestionnaire() {
       setIsSubmitting(true);
       await apiClient.post(`/api/patients/${patientId}/responses`, payload);
       if (measurementPayload.length > 0) {
-        await apiClient.post(`/api/patients/${patientId}/measurements`, measurementPayload);
+        await apiClient.post(
+          `/api/patients/${patientId}/measurements`,
+          measurementPayload,
+        );
       }
       router.push("/pasientDashboard");
     } catch (err) {
@@ -482,12 +485,14 @@ export default function PatientHealthQuestionnaire() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-brand-navy font-bold mt-0.5">•</span>
-                  Du kan navigere frem og tilbake mellom spørsmålene, og du kan trykke &quot;Neste&quot; på spørsmål du er usikker på, eller ikke ønsker å svare på.
+                  Du kan navigere frem og tilbake mellom spørsmålene, og du kan
+                  trykke &quot;Neste&quot; på spørsmål du er usikker på, eller
+                  ikke ønsker å svare på.
                 </li>
               </ul>
               <p className="text-sm text-gray-500">
-                Svarene dine behandles konfidensielt i henhold til
-                gjeldende personvernregler.
+                Svarene dine behandles konfidensielt i henhold til gjeldende
+                personvernregler.
               </p>
             </div>
             <div className="flex gap-3">
@@ -531,6 +536,13 @@ export default function PatientHealthQuestionnaire() {
               onSubmit={handleSubmit}
               isSubmitting={isSubmitting}
               submitError={submitError}
+              onGoToQuestion={(questionId) => {
+                const stepIndex = visibleQuestions.findIndex(
+                  (q) => q.questionId === questionId,
+                );
+                if (stepIndex !== -1) setCurrentStep(stepIndex);
+                setShowSummary(false);
+              }}
             />
           ) : (
             <QuestionWizard

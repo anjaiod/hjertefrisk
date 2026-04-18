@@ -1,8 +1,13 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import CategoryTree from '@/components/organisms/ToDoRules/CategoryTree';
-import type { CategoryDto, QuestionDto, ToDoRule, CreateToDoRule } from '@/types';
+import React, { useState, useEffect } from "react";
+import CategoryTree from "@/components/organisms/ToDoRules/CategoryTree";
+import type {
+  CategoryDto,
+  QuestionDto,
+  ToDoRule,
+  CreateToDoRule,
+} from "@/types";
 
 export default function ToDoRulesPage() {
   const [categories, setCategories] = useState<CategoryDto[]>([]);
@@ -13,8 +18,8 @@ export default function ToDoRulesPage() {
 
   // Get token from localStorage
   const getToken = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('access_token');
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("access_token");
     }
     return null;
   };
@@ -28,29 +33,29 @@ export default function ToDoRulesPage() {
         setLoading(true);
         const headers: Record<string, string> = {};
         if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
+          headers["Authorization"] = `Bearer ${token}`;
         }
 
         const [categoriesRes, questionsRes, rulesRes] = await Promise.all([
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/Categories`, {
-            headers
+            headers,
           }),
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/Questions`, {
-            headers
+            headers,
           }),
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ToDoRule`, {
-            headers
-          })
+            headers,
+          }),
         ]);
 
         if (!categoriesRes.ok || !questionsRes.ok || !rulesRes.ok) {
-          throw new Error('Failed to fetch data');
+          throw new Error("Failed to fetch data");
         }
 
         const [categoriesData, questionsData, rulesData] = await Promise.all([
           categoriesRes.json(),
           questionsRes.json(),
-          rulesRes.json()
+          rulesRes.json(),
         ]);
 
         // Fetch options for each question
@@ -59,24 +64,27 @@ export default function ToDoRulesPage() {
             try {
               const optionsRes = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/api/QuestionOptions/question/${question.questionId}`,
-                { headers }
+                { headers },
               );
               if (optionsRes.ok) {
                 const options = await optionsRes.json();
                 return { ...question, options };
               }
             } catch (err) {
-              console.error(`Failed to fetch options for question ${question.questionId}:`, err);
+              console.error(
+                `Failed to fetch options for question ${question.questionId}:`,
+                err,
+              );
             }
             return question;
-          })
+          }),
         );
 
         setCategories(categoriesData);
         setQuestions(questionsWithOptions);
         setRules(rulesData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data');
+        setError(err instanceof Error ? err.message : "Failed to load data");
       } finally {
         setLoading(false);
       }
@@ -90,27 +98,30 @@ export default function ToDoRulesPage() {
 
     try {
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       };
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ToDoRule`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(newRule)
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/ToDoRule`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify(newRule),
+        },
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to create rule');
+        throw new Error("Failed to create rule");
       }
 
       const createdRule = await response.json();
       setRules([...rules, createdRule]);
-      alert('Rule created successfully!');
+      alert("Rule created successfully!");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create rule');
+      setError(err instanceof Error ? err.message : "Failed to create rule");
     }
   };
 
@@ -119,60 +130,72 @@ export default function ToDoRulesPage() {
 
     try {
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       };
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ToDoRule/${id}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(updatedRule)
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/ToDoRule/${id}`,
+        {
+          method: "PUT",
+          headers,
+          body: JSON.stringify(updatedRule),
+        },
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to update rule');
+        throw new Error("Failed to update rule");
       }
 
       const updatedRuleData = await response.json();
-      setRules(rules.map(r => (r.toDoRuleId === updatedRuleData.toDoRuleId) ? updatedRuleData : r));
-      alert('Rule updated successfully!');
+      setRules(
+        rules.map((r) =>
+          r.toDoRuleId === updatedRuleData.toDoRuleId ? updatedRuleData : r,
+        ),
+      );
+      alert("Rule updated successfully!");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update rule');
+      setError(err instanceof Error ? err.message : "Failed to update rule");
     }
   };
 
   const handleRuleDeleted = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this rule?')) return;
+    if (!confirm("Are you sure you want to delete this rule?")) return;
 
     const token = getToken();
 
     try {
       const headers: Record<string, string> = {};
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ToDoRule/${id}`, {
-        method: 'DELETE',
-        headers
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/ToDoRule/${id}`,
+        {
+          method: "DELETE",
+          headers,
+        },
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to delete rule');
+        throw new Error("Failed to delete rule");
       }
 
-      setRules(rules.filter(r => r.toDoRuleId !== id));
-      alert('Rule deleted successfully!');
+      setRules(rules.filter((r) => r.toDoRuleId !== id));
+      alert("Rule deleted successfully!");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete rule');
+      setError(err instanceof Error ? err.message : "Failed to delete rule");
     }
   };
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">TODO Rule Management</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-6">
+        TODO Rule Management
+      </h1>
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">

@@ -33,9 +33,9 @@ public class KroppsDataEvaluationService
 {
     private readonly AppDbContext _db;
 
-    private const int WeightMeasurementId  = 1;
-    private const int HeightMeasurementId  = 2;
-    private const int WaistMeasurementId   = 3;
+    private const int WeightMeasurementId = 1;
+    private const int HeightMeasurementId = 2;
+    private const int WaistMeasurementId = 3;
     private const int WeightGainQuestionId = 16;
     private const int KroppsDataCategoryId = 9;
 
@@ -57,8 +57,8 @@ public class KroppsDataEvaluationService
         var measurementRows = await _db.MeasurementResults
             .AsNoTracking()
             .Where(r => r.PatientId == patientId &&
-                        (r.MeasurementId == WeightMeasurementId  ||
-                         r.MeasurementId == HeightMeasurementId  ||
+                        (r.MeasurementId == WeightMeasurementId ||
+                         r.MeasurementId == HeightMeasurementId ||
                          r.MeasurementId == WaistMeasurementId))
             .OrderByDescending(r => r.RegisteredAt)
             .ToListAsync();
@@ -70,7 +70,7 @@ public class KroppsDataEvaluationService
             .Where(r => r.MeasurementId == WaistMeasurementId)
             .ToList();
 
-        var latestWaist   = waistHistory.ElementAtOrDefault(0)?.Result;
+        var latestWaist = waistHistory.ElementAtOrDefault(0)?.Result;
         var previousWaist = waistHistory.ElementAtOrDefault(1)?.Result;
 
         bool hasHighTrigger = false;

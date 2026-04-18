@@ -30,7 +30,8 @@ public class PatientService : IPatientService
                 Name = p.Name,
                 Email = p.Email,
                 Gender = p.Gender,
-                CreatedAt = p.CreatedAt
+                CreatedAt = p.CreatedAt,
+                RiskLevel = p.RiskLevel
             })
             .ToListAsync();
     }
@@ -51,9 +52,129 @@ public class PatientService : IPatientService
                 Name = p.Name,
                 Email = p.Email,
                 Gender = p.Gender,
-                CreatedAt = p.CreatedAt
+                CreatedAt = p.CreatedAt,
+                RiskLevel = p.RiskLevel
             })
             .ToListAsync();
+    }
+
+    public async Task<PagedResult<PatientDto>> GetPagedByIdsAsync(IEnumerable<int> ids, int page, int pageSize, string? search, string? sortBy, string? sortDir, string? riskLevel, int? personnelId = null)
+    {
+        var idList = ids.ToList();
+        if (idList.Count == 0)
+            return new PagedResult<PatientDto> { Data = [], TotalCount = 0 };
+
+        var query = _db.Patients
+            .AsNoTracking()
+            .Where(p => idList.Contains(p.Id));
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var pattern = $"%{search.Trim()}%";
+            query = query.Where(p => EF.Functions.ILike(p.Name, pattern));
+        }
+
+        if (!string.IsNullOrWhiteSpace(riskLevel))
+        {
+            query = query.Where(p => p.RiskLevel == riskLevel);
+        }
+
+        var isDesc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
+        var isSortByName = string.Equals(sortBy, "name", StringComparison.OrdinalIgnoreCase);
+
+        if (!isSortByName)
+        {
+            // lastVisited sort: join with PatientAccess at DB level, paginate in DB
+            var dbQuery = query.Join(
+                _db.PatientAccesses.Where(a => a.PersonnelId == personnelId),
+                p => p.Id,
+                a => a.PatientId,
+                (p, a) => new PatientDto
+                {
+                    Id = p.Id,
+                    SupabaseUserId = p.SupabaseUserId,
+                    Name = p.Name,
+                    Email = p.Email,
+                    Gender = p.Gender,
+                    CreatedAt = p.CreatedAt,
+                    RiskLevel = p.RiskLevel,
+                    LastVisited = a.LastVisited
+                });
+
+            var ordered = isDesc
+                ? dbQuery.OrderByDescending(p => p.LastVisited.HasValue).ThenByDescending(p => p.LastVisited)
+                : dbQuery.OrderBy(p => p.LastVisited.HasValue ? 1 : 0).ThenBy(p => p.LastVisited);
+
+            var totalCount = await ordered.CountAsync();
+            var data = await ordered.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+            return new PagedResult<PatientDto> { Data = data, TotalCount = totalCount };
+        }
+        else
+        {
+            // Name sort: must be done in-memory due to last-name extraction
+            var allRows = await query
+                .Select(p => new PatientDto
+                {
+                    Id = p.Id,
+                    SupabaseUserId = p.SupabaseUserId,
+                    Name = p.Name,
+                    Email = p.Email,
+                    Gender = p.Gender,
+                    CreatedAt = p.CreatedAt,
+                    RiskLevel = p.RiskLevel
+                })
+                .ToListAsync();
+
+            if (personnelId.HasValue)
+            {
+                var accessRows = await _db.PatientAccesses
+                    .AsNoTracking()
+                    .Where(a => a.PersonnelId == personnelId.Value && idList.Contains(a.PatientId))
+                    .ToListAsync();
+
+                var lastVisitedMap = accessRows.ToDictionary(a => a.PatientId, a => a.LastVisited);
+                foreach (var row in allRows)
+                {
+                    if (lastVisitedMap.TryGetValue(row.Id, out var lv))
+                        row.LastVisited = lv;
+                }
+            }
+
+            var totalCount = allRows.Count;
+            var sorted = isDesc
+                ? allRows.OrderByDescending(p => p.Name.Split(' ').Last().ToLower())
+                : allRows.OrderBy(p => p.Name.Split(' ').Last().ToLower());
+
+            var data = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            return new PagedResult<PatientDto> { Data = data, TotalCount = totalCount };
+        }
+    }
+
+    public async Task RecordVisitAsync(int patientId, int personnelId)
+    {
+        var access = await _db.PatientAccesses
+            .FirstOrDefaultAsync(a => a.PatientId == patientId && a.PersonnelId == personnelId);
+        if (access == null) return;
+        access.LastVisited = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task<PatientDto?> GetByIdAsync(int id)
+    {
+        return await _db.Patients
+            .AsNoTracking()
+            .Where(p => p.Id == id)
+            .Select(p => new PatientDto
+            {
+                Id = p.Id,
+                SupabaseUserId = p.SupabaseUserId,
+                Name = p.Name,
+                Email = p.Email,
+                Gender = p.Gender,
+                CreatedAt = p.CreatedAt,
+                RiskLevel = p.RiskLevel
+            })
+            .FirstOrDefaultAsync();
     }
 
     public async Task<PatientDto?> GetBySupabaseUserIdAsync(string supabaseUserId)
@@ -71,7 +192,8 @@ public class PatientService : IPatientService
                 Name = p.Name,
                 Email = p.Email,
                 Gender = p.Gender,
-                CreatedAt = p.CreatedAt
+                CreatedAt = p.CreatedAt,
+                RiskLevel = p.RiskLevel
             })
             .FirstOrDefaultAsync();
     }
@@ -97,6 +219,14 @@ public class PatientService : IPatientService
             Email = entity.Email,
             CreatedAt = entity.CreatedAt
         };
+    }
+
+    public async Task UpdateRiskLevelAsync(int patientId, string? riskLevel)
+    {
+        var patient = await _db.Patients.FindAsync(patientId);
+        if (patient == null) return;
+        patient.RiskLevel = riskLevel;
+        await _db.SaveChangesAsync();
     }
 
     public async Task<int> GetTotalScoreAsync(int patientId)

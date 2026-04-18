@@ -51,7 +51,7 @@ function getSupabaseSessionToken(): string | undefined {
   if (typeof window === "undefined") return undefined;
   try {
     const allKeys = Object.keys(window.localStorage);
-    
+
     // Find Supabase auth token dynamically (keys start with "sb-" and end with "-auth-token")
     for (const key of allKeys) {
       if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
@@ -69,9 +69,11 @@ function getSupabaseSessionToken(): string | undefined {
         }
       }
     }
-    
+
     // Fallback: check for auth.session key (used by some Supabase configurations)
-    const sessionKey = allKeys.find(k => k.includes("auth") && k.includes("session"));
+    const sessionKey = allKeys.find(
+      (k) => k.includes("auth") && k.includes("session"),
+    );
     if (sessionKey) {
       const sessionItem = window.localStorage.getItem(sessionKey);
       if (sessionItem) {
@@ -85,7 +87,7 @@ function getSupabaseSessionToken(): string | undefined {
         }
       }
     }
-    
+
     return undefined;
   } catch (error) {
     return undefined;
@@ -99,7 +101,7 @@ async function request<TResponse = void>(
   const requestUrl = `${getApiBaseUrl()}${path}`;
 
   const token = getSupabaseSessionToken();
-  
+
   const headers = new Headers(options.headers);
   headers.set("Content-Type", "application/json");
 
@@ -160,7 +162,7 @@ async function request<TResponse = void>(
     if (error instanceof ApiClientError) {
       throw error;
     }
-    
+
     // Enhanced error logging for network errors
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`Network error fetching ${path}:`, {
@@ -169,8 +171,10 @@ async function request<TResponse = void>(
       error: errorMessage,
       hasToken: !!token,
     });
-    
-    throw new Error(`Network error: ${errorMessage}. Details: Kunne ikke koble til API på ${getApiBaseUrl()}`);
+
+    throw new Error(
+      `Network error: ${errorMessage}. Details: Kunne ikke koble til API på ${getApiBaseUrl()}`,
+    );
   }
 }
 

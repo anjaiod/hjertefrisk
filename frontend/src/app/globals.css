@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 @theme {
+  /* ─── Brand palette ─────────────────────────────────────────── */
+
   /* Navy */
   --color-brand-navy: #002f86;
   --color-brand-navy-light: #4d6ead;
@@ -18,6 +20,8 @@
   --color-brand-mist-light: #becdd6;
   --color-brand-mist-lighter: #dfe5eb;
   --color-brand-mist-lightest: #ecf0f3;
+  --color-brand-mist-background: #f0f4f8;
+  --color-brand-mist-text: #4a5568;
 
   /* Sage */
   --color-brand-sage: #6fa185;
@@ -30,6 +34,8 @@
   --color-brand-mint-light: #c7e7ca;
   --color-brand-mint-lighter: #d7eedb;
   --color-brand-mint-lightest: #e8f4e7;
+  --color-brand-mint-background: #e8f5ec;
+  --color-brand-mint-text: #007a64;
 
   /* Teal */
   --color-brand-teal: #03c199;
@@ -42,10 +48,26 @@
   --color-brand-sun-light: #feda7c;
   --color-brand-sun-lighter: #ffe2a0;
   --color-brand-sun-lightest: #ffecc6;
+  --color-brand-sun-background: #fff8e1;
+  --color-brand-sun-text: #b88100;
 
   /* Orange */
   --color-brand-orange: #ff661f;
   --color-brand-orange-light: #fe9562;
   --color-brand-orange-lighter: #ffb38f;
   --color-brand-orange-lightest: #ffd0bc;
+
+  /* Red */
+  --color-brand-red: #e53e3e;
+  --color-brand-red-light: #ffe5e5;
+
+  /* ─── Semantic color ──────────────────────────────────────── */
+
+  /* Risk level (border/tag) */
+  --color-risk-high: #f5a0a0;
+  --color-risk-medium: #e5c06a;
+  --color-risk-low: #86c189;
+
+  /* buttons */
+  --color-brand-sky-button: #e8f0fb;
 }

@@ -39,10 +39,17 @@ export default function DashboardPage() {
 
     const loadData = async () => {
       try {
+        // Record visit (fire and forget)
+        apiClient
+          .patch(`/api/patients/${encodeURIComponent(patientId)}/visit`)
+          .catch(() => {});
+
         // Fetch patient data, todos, measurements, and risks in parallel
-        const [patients, allTodos, measurements, categoryRisks] =
+        const [patient, allTodos, measurements, categoryRisks] =
           await Promise.all([
-            apiClient.get<PatientDto[]>("/api/patients"),
+            apiClient.get<PatientDto>(
+              `/api/patients/${encodeURIComponent(patientId)}`,
+            ),
             apiClient.get<ToDoDto[]>("/api/todos"),
             apiClient.get<LatestMeasurementResultDto[]>(
               `/api/patients/${encodeURIComponent(patientId)}/latest-measurements`,
@@ -50,8 +57,6 @@ export default function DashboardPage() {
             getRisks(patientId),
           ]);
 
-        const patient =
-          patients.find((p) => String(p.id) === patientId) ?? null;
         setSelectedPatient(patient);
 
         const filteredTodos = allTodos

@@ -12,20 +12,20 @@ public class BlodlipiderEvaluationService
 
     private static class MeasureTitleKeys
     {
-        public const string TotalCholesterolHigh   = "Totalkolesterol >= 7,0";
+        public const string TotalCholesterolHigh = "Totalkolesterol >= 7,0";
         public const string TotalCholesterolNormal = "Totalkolesterol < 7,0";
-        public const string TriglyceridesVeryHigh  = "Triglyserider >= 10,0";
-        public const string TriglyceridesElevated  = "Triglyserider 4,0-9,9";
+        public const string TriglyceridesVeryHigh = "Triglyserider >= 10,0";
+        public const string TriglyceridesElevated = "Triglyserider 4,0-9,9";
         public const string TriglyceridesLifestyle = "Triglyserider 1,7-3,9";
-        public const string LdlVeryHigh            = "LDL > 4,9";
-        public const string LdlElevated            = "LDL 3,0-4,9";
-        public const string LdlModerate            = "LDL 1,8-2,9";
-        public const string LdlOptimal             = "LDL < 1,8";
-        public const string HdlLow                 = "HDL lav";
-        public const string ComorbidityTreatment   = "Lipidsenkende behandling (komorbiditet)";
-        public const string CategoryHigh           = "Blodlipider score 2";
-        public const string CategoryMedium         = "Blodlipider score 1";
-        public const string CategoryLow            = "Blodlipider score 0";
+        public const string LdlVeryHigh = "LDL > 4,9";
+        public const string LdlElevated = "LDL 3,0-4,9";
+        public const string LdlModerate = "LDL 1,8-2,9";
+        public const string LdlOptimal = "LDL < 1,8";
+        public const string HdlLow = "HDL lav";
+        public const string ComorbidityTreatment = "Lipidsenkende behandling (komorbiditet)";
+        public const string CategoryHigh = "Blodlipider score 2";
+        public const string CategoryMedium = "Blodlipider score 1";
+        public const string CategoryLow = "Blodlipider score 0";
     }
 
     private const int TotalCholesterolMeasurementId = 6;

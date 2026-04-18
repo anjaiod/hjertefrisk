@@ -1,4 +1,4 @@
-import type { QuestionOptionDto } from './QuestionOption';
+import type { QuestionOptionDto } from "./QuestionOption";
 
 export type CreateQuestionDto = {
   categoryId?: number | null;
