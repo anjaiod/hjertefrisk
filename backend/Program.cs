@@ -195,6 +195,8 @@ static string NormalizePostgresConnectionString(string input)
         throw new InvalidOperationException("Connection string cannot be empty.");
     }
 
+    input = UnwrapQuotedValue(input.Trim());
+
     NpgsqlConnectionStringBuilder builder;
 
     if (Uri.TryCreate(input, UriKind.Absolute, out var uri) &&
@@ -255,6 +257,21 @@ static string NormalizePostgresConnectionString(string input)
     builder.ConnectionIdleLifetime = 60;
 
     return builder.ConnectionString;
+}
+
+static string UnwrapQuotedValue(string input)
+{
+    if (input.Length >= 2)
+    {
+        var first = input[0];
+        var last = input[^1];
+        if ((first == '"' && last == '"') || (first == '\'' && last == '\''))
+        {
+            return input[1..^1].Trim();
+        }
+    }
+
+    return input;
 }
 
 static string[] GetAllowedOrigins(string? configuredOrigins)
