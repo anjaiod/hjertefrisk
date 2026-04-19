@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { PatientSidebarNav } from "../../../components/organisms/PatientSidebarNav";
 import { PatientHeader } from "../../../components/organisms/PatientHeader";
-import { IconButton } from "@/components/atoms/IconButton";
+import BackButton from "@/components/atoms/BackButton";
 import { HealthCard } from "@/components/molecules/HealthCard";
 import {
   scoreToVariant,
@@ -127,12 +127,7 @@ export default function PasientRisikoSide() {
         <main className="p-8 py-6 bg-slate-50 min-h-screen">
           <div className="mb-4">
             <div className="flex items-center gap-3">
-              <IconButton
-                onClick={() => window.history.back()}
-                ariaLabel="Tilbake"
-              >
-                ←
-              </IconButton>
+              <BackButton />
 
               <h1 className="text-2xl font-semibold text-brand-navy">
                 Din somatiske helseoversikt

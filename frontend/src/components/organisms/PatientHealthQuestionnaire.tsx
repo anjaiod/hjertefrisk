@@ -536,6 +536,13 @@ export default function PatientHealthQuestionnaire() {
               onSubmit={handleSubmit}
               isSubmitting={isSubmitting}
               submitError={submitError}
+              onGoToQuestion={(questionId) => {
+                const stepIndex = visibleQuestions.findIndex(
+                  (q) => q.questionId === questionId,
+                );
+                if (stepIndex !== -1) setCurrentStep(stepIndex);
+                setShowSummary(false);
+              }}
             />
           ) : (
             <QuestionWizard
