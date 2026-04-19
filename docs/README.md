@@ -12,7 +12,9 @@ Use the documents in this order:
    First end-to-end deploy to `dev`.
 5. `gcp_naerverk_domain_setup.md`
    Custom domains, load balancer, DNS, and HTTPS.
-6. `cloud_run_destroy_and_cleanup.md`
+6. `gcp_load_balancer_bootstrap.md`
+   Scripted bootstrap of the Google Cloud load balancer resources.
+7. `cloud_run_destroy_and_cleanup.md`
    Non-production teardown and image cleanup.
 
 Supporting docs:

@@ -44,6 +44,8 @@ If you use a real `dev.secrets`, it must contain:
 - `ConnectionStrings__Default`
 - `Supabase__AnonKey`
 
+`Supabase__AnonKey` is the Supabase anon key for the environment. It is the same value frontend previously used as `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+
 ## 2. Bootstrap GitHub Environment
 
 ```bash

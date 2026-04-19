@@ -35,11 +35,12 @@ log_set_action() {
   local key="$2"
   local source_label="$3"
   local dry_run="$4"
+  local note="${5:-}"
 
   if [[ "$dry_run" == "1" ]]; then
-    echo "Would set ${kind%?}: ${key} (${source_label})"
+    echo "Would set ${kind%?}: ${key} (${source_label})${note:+ ${note}}"
   else
-    echo "Set ${kind%?}: ${key} (${source_label})"
+    echo "Set ${kind%?}: ${key} (${source_label})${note:+ ${note}}"
   fi
 }
 
@@ -89,7 +90,7 @@ apply_key_value_file() {
   fi
 
   while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
-    local line key value
+    local line key value note
     line="${raw_line#"${raw_line%%[![:space:]]*}"}"
 
     if [[ -z "$line" || "${line:0:1}" == "#" ]]; then
@@ -109,6 +110,13 @@ apply_key_value_file() {
       exit 1
     fi
 
+    note=""
+    if [[ "$kind" == "secrets" ]]; then
+      if [[ -z "$value" || "$value" == "-" || ( "$value" == \<* && "$value" == *\> ) ]]; then
+        note="[placeholder value: update in GitHub after bootstrap]"
+      fi
+    fi
+
     if [[ "$dry_run" != "1" ]]; then
       if [[ "$kind" == "vars" ]]; then
         gh variable set "$key" --env "$environment" --repo "$repo" --body "$value" >/dev/null
@@ -117,7 +125,7 @@ apply_key_value_file() {
       fi
     fi
 
-    log_set_action "$kind" "$key" "$source_label" "$dry_run"
+    log_set_action "$kind" "$key" "$source_label" "$dry_run" "$note"
   done <"$file_path"
 }
 

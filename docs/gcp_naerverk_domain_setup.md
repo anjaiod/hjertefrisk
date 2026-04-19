@@ -157,6 +157,24 @@ For host `hjertefrisk.naerverk.no`:
 
 ## How To Create The Domains
 
+The repository now includes a bootstrap script for the Google Cloud side of this setup:
+
+```bash
+scripts/bootstrap_gcp_load_balancer.sh --project-id hjertefrisk --dry-run
+scripts/bootstrap_gcp_load_balancer.sh --project-id hjertefrisk
+```
+
+It creates:
+- one global static IP
+- one managed certificate
+- one serverless NEG per Cloud Run service
+- one backend service per NEG
+- one URL map with host and path routing
+- one HTTPS target proxy
+- one HTTPS forwarding rule
+
+It does not create DNS records at the `naerverk.no` provider. That remains manual.
+
 ### Step 1. Deploy Cloud Run services first
 Deploy the six Cloud Run services first:
 - dev frontend/backend

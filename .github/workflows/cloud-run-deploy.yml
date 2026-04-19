@@ -309,13 +309,15 @@ jobs:
       - name: Deployment summary
         shell: bash
         run: |
+          public_url="${NEXT_PUBLIC_API_URL}"
           {
             echo "environment=${{ inputs.target_environment }}"
             echo "git_ref=${DEPLOY_REF}"
             echo "backend_service=${GCP_BACKEND_SERVICE}"
             echo "frontend_service=${GCP_FRONTEND_SERVICE}"
-            echo "backend_url=${{ steps.service_urls.outputs.backend_url }}"
-            echo "frontend_url=${{ steps.service_urls.outputs.frontend_url }}"
+            echo "backend_cloud_run_url=${{ steps.service_urls.outputs.backend_url }}"
+            echo "frontend_cloud_run_url=${{ steps.service_urls.outputs.frontend_url }}"
+            echo "public_url=${public_url}"
             echo "backend_image=${{ steps.image_meta.outputs.backend_image }}"
             echo "frontend_image=${{ steps.image_meta.outputs.frontend_image }}"
           } >> "$GITHUB_STEP_SUMMARY"

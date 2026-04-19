@@ -26,6 +26,8 @@ Examples:
 
 ## Important Note About Supabase Keys
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is not a secret in the normal sense. It belongs in `vars`.
+- `Supabase__AnonKey` is the Supabase anon key for the environment. In this repo it is sourced from `ops/github/environments/<env>.secrets`.
+- `Supabase__AnonKey` is the same underlying value frontend previously used as `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 - `Supabase__AnonKey` is also typically a public client key, but if the team prefers a stricter boundary it can stay in `secrets`.
 - `SUPABASE_DB_URL` and `ConnectionStrings__Default` must stay in `secrets`.
 
@@ -95,6 +97,7 @@ The script will:
 - `SUPABASE_DB_URL`
 - `ConnectionStrings__Default`
 - `Supabase__AnonKey`
+  This should be the environment's Supabase anon key, not the publishable key and not the database URL.
 
 ## Recommended Team Workflow
 - Commit `*.vars.example` and `*.secrets.example`.
