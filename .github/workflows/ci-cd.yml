@@ -11,6 +11,7 @@ env:
   BACKEND_DIR: backend
   FRONTEND_DIR: frontend
   COMPOSE_FILES: docker-compose.yml:docker-compose.dev.yml
+  RUN_DB_MIGRATIONS: "false"
 
 jobs:
   verify-stack:
