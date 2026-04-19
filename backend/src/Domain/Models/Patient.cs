@@ -17,4 +17,5 @@ public class Patient
     public ICollection<MeasurementResult> MeasurementResults { get; set; } = new List<MeasurementResult>();
     public ICollection<PatientMeasureResult> PatientMeasureResults { get; set; } = new List<PatientMeasureResult>();
     public ICollection<PersonnelMeasureResult> PersonnelMeasureResults { get; set; } = new List<PersonnelMeasureResult>();
+    public ICollection<Journalnotat> Journalnots { get; set; } = new List<Journalnotat>();
 }
