@@ -122,7 +122,7 @@ apply_key_value_file() {
       if [[ "$kind" == "vars" ]]; then
         gh variable set "$key" --env "$environment" --repo "$repo" --body "$value" >/dev/null
       else
-        printf '%s' "$value" | gh secret set "$key" --env "$environment" --repo "$repo" --body - >/dev/null
+        printf '%s' "$value" | gh secret set "$key" --env "$environment" --repo "$repo" >/dev/null
       fi
     fi
 
