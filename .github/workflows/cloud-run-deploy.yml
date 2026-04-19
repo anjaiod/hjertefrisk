@@ -181,6 +181,51 @@ jobs:
             echo "frontend_origins=${FRONTEND_ORIGINS}"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Diagnose backend connection string format
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          connection_string="${{ steps.backend_env.outputs.connection_string }}"
+
+          echo "Backend connection string diagnostics:"
+          echo "length=${#connection_string}"
+
+          if [[ "$connection_string" == postgresql://* ]]; then
+            echo "starts_with_postgresql=true"
+          else
+            echo "starts_with_postgresql=false"
+          fi
+
+          if [[ "$connection_string" == postgres://* ]]; then
+            echo "starts_with_postgres=true"
+          else
+            echo "starts_with_postgres=false"
+          fi
+
+          if [[ "$connection_string" == *$'\n'* || "$connection_string" == *$'\r'* ]]; then
+            echo "contains_newline=true"
+          else
+            echo "contains_newline=false"
+          fi
+
+          if [[ "$connection_string" == *=* ]]; then
+            echo "contains_equals=true"
+          else
+            echo "contains_equals=false"
+          fi
+
+          if [[ "$connection_string" == *';'* ]]; then
+            echo "contains_semicolon=true"
+          else
+            echo "contains_semicolon=false"
+          fi
+
+          if [[ ${#connection_string} -gt 0 ]]; then
+            LC_CTYPE=C printf 'first_char_code=%d\n' "'${connection_string:0:1}"
+            LC_CTYPE=C printf 'last_char_code=%d\n' "'${connection_string: -1}"
+          fi
+
       - name: Deploy backend to Cloud Run
         id: deploy_backend
         continue-on-error: true
