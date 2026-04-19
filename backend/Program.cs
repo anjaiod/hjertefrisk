@@ -38,6 +38,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 const string CorsPolicyName = "FrontendDev";
@@ -248,7 +249,15 @@ static string NormalizePostgresConnectionString(string input)
     }
     else
     {
-        builder = new NpgsqlConnectionStringBuilder(input);
+        try
+        {
+            builder = new NpgsqlConnectionStringBuilder(input);
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"[Startup] Connection string diagnostics: {DescribeConnectionString(input)}");
+            throw new ArgumentException("Connection string format is invalid.", ex);
+        }
     }
 
     // Limit pool size to avoid exceeding Supabase's max client connections.
@@ -272,6 +281,36 @@ static string UnwrapQuotedValue(string input)
     }
 
     return input;
+}
+
+static string DescribeConnectionString(string input)
+{
+    var sb = new StringBuilder();
+    sb.Append($"length={input.Length}; ");
+    sb.Append($"startsWithPostgres={input.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase)}; ");
+    sb.Append($"startsWithPostgresql={input.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase)}; ");
+    sb.Append($"startsWithQuote={(input.StartsWith('"') || input.StartsWith('\''))}; ");
+    sb.Append($"endsWithQuote={(input.EndsWith('"') || input.EndsWith('\''))}; ");
+    sb.Append($"containsNewline={input.Contains('\n') || input.Contains('\r')}; ");
+    sb.Append($"containsSemicolon={input.Contains(';')}; ");
+    sb.Append($"containsEquals={input.Contains('=')}; ");
+    sb.Append($"containsAt={input.Contains('@')}; ");
+    sb.Append($"containsQuestionMark={input.Contains('?')}; ");
+
+    if (input.Length > 0)
+    {
+        sb.Append($"firstCharCode={(int)input[0]}; ");
+        sb.Append($"lastCharCode={(int)input[^1]}; ");
+    }
+
+    var previewLength = Math.Min(24, input.Length);
+    var preview = input[..previewLength]
+        .Replace("\\", "\\\\", StringComparison.Ordinal)
+        .Replace("\n", "\\n", StringComparison.Ordinal)
+        .Replace("\r", "\\r", StringComparison.Ordinal);
+    sb.Append($"preview={preview}");
+
+    return sb.ToString();
 }
 
 static string[] GetAllowedOrigins(string? configuredOrigins)
