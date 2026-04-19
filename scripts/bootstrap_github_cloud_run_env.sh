@@ -35,12 +35,13 @@ log_set_action() {
   local key="$2"
   local source_label="$3"
   local dry_run="$4"
-  local note="${5:-}"
+  local value="$5"
+  local note="${6:-}"
 
   if [[ "$dry_run" == "1" ]]; then
-    echo "Would set ${kind%?}: ${key} (${source_label})${note:+ ${note}}"
+    echo "Would set ${kind%?}: ${key}=${value} (${source_label})${note:+ ${note}}"
   else
-    echo "Set ${kind%?}: ${key} (${source_label})${note:+ ${note}}"
+    echo "Set ${kind%?}: ${key}=${value} (${source_label})${note:+ ${note}}"
   fi
 }
 
@@ -125,7 +126,7 @@ apply_key_value_file() {
       fi
     fi
 
-    log_set_action "$kind" "$key" "$source_label" "$dry_run" "$note"
+    log_set_action "$kind" "$key" "$source_label" "$dry_run" "$value" "$note"
   done <"$file_path"
 }
 
