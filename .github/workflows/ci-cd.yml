@@ -71,10 +71,12 @@ jobs:
         working-directory: ${{ env.BACKEND_DIR }}
         env:
           ASPNETCORE_URLS: http://0.0.0.0:8080
+          ASPNETCORE_ENVIRONMENT: Production
+          RUN_DB_MIGRATIONS: "false"
           ConnectionStrings__Default: ${{ secrets.ConnectionStrings__Default || secrets.SUPABASE_DB_URL }}
         run: |
           set -euo pipefail
-          dotnet run --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build -- --urls http://0.0.0.0:8080 &
+          dotnet run --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build --no-launch-profile -- --urls http://0.0.0.0:8080 &
           APP_PID=$!
           ready=0
           for i in $(seq 1 30); do
