@@ -58,6 +58,10 @@
   --color-brand-orange-lighter: #ffb38f;
   --color-brand-orange-lightest: #ffd0bc;
 
+  /* Violet */
+  --color-brand-violet-background: #ede9f8;
+  --color-brand-violet-text: #6b4fa0;
+
   /* Red */
   --color-brand-red: #e53e3e;
   --color-brand-red-light: #ffe5e5;

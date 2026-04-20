@@ -91,10 +91,7 @@ export default function PatientRow({
         </td>
       </tr>
       {openModal === "todo" && (
-        <TodoModal
-          patientId={id}
-          onClose={() => setOpenModal(null)}
-        />
+        <TodoModal patientId={id} onClose={() => setOpenModal(null)} />
       )}
       {openModal === "varsling" && (
         <VarslingModal patientName={name} onClose={() => setOpenModal(null)} />

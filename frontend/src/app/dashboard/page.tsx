@@ -15,9 +15,15 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
   const patientId = searchParams.get("patientId");
 
-  const [selectedPatient, setSelectedPatient] = useState<PatientDto | null>(null);
-  const [todos, setTodos] = useState<{ id: number; text: string; completed: boolean; public: boolean }[]>([]);
-  const [latestMeasurements, setLatestMeasurements] = useState<LatestMeasurementResultDto[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<PatientDto | null>(
+    null,
+  );
+  const [todos, setTodos] = useState<
+    { id: number; text: string; completed: boolean; public: boolean }[]
+  >([]);
+  const [latestMeasurements, setLatestMeasurements] = useState<
+    LatestMeasurementResultDto[]
+  >([]);
   const [risks, setRisks] = useState<CategoryRisk[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -55,7 +61,12 @@ export default function DashboardPage() {
 
         const filteredTodos = allTodos
           .filter((t) => String(t.patientId) === patientId)
-          .map((t) => ({ id: t.toDoId, text: t.toDoText, completed: t.finished, public: t.public }));
+          .map((t) => ({
+            id: t.toDoId,
+            text: t.toDoText,
+            completed: t.finished,
+            public: t.public,
+          }));
         setTodos(filteredTodos || []);
 
         setLatestMeasurements(measurements || []);

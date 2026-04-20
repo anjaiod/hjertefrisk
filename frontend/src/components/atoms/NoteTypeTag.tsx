@@ -4,12 +4,14 @@ const variantClasses: Record<JournalNoteType, string> = {
   Konsultasjon: "bg-brand-mint-background text-brand-mint-text",
   JournalNotat: "bg-brand-sky-lightest text-brand-navy-light",
   Henvisning: "bg-brand-sun-background text-brand-sun-text",
+  Epikrise: "bg-brand-violet-background text-brand-violet-text",
 };
 
 const labels: Record<JournalNoteType, string> = {
   Konsultasjon: "Konsultasjon",
   JournalNotat: "Journal notat",
   Henvisning: "Henvisning",
+  Epikrise: "Epikrise",
 };
 
 interface NoteTypeTagProps {

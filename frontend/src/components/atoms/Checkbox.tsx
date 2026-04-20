@@ -16,7 +16,7 @@ export function Checkbox({
   // Require an accessible name: either label text or aria-label
   if (!label && !ariaLabel) {
     console.warn(
-      "Checkbox component: Either provide a 'label' prop or 'aria-label' for accessibility"
+      "Checkbox component: Either provide a 'label' prop or 'aria-label' for accessibility",
     );
   }
 
@@ -31,11 +31,7 @@ export function Checkbox({
         } ${className}`}
         {...props}
       />
-      {label && (
-        <span className="text-base text-slate-700">
-          {label}
-        </span>
-      )}
+      {label && <span className="text-base text-slate-700">{label}</span>}
     </label>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEditor, EditorContent } from "@tiptap/react";
+import { useEffect, useRef } from "react";
 import StarterKit from "@tiptap/starter-kit";
 
 type RichTextEditorProps = {
@@ -24,14 +25,19 @@ function Toolbar({ editor }: { editor: ReturnType<typeof useEditor> | null }) {
         onChange={(e) => {
           const v = e.target.value;
           if (v === "p") editor.chain().focus().setParagraph().run();
-          else editor.chain().focus().toggleHeading({ level: parseInt(v) as 1 | 2 | 3 }).run();
+          else
+            editor
+              .chain()
+              .focus()
+              .toggleHeading({ level: parseInt(v) as 1 | 2 | 3 })
+              .run();
         }}
         value={
           editor.isActive("heading", { level: 1 })
             ? "1"
             : editor.isActive("heading", { level: 2 })
-            ? "2"
-            : "p"
+              ? "2"
+              : "p"
         }
       >
         <option value="p">Brødtekst</option>
@@ -39,26 +45,50 @@ function Toolbar({ editor }: { editor: ReturnType<typeof useEditor> | null }) {
         <option value="2">Overskrift 2</option>
       </select>
 
-      <button type="button" className={btn(editor.isActive("bold"))} onClick={() => editor.chain().focus().toggleBold().run()} title="Fet">
+      <button
+        type="button"
+        className={btn(editor.isActive("bold"))}
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        title="Fet"
+      >
         B
       </button>
-      <button type="button" className={btn(editor.isActive("italic"))} onClick={() => editor.chain().focus().toggleItalic().run()} title="Kursiv">
+      <button
+        type="button"
+        className={btn(editor.isActive("italic"))}
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        title="Kursiv"
+      >
         <em>I</em>
       </button>
 
       <div className="w-px h-4 bg-gray-200 mx-1" />
 
-      <button type="button" className={btn(editor.isActive("bulletList"))} onClick={() => editor.chain().focus().toggleBulletList().run()} title="Punktliste">
+      <button
+        type="button"
+        className={btn(editor.isActive("bulletList"))}
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        title="Punktliste"
+      >
         ≡
       </button>
-      <button type="button" className={btn(editor.isActive("orderedList"))} onClick={() => editor.chain().focus().toggleOrderedList().run()} title="Nummerert liste">
+      <button
+        type="button"
+        className={btn(editor.isActive("orderedList"))}
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        title="Nummerert liste"
+      >
         1.
       </button>
     </div>
   );
 }
 
-export function RichTextEditor({ content, onChange, disabled = false }: RichTextEditorProps) {
+export function RichTextEditor({
+  content,
+  onChange,
+  disabled = false,
+}: RichTextEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [StarterKit],
@@ -68,6 +98,19 @@ export function RichTextEditor({ content, onChange, disabled = false }: RichText
       onChange(editor.getHTML());
     },
   });
+
+  // Sync external content changes (e.g. template selection) into the editor
+  const prevContentRef = useRef(content);
+  useEffect(() => {
+    if (
+      editor &&
+      content !== prevContentRef.current &&
+      content !== editor.getHTML()
+    ) {
+      editor.commands.setContent(content);
+    }
+    prevContentRef.current = content;
+  }, [content, editor]);
 
   if (disabled) {
     return (
@@ -79,12 +122,14 @@ export function RichTextEditor({ content, onChange, disabled = false }: RichText
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden">
       <Toolbar editor={editor} />
-      <EditorContent
-        editor={editor}
-        className="flex-1 overflow-y-auto px-4 py-3 prose prose-sm max-w-none text-gray-800 [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-40"
-      />
+      <div className="flex-1 h-0 overflow-y-auto">
+        <EditorContent
+          editor={editor}
+          className="px-4 py-3 prose prose-sm max-w-none text-gray-800 [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-40"
+        />
+      </div>
     </div>
   );
 }

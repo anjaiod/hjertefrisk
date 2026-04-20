@@ -37,7 +37,7 @@ export function JournalDetail({
   const isOwner = user?.id === String(note.personnelId);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       <div className="flex items-start justify-between px-6 py-4 border-b border-gray-200">
         <div>
           <div className="flex items-center gap-2 mb-1">

@@ -35,9 +35,7 @@ export function TodoList({
 
     // Update local state immediately for responsiveness
     setTodos(
-      todos.map((t) =>
-        t.id === id ? { ...t, completed: !t.completed } : t,
-      ),
+      todos.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)),
     );
 
     // Update database
@@ -83,12 +81,15 @@ export function TodoList({
         public: newTodoPublic,
       });
 
-      setTodos([...todos, {
-        id: created.toDoId,
-        text: created.toDoText,
-        completed: created.finished,
-        public: created.public,
-      }]);
+      setTodos([
+        ...todos,
+        {
+          id: created.toDoId,
+          text: created.toDoText,
+          completed: created.finished,
+          public: created.public,
+        },
+      ]);
       setNewTodoText("");
       setNewTodoPublic(true);
       setShowCreateForm(false);
@@ -150,7 +151,7 @@ export function TodoList({
             autoFocus
             disabled={isCreating}
           />
-          
+
           <div className="mb-3 flex items-center gap-2">
             <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
               <input
@@ -166,7 +167,7 @@ export function TodoList({
               {newTodoPublic ? "(alle kan se)" : "(bare du)"}
             </span>
           </div>
-          
+
           <div className="flex gap-2">
             <button
               onClick={createTodo}
@@ -207,7 +208,9 @@ export function TodoList({
           <div
             key={todo.id}
             className={`flex items-center gap-3 rounded-lg p-2 hover:bg-brand-mist/20 group ${
-              updatingId === todo.id || deletingId === todo.id ? "opacity-60" : ""
+              updatingId === todo.id || deletingId === todo.id
+                ? "opacity-60"
+                : ""
             }`}
           >
             <Checkbox
