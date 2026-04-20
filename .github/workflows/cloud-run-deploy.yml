@@ -1,6 +1,9 @@
 name: Cloud Run Deploy
 
 on:
+  push:
+    tags:
+      - 'stage-*'
   workflow_dispatch:
     inputs:
       target_environment:
@@ -23,7 +26,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: cloud-run-${{ inputs.target_environment }}
+  group: cloud-run-${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
   cancel-in-progress: false
 
 env:
@@ -34,8 +37,10 @@ jobs:
   build-and-deploy:
     name: Build and Deploy Cloud Run Services
     runs-on: ubuntu-latest
-    environment: ${{ inputs.target_environment }}
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
     env:
+      TARGET_ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
+      DEPLOY_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.git_ref || github.ref_name }}
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       GCP_REGION: ${{ vars.GCP_REGION }}
       GCP_ARTIFACT_REGION: ${{ vars.GCP_ARTIFACT_REGION }}
@@ -55,7 +60,6 @@ jobs:
       FRONTEND_MEMORY: ${{ vars.GCP_FRONTEND_MEMORY != '' && vars.GCP_FRONTEND_MEMORY || '512Mi' }}
       BACKEND_CPU: ${{ vars.GCP_BACKEND_CPU != '' && vars.GCP_BACKEND_CPU || '1' }}
       FRONTEND_CPU: ${{ vars.GCP_FRONTEND_CPU != '' && vars.GCP_FRONTEND_CPU || '1' }}
-      DEPLOY_REF: ${{ inputs.git_ref }}
     steps:
       - name: Checkout selected ref
         uses: actions/checkout@v4
@@ -133,8 +137,8 @@ jobs:
           set -euo pipefail
 
           short_sha="$(git rev-parse --short HEAD)"
-          backend_image="${GCP_ARTIFACT_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/${GCP_BACKEND_IMAGE}:${{ inputs.target_environment }}-${short_sha}"
-          frontend_image="${GCP_ARTIFACT_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/${GCP_FRONTEND_IMAGE}:${{ inputs.target_environment }}-${short_sha}"
+          backend_image="${GCP_ARTIFACT_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/${GCP_BACKEND_IMAGE}:${TARGET_ENVIRONMENT}-${short_sha}"
+          frontend_image="${GCP_ARTIFACT_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/${GCP_FRONTEND_IMAGE}:${TARGET_ENVIRONMENT}-${short_sha}"
 
           {
             echo "backend_image=${backend_image}"
@@ -313,7 +317,7 @@ jobs:
         run: |
           public_url="${NEXT_PUBLIC_API_URL}"
           {
-            echo "environment=${{ inputs.target_environment }}"
+            echo "environment=${TARGET_ENVIRONMENT}"
             echo "git_ref=${DEPLOY_REF}"
             echo "backend_service=${GCP_BACKEND_SERVICE}"
             echo "frontend_service=${GCP_FRONTEND_SERVICE}"
