@@ -14,6 +14,7 @@ public class MeasureEvaluationService : IMeasureEvaluationService
     private readonly KroppsDataEvaluationService _kroppsDataEvaluationService;
     private readonly BlodlipiderEvaluationService _blodlipiderEvaluationService;
     private readonly BlodtrykkEvaluationService _blodtrykkEvaluationService;
+    private readonly GlukoseEvaluationService _glukoseEvaluationService;
 
     private const int SleepCategoryId = 10;
     private const int KroppsDataCategoryId = 9;
@@ -25,6 +26,7 @@ public class MeasureEvaluationService : IMeasureEvaluationService
         _kroppsDataEvaluationService = new KroppsDataEvaluationService(db);
         _blodlipiderEvaluationService = new BlodlipiderEvaluationService(db);
         _blodtrykkEvaluationService = new BlodtrykkEvaluationService(db);
+        _glukoseEvaluationService = new GlukoseEvaluationService(db);
     }
 
     public async Task<MeasureEvaluationResultDto> EvaluateAsync(EvaluateMeasuresDto dto)
@@ -116,6 +118,10 @@ public class MeasureEvaluationService : IMeasureEvaluationService
             .ToHashSet();
 
         var categoryScores = CalculateCategoryScores(questions, responses, answeredCategoryIds, dependencies);
+
+        // Remember which categories came from questions (before measurement scoring adds more)
+        var questionDerivedCategoryIds = new HashSet<int>(categoryIds);
+
         await ApplyMeasurementSeveritiesAsync(dto.PatientId, categoryScores, answeredCategoryIds);
 
         var blodlipiderResult = await _blodlipiderEvaluationService.EvaluateAsync(dto.PatientId, responses);
@@ -132,6 +138,14 @@ public class MeasureEvaluationService : IMeasureEvaluationService
             answeredCategoryIds.Add(blodtrykkResult.CategoryId);
             var updatedBpScore = Math.Max(categoryScores.GetValueOrDefault(blodtrykkResult.CategoryId), blodtrykkResult.Score);
             categoryScores[blodtrykkResult.CategoryId] = updatedBpScore;
+        }
+
+        var glukoseResult = await _glukoseEvaluationService.EvaluateAsync(dto.PatientId);
+        if (glukoseResult is not null)
+        {
+            answeredCategoryIds.Add(glukoseResult.CategoryId);
+            var updatedGlukoseScore = Math.Max(categoryScores.GetValueOrDefault(glukoseResult.CategoryId), glukoseResult.Score);
+            categoryScores[glukoseResult.CategoryId] = updatedGlukoseScore;
         }
 
         var kroppsDataResult = await _kroppsDataEvaluationService.EvaluateAsync(dto.PatientId, responses);
@@ -367,6 +381,26 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     Priority = measure.Priority
                 });
             }
+        }
+
+        // Fetch and evaluate Category-trigger PatientMeasures for categories that were added
+        // purely by measurement scoring (e.g. glukose/HbA1C entered by clinician) and therefore
+        // were not included in the initial patientCategoryMeasures query.
+        var measurementOnlyCategoryIds = answeredCategoryIds
+            .Except(questionDerivedCategoryIds)
+            .ToList();
+
+        if (measurementOnlyCategoryIds.Count > 0)
+        {
+            var extraPatientCategoryMeasures = await _db.PatientMeasures
+                .AsNoTracking()
+                .Include(m => m.Texts)
+                .Where(m => m.TriggerType == MeasureTriggerType.Category
+                         && m.CategoryId.HasValue
+                         && measurementOnlyCategoryIds.Contains(m.CategoryId.Value))
+                .ToListAsync();
+
+            EvaluateCategoryMeasures(extraPatientCategoryMeasures, categoryScores, answeredCategoryIds, languageCode, generatedAt, patientResults);
         }
 
         return new MeasureEvaluationResultDto
