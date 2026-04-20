@@ -7,10 +7,18 @@ import type {
   JournalNoteType,
   CreateJournalNoteDto,
   UpdateJournalNoteDto,
+  CategoryDto,
+  QueryDto,
+  MeasurementResultDto,
 } from "@/types";
 import { RichTextEditor } from "@/components/molecules/RichTextEditor";
 import { NoteTypeTag } from "@/components/atoms/NoteTypeTag";
 import { getTemplates } from "@/lib/journalTemplates";
+import {
+  tagVariantFromCategoryScore,
+  sleepTagVariant,
+  tagTextFromVariant,
+} from "@/lib/riskUtils";
 
 const NOTE_TYPES: { value: JournalNoteType; label: string }[] = [
   { value: "Konsultasjon", label: "Konsultasjon" },
@@ -19,8 +27,53 @@ const NOTE_TYPES: { value: JournalNoteType; label: string }[] = [
   { value: "Epikrise", label: "Epikrise" },
 ];
 
+const HJERTEFRISK_TEMPLATE_IDS = new Set([
+  "hjertefrisk-kardiometabolsk",
+  "hjertefrisk-oppstart-antipsykotika",
+]);
+
+// measurementId → label used in the template <li> fields
+const MEASUREMENT_LABELS: Record<number, string> = {
+  1: "Vekt (kg)",
+  2: "Høyde (cm)",
+  3: "Livvidde (cm)",
+  4: "HbA1c (mmol/mol)",
+  6: "Totalkolesterol (mmol/l)",
+  7: "LDL-kolesterol (mmol/l)",
+  8: "HDL-kolesterol (mmol/l)",
+  9: "Triglyserider (mmol/l)",
+  10: "KMI (kg/m²)",
+  11: "Blodtrykk (mmHg)",
+  12: "Blodtrykk (mmHg)",
+};
+
+// categoryId → label used in the template <li> fields
+const CATEGORY_RISK_LABELS: Record<number, string> = {
+  6: "Status", // Røyking
+  7: "Fysisk aktivitet", // Fysisk aktivitet
+  8: "Kosthold", // Kosthold
+  9: "KMI (kg/m²)", // Overvekt/kroppsdata
+  15: "HbA1c (mmol/mol)", // Glukoseregulering
+  16: "LDL-kolesterol (mmol/l)", // Blodlipider
+};
+
+type PersonnelMeasureResult = {
+  personnelMeasureId: number;
+  categoryId: number | null;
+  categoryScore: number;
+  title: string | null;
+};
+
 function typeLabel(type: JournalNoteType) {
   return NOTE_TYPES.find((t) => t.value === type)?.label ?? type;
+}
+
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yy = String(d.getFullYear()).slice(2);
+  return `${dd}.${mm}.${yy}`;
 }
 
 function formatDateTime(iso: string) {
@@ -31,6 +84,128 @@ function formatDateTime(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function injectIntoHtml(
+  html: string,
+  measurements: MeasurementResultDto[],
+  categoryScores: Record<number, number>,
+  categories: CategoryDto[],
+  personnelMeasures: PersonnelMeasureResult[],
+): string {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  const measureById: Record<number, number> = {};
+  const measureDateById: Record<number, string> = {};
+  for (const m of measurements) {
+    measureById[m.measurementId] = m.result;
+    measureDateById[m.measurementId] = formatDate(m.registeredAt);
+  }
+
+  // Combine BT systolisk/diastolisk into one string
+  const btValue =
+    measureById[11] != null && measureById[12] != null
+      ? `${measureById[11]}/${measureById[12]}`
+      : (measureById[11] ?? measureById[12] ?? null);
+  const btDate = measureDateById[11] ?? measureDateById[12] ?? null;
+
+  // Build categoryId → riskText map
+  const riskByCategoryId: Record<number, string> = {};
+  const measuresByCategory: Record<number, PersonnelMeasureResult[]> = {};
+  for (const m of personnelMeasures) {
+    if (!m.categoryId) continue;
+    measuresByCategory[m.categoryId] ??= [];
+    measuresByCategory[m.categoryId].push(m);
+  }
+
+  for (const cat of categories) {
+    const score = categoryScores[cat.categoryId];
+    if (score == null) continue;
+
+    // Sleep uses title-based logic
+    const catNameLower = cat.name.toLowerCase().trim();
+    if (catNameLower === "søvn") {
+      const measures = measuresByCategory[cat.categoryId] ?? [];
+      const variant = sleepTagVariant(measures);
+      if (variant)
+        riskByCategoryId[cat.categoryId] = tagTextFromVariant(variant);
+      continue;
+    }
+
+    const variant = tagVariantFromCategoryScore(cat.name, score);
+    if (variant) riskByCategoryId[cat.categoryId] = tagTextFromVariant(variant);
+  }
+
+  // Inject into <li> elements by matching label text
+  const listItems = doc.querySelectorAll("li");
+  for (const li of listItems) {
+    const strong = li.querySelector("strong");
+    if (!strong) continue;
+    const label = strong.textContent?.replace(/:$/, "").trim() ?? "";
+
+    // Try measurements first
+    let injected = false;
+    if (
+      (label === "Blodtrykk (mmHg)" || label === "BT (mmHg)") &&
+      btValue != null
+    ) {
+      injectValue(li, String(btValue), btDate);
+      injected = true;
+    } else {
+      for (const [idStr, measureLabel] of Object.entries(MEASUREMENT_LABELS)) {
+        const id = Number(idStr);
+        if (id === 11 || id === 12) continue; // handled above as BT
+        if (label === measureLabel && measureById[id] != null) {
+          injectValue(li, String(measureById[id]), measureDateById[id] ?? null);
+          injected = true;
+          break;
+        }
+      }
+    }
+
+    if (injected) continue;
+
+    // Try risk levels
+    for (const [catIdStr, riskLabel] of Object.entries(CATEGORY_RISK_LABELS)) {
+      const catId = Number(catIdStr);
+      if (label === riskLabel && riskByCategoryId[catId]) {
+        appendRisk(li, riskByCategoryId[catId]);
+        break;
+      }
+    }
+  }
+
+  return doc.body.innerHTML;
+}
+
+function injectAfterLabel(li: Element, html: string) {
+  const hint = li.querySelector("span");
+  if (hint) {
+    // Replace hint text with the actual value — cleaner than appending after it
+    hint.outerHTML = html;
+  } else {
+    const p = li.querySelector("p");
+    if (p) {
+      p.insertAdjacentHTML("beforeend", html);
+    } else {
+      const strong = li.querySelector("strong");
+      if (strong) {
+        strong.insertAdjacentHTML("afterend", html);
+      } else {
+        li.insertAdjacentHTML("beforeend", html);
+      }
+    }
+  }
+}
+
+function injectValue(li: Element, value: string, date: string | null) {
+  const text = date ? `${value} [${date}]` : value;
+  injectAfterLabel(li, ` <span style="color:#6fa185">${text}</span>`);
+}
+
+function appendRisk(li: Element, riskText: string) {
+  injectAfterLabel(li, ` <span style="color:#6fa185">${riskText}</span>`);
 }
 
 type JournalEditorProps = {
@@ -60,6 +235,8 @@ export function JournalEditor({
     "saved" | "saving" | "unsaved"
   >("saved");
   const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+  const [filling, setFilling] = useState(false);
   const templateDropdownRef = useRef<HTMLDivElement>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedNoteRef = useRef<JournalNoteDto | null>(note);
@@ -68,6 +245,8 @@ export function JournalEditor({
   const isNewNoteRef = useRef(note === null);
 
   const templates = getTemplates(type);
+  const isHjertefriskTemplate =
+    activeTemplateId !== null && HJERTEFRISK_TEMPLATE_IDS.has(activeTemplateId);
 
   useEffect(() => {
     savedNoteRef.current = note;
@@ -92,6 +271,56 @@ export function JournalEditor({
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [templateDropdownOpen]);
+
+  const handleFillValues = useCallback(async () => {
+    setFilling(true);
+    try {
+      const [allMeasurements, query, categories] = await Promise.all([
+        apiClient.get<MeasurementResultDto[]>(
+          `/api/patients/${patientId}/all-measurements`,
+        ),
+        apiClient.get<QueryDto>("/api/Query/by-name/Helseskjema"),
+        apiClient.get<CategoryDto[]>("/api/Categories"),
+      ]);
+
+      // Deduplicate: keep latest result per measurement ID
+      const latestById: Record<number, MeasurementResultDto> = {};
+      for (const m of allMeasurements) {
+        const existing = latestById[m.measurementId];
+        if (
+          !existing ||
+          new Date(m.registeredAt) > new Date(existing.registeredAt)
+        ) {
+          latestById[m.measurementId] = m;
+        }
+      }
+      const measurements = Object.values(latestById);
+
+      const evaluation = await apiClient.post<{
+        personnelMeasures: PersonnelMeasureResult[];
+        categoryScores: Record<number, number>;
+      }>("/api/measures/evaluate", {
+        patientId,
+        queryId: query.id,
+        languageCode: "no",
+      });
+
+      const updated = injectIntoHtml(
+        content,
+        measurements,
+        evaluation.categoryScores,
+        categories,
+        evaluation.personnelMeasures,
+      );
+
+      setContent(updated);
+      setAutoSaveStatus("unsaved");
+    } catch {
+      alert("Kunne ikke hente pasientdata.");
+    } finally {
+      setFilling(false);
+    }
+  }, [patientId, content]);
 
   const handleSave = useCallback(
     async (isAutoSave = false): Promise<JournalNoteDto | null> => {
@@ -193,6 +422,7 @@ export function JournalEditor({
                       type="button"
                       onClick={() => {
                         setContent(tpl.content);
+                        setActiveTemplateId(tpl.id);
                         setAutoSaveStatus("unsaved");
                         setTemplateDropdownOpen(false);
                       }}
@@ -204,6 +434,16 @@ export function JournalEditor({
                 </div>
               )}
             </div>
+          )}
+          {isHjertefriskTemplate && (
+            <button
+              type="button"
+              onClick={handleFillValues}
+              disabled={filling}
+              className="px-2.5 py-1 text-xs text-brand-navy border border-brand-navy rounded hover:bg-brand-sky-button disabled:opacity-50 transition-colors"
+            >
+              {filling ? "Henter..." : "Fyll inn siste verdier"}
+            </button>
           )}
         </div>
 

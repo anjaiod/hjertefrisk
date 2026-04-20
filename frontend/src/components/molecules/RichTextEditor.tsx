@@ -3,6 +3,8 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import { useEffect, useRef } from "react";
 import StarterKit from "@tiptap/starter-kit";
+import { TextStyle } from "@tiptap/extension-text-style";
+import { Color } from "@tiptap/extension-color";
 
 type RichTextEditorProps = {
   content: string;
@@ -91,7 +93,7 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [StarterKit],
+    extensions: [StarterKit, TextStyle, Color],
     content,
     editable: !disabled,
     onUpdate: ({ editor }) => {
@@ -127,7 +129,7 @@ export function RichTextEditor({
       <div className="flex-1 h-0 overflow-y-auto">
         <EditorContent
           editor={editor}
-          className="px-4 py-3 prose prose-sm max-w-none text-gray-800 [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-40"
+          className="px-4 py-3 prose prose-sm max-w-none text-gray-800 [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-40 [&_.ProseMirror_span[style]]:text-[unset]"
         />
       </div>
     </div>

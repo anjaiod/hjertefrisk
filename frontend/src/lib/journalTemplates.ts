@@ -17,7 +17,7 @@ function field(label: string) {
 }
 
 function hint(label: string, hintText: string) {
-  return `<li><strong>${label}:</strong> <span style="color:${G}">${hintText}</span></li>`;
+  return `<li><strong>${label}:</strong> <span style="color:${G};font-style:italic">${hintText}</span></li>`;
 }
 
 function nb(text: string) {
