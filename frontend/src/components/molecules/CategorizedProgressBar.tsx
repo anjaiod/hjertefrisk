@@ -47,7 +47,9 @@ export default function CategorizedProgressBar({
               type="button"
               onClick={() => onCategoryClick?.(index)}
               className="flex-1 relative text-left"
-              style={{ flexBasis: `${(categoryWithCount.count / totalSteps) * 100}%` }}
+              style={{
+                flexBasis: `${(categoryWithCount.count / totalSteps) * 100}%`,
+              }}
             >
               {/* Background */}
               <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
@@ -59,7 +61,7 @@ export default function CategorizedProgressBar({
               </div>
               {/* Category Label */}
               <div
-                className={`text-xs mt-1 text-center hover:underline cursor-pointer ${
+                className={`text-xs md:text-sm mt-1 text-center hover:underline cursor-pointer leading-tight ${
                   isActive
                     ? "font-semibold text-gray-800"
                     : "font-normal text-gray-600"
@@ -73,7 +75,7 @@ export default function CategorizedProgressBar({
       </div>
 
       {/* Current Progress Text */}
-      <div className="flex items-center justify-between text-sm">
+      <div className="flex items-center justify-between text-sm md:text-base">
         <span className="font-medium text-gray-700">
           {currentCategory ? (
             <>

@@ -51,7 +51,9 @@ export function LoginForm({
         onChange={onPasswordChange}
       />
 
-      {errorMessage ? <AuthMessage message={errorMessage} tone="error" /> : null}
+      {errorMessage ? (
+        <AuthMessage message={errorMessage} tone="error" />
+      ) : null}
 
       <Button type="submit" disabled={isLoading} fullWidth>
         {isLoading ? "Logger inn..." : "Logg inn"}

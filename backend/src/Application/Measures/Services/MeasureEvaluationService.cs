@@ -12,8 +12,9 @@ public class MeasureEvaluationService : IMeasureEvaluationService
     private readonly AppDbContext _db;
     private readonly SleepEvaluationService _sleepEvaluationService;
     private readonly KroppsDataEvaluationService _kroppsDataEvaluationService;
+    private readonly BlodlipiderEvaluationService _blodlipiderEvaluationService;
 
-    private const int SleepCategoryId      = 10;
+    private const int SleepCategoryId = 10;
     private const int KroppsDataCategoryId = 9;
 
     public MeasureEvaluationService(AppDbContext db)
@@ -21,6 +22,7 @@ public class MeasureEvaluationService : IMeasureEvaluationService
         _db = db;
         _sleepEvaluationService = new SleepEvaluationService();
         _kroppsDataEvaluationService = new KroppsDataEvaluationService(db);
+        _blodlipiderEvaluationService = new BlodlipiderEvaluationService(db);
     }
 
     public async Task<MeasureEvaluationResultDto> EvaluateAsync(EvaluateMeasuresDto dto)
@@ -112,6 +114,23 @@ public class MeasureEvaluationService : IMeasureEvaluationService
             .ToHashSet();
 
         var categoryScores = CalculateCategoryScores(questions, responses, answeredCategoryIds, dependencies);
+        await ApplyMeasurementSeveritiesAsync(dto.PatientId, categoryScores, answeredCategoryIds);
+
+        var blodlipiderResult = await _blodlipiderEvaluationService.EvaluateAsync(dto.PatientId, responses);
+        if (blodlipiderResult is not null)
+        {
+            answeredCategoryIds.Add(blodlipiderResult.CategoryId);
+            var updatedLipidsScore = Math.Max(categoryScores.GetValueOrDefault(blodlipiderResult.CategoryId), blodlipiderResult.Score);
+            categoryScores[blodlipiderResult.CategoryId] = updatedLipidsScore;
+        }
+
+        var kroppsDataResult = await _kroppsDataEvaluationService.EvaluateAsync(dto.PatientId, responses);
+        if (kroppsDataResult is not null)
+        {
+            answeredCategoryIds.Add(KroppsDataCategoryId);
+            var updatedScore = Math.Max(categoryScores.GetValueOrDefault(KroppsDataCategoryId), kroppsDataResult.Score);
+            categoryScores[KroppsDataCategoryId] = updatedScore;
+        }
         var languageCode = NormalizeLanguage(dto.LanguageCode);
         var generatedAt = DateTime.UtcNow;
 
@@ -142,49 +161,139 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                 patientResults.Add(new PatientMeasureResultDto
                 {
                     PatientMeasureId = measure.PatientMeasureId,
-                    Source           = MeasureResultSource.CategoryScore,
-                    CategoryId       = measure.CategoryId,
+                    Source = MeasureResultSource.CategoryScore,
+                    CategoryId = measure.CategoryId,
                     TriggerQuestionId = null,
-                    CategoryScore    = categoryScores.GetValueOrDefault(SleepCategoryId),
-                    Text             = ResolvePatientText(measure, languageCode),
-                    Title            = ResolvePatientTitle(measure, languageCode),
-                    ResourceUrl      = measure.ResourceUrl,
-                    GeneratedAt      = generatedAt,
-                    ScoreThreshold   = measure.ScoreThreshold,
-                    IsExclusive      = measure.IsExclusive,
-                    Priority         = measure.Priority
+                    CategoryScore = categoryScores.GetValueOrDefault(SleepCategoryId),
+                    Text = ResolvePatientText(measure, languageCode),
+                    Title = ResolvePatientTitle(measure, languageCode),
+                    ResourceUrl = measure.ResourceUrl,
+                    GeneratedAt = generatedAt,
+                    ScoreThreshold = measure.ScoreThreshold,
+                    IsExclusive = measure.IsExclusive,
+                    Priority = measure.Priority
                 });
             }
         }
 
-        if (answeredCategoryIds.Contains(KroppsDataCategoryId))
+        if (kroppsDataResult is not null)
         {
-            var kroppsDataTitles = await _kroppsDataEvaluationService.EvaluatePatientTitlesAsync(dto.PatientId, responses);
-            var kroppsDataMeasures = await _db.PatientMeasures
+            var updatedScore = categoryScores.GetValueOrDefault(KroppsDataCategoryId);
+
+            var kroppsDataPatientMeasures = await _db.PatientMeasures
                 .AsNoTracking()
                 .Include(m => m.Texts)
                 .Where(m => m.TriggerType == MeasureTriggerType.Custom
                          && m.CategoryId == KroppsDataCategoryId
                          && m.Title != null
-                         && kroppsDataTitles.Contains(m.Title))
+                         && kroppsDataResult.Titles.Contains(m.Title))
                 .ToListAsync();
 
-            foreach (var measure in kroppsDataMeasures)
+            foreach (var measure in kroppsDataPatientMeasures)
             {
                 patientResults.Add(new PatientMeasureResultDto
                 {
-                    PatientMeasureId  = measure.PatientMeasureId,
-                    Source            = MeasureResultSource.CategoryScore,
-                    CategoryId        = measure.CategoryId,
+                    PatientMeasureId = measure.PatientMeasureId,
+                    Source = MeasureResultSource.CategoryScore,
+                    CategoryId = measure.CategoryId,
                     TriggerQuestionId = null,
-                    CategoryScore     = categoryScores.GetValueOrDefault(KroppsDataCategoryId),
-                    Text              = ResolvePatientText(measure, languageCode),
-                    Title             = ResolvePatientTitle(measure, languageCode),
-                    ResourceUrl       = measure.ResourceUrl,
-                    GeneratedAt       = generatedAt,
-                    ScoreThreshold    = measure.ScoreThreshold,
-                    IsExclusive       = measure.IsExclusive,
-                    Priority          = measure.Priority
+                    CategoryScore = updatedScore,
+                    Text = ResolvePatientText(measure, languageCode),
+                    Title = ResolvePatientTitle(measure, languageCode),
+                    ResourceUrl = measure.ResourceUrl,
+                    GeneratedAt = generatedAt,
+                    ScoreThreshold = measure.ScoreThreshold,
+                    IsExclusive = measure.IsExclusive,
+                    Priority = measure.Priority
+                });
+            }
+
+            var kroppsDataPersonnelMeasures = await _db.PersonnelMeasures
+                .AsNoTracking()
+                .Include(m => m.Texts)
+                .Where(m => m.TriggerType == MeasureTriggerType.Custom
+                         && m.CategoryId == KroppsDataCategoryId
+                         && m.Title != null
+                         && kroppsDataResult.Titles.Contains(m.Title))
+                .ToListAsync();
+
+            foreach (var measure in kroppsDataPersonnelMeasures)
+            {
+                personnelResults.Add(new PersonnelMeasureResultDto
+                {
+                    PersonnelMeasureId = measure.PersonnelMeasureId,
+                    Source = MeasureResultSource.CategoryScore,
+                    CategoryId = measure.CategoryId,
+                    TriggerQuestionId = null,
+                    CategoryScore = updatedScore,
+                    Text = ResolvePersonnelText(measure, languageCode),
+                    Title = ResolvePersonnelTitle(measure, languageCode),
+                    ResourceUrl = measure.ResourceUrl,
+                    GeneratedAt = generatedAt,
+                    ScoreThreshold = measure.ScoreThreshold,
+                    IsExclusive = measure.IsExclusive,
+                    Priority = measure.Priority
+                });
+            }
+        }
+
+        if (blodlipiderResult is not null)
+        {
+            var updatedScore = categoryScores.GetValueOrDefault(blodlipiderResult.CategoryId);
+
+            var lipidPatientMeasures = await _db.PatientMeasures
+                .AsNoTracking()
+                .Include(m => m.Texts)
+                .Where(m => m.TriggerType == MeasureTriggerType.Custom
+                         && m.CategoryId == blodlipiderResult.CategoryId
+                         && m.Title != null
+                         && blodlipiderResult.Titles.Contains(m.Title))
+                .ToListAsync();
+
+            foreach (var measure in lipidPatientMeasures)
+            {
+                patientResults.Add(new PatientMeasureResultDto
+                {
+                    PatientMeasureId = measure.PatientMeasureId,
+                    Source = MeasureResultSource.CategoryScore,
+                    CategoryId = measure.CategoryId,
+                    TriggerQuestionId = null,
+                    CategoryScore = updatedScore,
+                    Text = ResolvePatientText(measure, languageCode),
+                    Title = ResolvePatientTitle(measure, languageCode),
+                    ResourceUrl = measure.ResourceUrl,
+                    GeneratedAt = generatedAt,
+                    ScoreThreshold = measure.ScoreThreshold,
+                    IsExclusive = measure.IsExclusive,
+                    Priority = measure.Priority
+                });
+            }
+
+            var lipidPersonnelMeasures = await _db.PersonnelMeasures
+                .AsNoTracking()
+                .Include(m => m.Texts)
+                .Where(m => m.TriggerType == MeasureTriggerType.Custom
+                         && m.CategoryId == blodlipiderResult.CategoryId
+                         && m.Title != null
+                         && blodlipiderResult.Titles.Contains(m.Title))
+                .ToListAsync();
+
+            foreach (var measure in lipidPersonnelMeasures)
+            {
+                personnelResults.Add(new PersonnelMeasureResultDto
+                {
+                    PersonnelMeasureId = measure.PersonnelMeasureId,
+                    Source = MeasureResultSource.CategoryScore,
+                    CategoryId = measure.CategoryId,
+                    TriggerQuestionId = null,
+                    CategoryScore = updatedScore,
+                    Text = ResolvePersonnelText(measure, languageCode),
+                    Title = ResolvePersonnelTitle(measure, languageCode),
+                    ResourceUrl = measure.ResourceUrl,
+                    GeneratedAt = generatedAt,
+                    ScoreThreshold = measure.ScoreThreshold,
+                    IsExclusive = measure.IsExclusive,
+                    Priority = measure.Priority
                 });
             }
         }
@@ -500,6 +609,80 @@ public class MeasureEvaluationService : IMeasureEvaluationService
         await transaction.CommitAsync();
     }
 
+    private async Task ApplyMeasurementSeveritiesAsync(
+        int patientId,
+        Dictionary<int, int> categoryScores,
+        HashSet<int> answeredCategoryIds)
+    {
+        var measurementSeverities = await _db.Severities
+            .AsNoTracking()
+            .Where(s => s.MeasurementId.HasValue)
+            .Join(
+                _db.Measurements.AsNoTracking().Where(m => m.CategoryId.HasValue),
+                severity => severity.MeasurementId!.Value,
+                measurement => measurement.MeasurementId,
+                (severity, measurement) => new MeasurementSeverityInfo(
+                    severity.MeasurementId!.Value,
+                    measurement.CategoryId!.Value,
+                    severity.RequiredValue,
+                    severity.Operator,
+                    severity.Score))
+            .ToListAsync();
+
+        if (measurementSeverities.Count == 0)
+        {
+            return;
+        }
+
+        var measurementIds = measurementSeverities
+            .Select(s => s.MeasurementId)
+            .Distinct()
+            .ToList();
+
+        var latestMeasurements = await _db.MeasurementResults
+            .AsNoTracking()
+            .Where(r => r.PatientId == patientId && measurementIds.Contains(r.MeasurementId))
+            .OrderByDescending(r => r.RegisteredAt)
+            .ToListAsync();
+
+        var latestByMeasurement = latestMeasurements
+            .GroupBy(r => r.MeasurementId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.First().Result);
+
+        if (latestByMeasurement.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var severity in measurementSeverities)
+        {
+            if (!latestByMeasurement.TryGetValue(severity.MeasurementId, out var actualValue))
+            {
+                continue;
+            }
+
+            if (severity.RequiredValue.HasValue &&
+                !EvaluateNumber(actualValue, severity.RequiredValue.Value, severity.Operator))
+            {
+                continue;
+            }
+
+            var categoryId = severity.CategoryId;
+            answeredCategoryIds.Add(categoryId);
+            var current = categoryScores.GetValueOrDefault(categoryId);
+            categoryScores[categoryId] = current + severity.Score;
+        }
+    }
+
+    private sealed record MeasurementSeverityInfo(
+        int MeasurementId,
+        int CategoryId,
+        decimal? RequiredValue,
+        string? Operator,
+        int Score);
+
     private static bool MatchesRule(int? requiredOption, string? requiredText, decimal? requiredValue, string? op, Response response)
     {
         if (requiredOption.HasValue && response.SelectedOptionId != requiredOption)
@@ -626,4 +809,3 @@ public class MeasureEvaluationService : IMeasureEvaluationService
     private static string? NormalizeLanguage(string? languageCode)
         => string.IsNullOrWhiteSpace(languageCode) ? null : languageCode.Trim();
 }
-

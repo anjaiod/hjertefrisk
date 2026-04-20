@@ -13,10 +13,7 @@ export function FeatureCardGrid() {
     return `${href}${join}patientId=${encodeURIComponent(patientId)}`;
   };
   return (
-    <div
-      className="grid grid-cols-1 gap-4 md:grid-cols-3"
-      onClick={() => router.push(withPatientId("/dashboard/maalinger"))}
-    >
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       <FeatureCard
         icon="❤️"
         title="Oppdater målinger"

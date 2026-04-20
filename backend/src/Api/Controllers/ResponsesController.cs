@@ -28,4 +28,14 @@ public class ResponsesController : ControllerBase
         var created = await _service.CreateAsync(dto);
         return Created(string.Empty, created);
     }
+
+    [HttpPost("bulk")]
+    public async Task<IActionResult> CreateBulk([FromBody] List<CreateResponseDto> dtos)
+    {
+        if (dtos == null || !dtos.Any())
+            return BadRequest(new { error = "No responses provided" });
+
+        var created = await _service.UpsertManyAsync(dtos);
+        return Ok(created);
+    }
 }

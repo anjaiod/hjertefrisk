@@ -18,10 +18,11 @@ const tagLabel: Record<TagVariant, string> = {
   high: "Høy",
   medium: "Middels",
   low: "Lav",
+  none: "Mangler",
 };
 
 const btnClass =
-  "bg-brand-sky-lightest !text-brand-navy border-brand-sky-lightest hover:bg-brand-sky-lighter";
+  "bg-brand-sky-button !text-brand-navy border-brand-sky-button hover:bg-brand-sky-lightest";
 
 type ModalType = "todo" | "varsling" | null;
 
@@ -35,15 +36,25 @@ export default function PatientRow({
   const router = useRouter();
 
   const dashboardHref = `/dashboard?patientId=${encodeURIComponent(id)}`;
+  const teamvisningHref = `/dashboard/teamvisning?patientId=${encodeURIComponent(id)}`;
 
   return (
     <>
       <tr
-        className="border-t border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+        className="border-t border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer focus-within:bg-gray-50 outline-none"
+        tabIndex={0}
         onClick={() => router.push(dashboardHref)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            const target = e.target as HTMLElement;
+            if (target.closest("button") || target.closest("a")) return;
+            e.preventDefault();
+            router.push(dashboardHref);
+          }
+        }}
       >
         <td className="px-6 py-4">
-          <span className="text-brand-sky font-medium hover:underline">
+          <span className="text-brand-navy font-medium hover:underline">
             {name}
           </span>
         </td>
@@ -72,7 +83,7 @@ export default function PatientRow({
             <Button
               variant="primary"
               className={btnClass}
-              onClick={() => router.push(dashboardHref)}
+              onClick={() => router.push(teamvisningHref)}
             >
               Presentasjon
             </Button>
@@ -82,7 +93,6 @@ export default function PatientRow({
       {openModal === "todo" && (
         <TodoModal
           patientId={id}
-          patientName={name}
           onClose={() => setOpenModal(null)}
         />
       )}

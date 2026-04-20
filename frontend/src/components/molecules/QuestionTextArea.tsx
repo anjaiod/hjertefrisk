@@ -10,6 +10,7 @@ interface QuestionTextAreaProps {
   placeholder?: string;
   rows?: number;
   required?: boolean;
+  compact?: boolean;
 }
 
 export default function QuestionTextArea({
@@ -21,23 +22,25 @@ export default function QuestionTextArea({
   placeholder,
   rows = 3,
   required = false,
+  compact = false,
 }: QuestionTextAreaProps) {
   return (
     <div className="mb-6">
-      <QuestionLabel text={question} required={required} />
+      <QuestionLabel text={question} required={required} compact={compact} />
       <TextArea
         id={name}
         name={name}
         value={value}
         placeholder={placeholder}
         rows={rows}
+        compact={compact}
         onChange={onChange}
       />
       {onAnswer && (
         <button
           type="button"
           onClick={onAnswer}
-          className="mt-3 px-4 py-2 bg-brand-navy text-white rounded-md hover:opacity-90"
+          className="mt-3 px-5 py-3 md:px-6 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl hover:opacity-90 touch-manipulation"
         >
           Lagre svar
         </button>

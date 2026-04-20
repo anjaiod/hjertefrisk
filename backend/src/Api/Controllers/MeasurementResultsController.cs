@@ -14,4 +14,14 @@ public class MeasurementResultsController : ControllerBase
     {
         _service = service;
     }
+
+    [HttpPost("bulk")]
+    public async Task<IActionResult> CreateBulk([FromBody] List<CreateMeasurementResultDto> dtos)
+    {
+        if (dtos == null || !dtos.Any())
+            return BadRequest(new { error = "No measurements provided" });
+
+        var created = await _service.UpsertManyAsync(dtos);
+        return Ok(created);
+    }
 }

@@ -9,6 +9,7 @@ interface QuestionnaireSummaryProps {
   onSubmit: () => void;
   isSubmitting: boolean;
   submitError: string | null;
+  onGoToQuestion?: (questionId: number) => void;
 }
 
 /** Converts a boolean question into a readable Norwegian statement. */
@@ -97,7 +98,8 @@ function buildSentence(
     return optionLower === "aldri"
       ? "Du hopper aldri over måltider"
       : `Du hopper over måltider ${optionLower}`;
-  if (lower.includes("appetitten din")) return `Appetitten din er ${optionLower}`;
+  if (lower.includes("appetitten din"))
+    return `Appetitten din er ${optionLower}`;
   if (lower.includes("har vekten din vært stabil")) return optionText;
 
   // Sleep
@@ -173,6 +175,7 @@ export default function QuestionnaireSummary({
   onSubmit,
   isSubmitting,
   submitError,
+  onGoToQuestion,
 }: QuestionnaireSummaryProps) {
   const answeredQuestions = questions.filter((q) => {
     const val = (answers[q.questionId] ?? "").trim();
@@ -190,12 +193,12 @@ export default function QuestionnaireSummary({
   const groups = Array.from(categoryMap.entries());
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-white p-8 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold text-gray-900 mb-1">
+    <div className="w-full">
+      <div className="bg-white p-[clamp(1.5rem,4vw,3rem)] rounded-lg shadow-md">
+        <h2 className="text-[clamp(1.25rem,3vw,1.75rem)] font-semibold text-gray-900 mb-1">
           Oppsummering
         </h2>
-        <p className="text-gray-500 text-sm mb-6">
+        <p className="text-gray-500 text-sm md:text-base mb-6">
           Se over svarene dine før du sender inn.
         </p>
 
@@ -216,9 +219,26 @@ export default function QuestionnaireSummary({
                   return (
                     <li
                       key={q.questionId}
-                      className="py-2 border-b border-gray-100 last:border-0 text-gray-800 text-sm"
+                      className="border-b border-gray-100 last:border-0"
                     >
-                      {sentence}
+                      {onGoToQuestion ? (
+                        <div className="py-3 flex items-center justify-between gap-3">
+                          <span className="text-gray-800 text-sm md:text-base">
+                            {sentence}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => onGoToQuestion(q.questionId)}
+                            className="shrink-0 px-3 py-1.5 text-sm font-medium rounded-md border border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400 hover:text-slate-800 transition-colors"
+                          >
+                            Endre
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="block py-3 text-gray-800 text-sm md:text-base">
+                          {sentence}
+                        </span>
+                      )}
                     </li>
                   );
                 })}
@@ -235,7 +255,7 @@ export default function QuestionnaireSummary({
           <button
             type="button"
             onClick={onBack}
-            className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 min-w-28 touch-manipulation"
           >
             Tilbake
           </button>
@@ -243,7 +263,7 @@ export default function QuestionnaireSummary({
             type="button"
             onClick={onSubmit}
             disabled={isSubmitting}
-            className="px-6 py-2 bg-brand-navy text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed min-w-28 touch-manipulation"
           >
             {isSubmitting ? "Sender..." : "Send inn"}
           </button>

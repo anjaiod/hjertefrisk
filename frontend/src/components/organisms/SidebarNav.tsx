@@ -54,6 +54,26 @@ export function SidebarNav({
   const isActive = (href: string) =>
     currentPath === href || currentPath.startsWith(`${href}/`);
 
+  const dashboardItem: NavItem = {
+    label: "Dashboard",
+    href: withPatientId("/dashboard"),
+    active: currentPath === "/dashboard",
+    icon: (
+      <svg
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+        />
+      </svg>
+    ),
+  };
+
   const primaryItems: NavItem[] = [
     {
       label: "Varslinger",
@@ -153,6 +173,47 @@ export function SidebarNav({
         </svg>
       ),
     },
+    {
+      label: "Hurtigskjema",
+      href: withPatientId("/dashboard/hurtigskjema"),
+      active: isActive("/dashboard/hurtigskjema"),
+      icon: (
+        <svg
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+          />
+        </svg>
+      ),
+    },
+  ];
+
+  const adminItems: NavItem[] = [
+    {
+      label: "TODO Rules",
+      href: "/dashboard/todo_rules",
+      active: isActive("/dashboard/todo_rules"),
+      icon: (
+        <svg
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      ),
+    },
   ];
 
   return (
@@ -174,11 +235,13 @@ export function SidebarNav({
         </div>
       </div>
 
-      {hasSelectedPatient ? (
-        <>
-          <div className="my-6 h-px bg-linear-to-r from-transparent via-brand-sky to-transparent" />
+      <div className="my-6 h-px bg-linear-to-r from-transparent via-brand-sky to-transparent" />
 
-          <nav className="flex flex-col space-y-2">
+      <nav className="flex flex-col space-y-2">
+        {hasSelectedPatient ? (
+          <>
+            <Item key={dashboardItem.href} item={dashboardItem} />
+
             {primaryItems.map((item) => (
               <Item key={item.href} item={item} />
             ))}
@@ -186,9 +249,17 @@ export function SidebarNav({
             {secondaryItems.map((item) => (
               <Item key={item.href} item={item} />
             ))}
-          </nav>
-        </>
-      ) : null}
+          </>
+        ) : null}
+      </nav>
+
+      <div className="mt-auto border-t border-brand-sky/30 pt-6">
+        <nav className="flex flex-col space-y-2">
+          {adminItems.map((item) => (
+            <Item key={item.href} item={item} />
+          ))}
+        </nav>
+      </div>
     </aside>
   );
 }

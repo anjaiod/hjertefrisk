@@ -28,6 +28,14 @@ export function SearchBar({
     }
   }
 
+  function handleClear() {
+    if (onChange) {
+      onChange("");
+    } else {
+      setInternalValue("");
+    }
+  }
+
   return (
     <div
       className={[
@@ -51,6 +59,16 @@ export function SearchBar({
         placeholder={placeholder}
         className="w-full bg-transparent text-sm outline-none placeholder:text-brand-mist"
       />
+      {hasValue && (
+        <button
+          type="button"
+          onClick={handleClear}
+          aria-label="Tøm søk"
+          className="shrink-0 text-slate-400 hover:text-slate-600 transition-colors"
+        >
+          ✕
+        </button>
+      )}
     </div>
   );
 }

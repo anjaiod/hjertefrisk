@@ -12,3 +12,4 @@ export * from "./ToDo";
 export * from "./Response";
 export * from "./Personnel";
 export * from "./QuestionDependency";
+export * from "./ToDoRule";

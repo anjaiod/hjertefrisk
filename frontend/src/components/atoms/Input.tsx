@@ -57,7 +57,9 @@ export function Input(props: Props) {
     return (
       <select
         {...selectProps}
-        className={[baseClassName, "cursor-pointer appearance-none pr-8"].join(" ")}
+        className={[baseClassName, "cursor-pointer appearance-none pr-8"].join(
+          " ",
+        )}
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 13L15 7.5' stroke='%23647A89' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
           backgroundRepeat: "no-repeat",
@@ -66,7 +68,9 @@ export function Input(props: Props) {
         }}
       >
         {placeholder && (
-          <option value="" disabled hidden>{placeholder}</option>
+          <option value="" disabled hidden>
+            {placeholder}
+          </option>
         )}
         {options.map((option) => (
           <option key={option.value} value={option.value}>

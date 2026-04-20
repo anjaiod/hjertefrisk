@@ -13,6 +13,7 @@ import type {
   CreateResponseDto,
   QueryQuestionWithDetailsDto,
   QueryWithQuestionsDto,
+  SeverityDto,
 } from "@/types";
 
 function toPatientPerspective(text: string): string {
@@ -36,11 +37,16 @@ function toPatientPerspective(text: string): string {
 
 interface HealthQuestionnaireProps {
   patientId: number | null;
+  compact?: boolean;
 }
 
-export default function HealthQuestionnaire({ patientId }: HealthQuestionnaireProps) {
+export default function HealthQuestionnaire({
+  patientId,
+  compact = false,
+}: HealthQuestionnaireProps) {
   const { user } = useUser();
   const [questions, setQuestions] = useState<QueryQuestionWithDetailsDto[]>([]);
+  const [severities, setSeverities] = useState<SeverityDto[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,14 +54,19 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [formKey, setFormKey] = useState(0);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
-    const fetchQuestions = async () => {
+    const fetchData = async () => {
       try {
-        const data = await apiClient.get<QueryWithQuestionsDto>(
-          "/api/Query/full/by-name/Helseskjema",
-        );
-        setQuestions(data.questions ?? []);
+        const [questionsData, severitiesData] = await Promise.all([
+          apiClient.get<QueryWithQuestionsDto>(
+            "/api/Query/full/by-name/Helseskjema",
+          ),
+          apiClient.get<SeverityDto[]>("/api/Severities"),
+        ]);
+        setQuestions(questionsData.questions ?? []);
+        setSeverities(severitiesData ?? []);
       } catch (err) {
         setError("Noe gikk galt ved henting av spørsmål.");
         console.error(err);
@@ -64,14 +75,16 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
       }
     };
 
-    void fetchQuestions();
+    void fetchData();
   }, []);
 
   const updateAnswer = (questionId: number, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  const shouldShowQuestion = (question: QueryQuestionWithDetailsDto): boolean => {
+  const shouldShowQuestion = (
+    question: QueryQuestionWithDetailsDto,
+  ): boolean => {
     const isChild = questions.some((q) =>
       q.dependencies.some((d) => d.childQuestionId === question.questionId),
     );
@@ -130,7 +143,9 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
     return undefined;
   };
 
-  const getUnit = (question: QueryQuestionWithDetailsDto): string | undefined => {
+  const getUnit = (
+    question: QueryQuestionWithDetailsDto,
+  ): string | undefined => {
     const text = question.fallbackText.toLowerCase();
     if (text.includes("hvor høy")) return "cm";
     if (text.includes("hvor mye veier")) return "kg";
@@ -144,7 +159,9 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
     return undefined;
   };
 
-  const getRows = (question: QueryQuestionWithDetailsDto): number | undefined => {
+  const getRows = (
+    question: QueryQuestionWithDetailsDto,
+  ): number | undefined => {
     const text = question.fallbackText.toLowerCase();
     if (text.includes("hvor mye røyker")) return 2;
     if (text.includes("vekten din endret")) return 2;
@@ -152,7 +169,9 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
     return undefined;
   };
 
-  const renderQuestion = (question: QueryQuestionWithDetailsDto): ReactElement => {
+  const renderQuestion = (
+    question: QueryQuestionWithDetailsDto,
+  ): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
     const questionText = toPatientPerspective(question.fallbackText);
@@ -166,6 +185,7 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
           value={value as "ja" | "nei" | ""}
           onChange={(val) => updateAnswer(question.questionId, val)}
           required={question.isRequired}
+          compact={compact}
         />
       );
     }
@@ -176,13 +196,22 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
           key={question.questionId}
           question={questionText}
           name={name}
-          options={question.options.map((option) => ({
-            value: option.optionValue,
-            label: option.fallbackText,
-          }))}
+          options={question.options.map((option) => {
+            const severity = severities.find(
+              (s) =>
+                s.questionId === question.questionId &&
+                s.requiredOption === option.questionOptionId,
+            );
+            return {
+              value: option.optionValue,
+              label: option.fallbackText,
+              score: severity?.score,
+            };
+          })}
           value={value}
           onChange={(val) => updateAnswer(question.questionId, val)}
           required={question.isRequired}
+          compact={compact}
         />
       );
     }
@@ -198,6 +227,7 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
           placeholder={getPlaceholder(question)}
           unit={getUnit(question)}
           required={question.isRequired}
+          compact={compact}
         />
       );
     }
@@ -212,36 +242,43 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
         placeholder={getPlaceholder(question)}
         rows={getRows(question)}
         required={question.isRequired}
+        compact={compact}
       />
     );
   };
 
   const groupedQuestions = Array.from(
     visibleQuestions
-      .reduce((groups, question) => {
-        const categoryName = question.categoryName?.trim() || "Uten kategori";
-        const categoryKey =
-          question.categoryId != null
-            ? `category-${question.categoryId}`
-            : `category-name-${categoryName.toLowerCase()}`;
+      .reduce(
+        (groups, question) => {
+          const categoryName = question.categoryName?.trim() || "Uten kategori";
+          const categoryKey =
+            question.categoryId != null
+              ? `category-${question.categoryId}`
+              : `category-name-${categoryName.toLowerCase()}`;
 
-        const existingGroup = groups.get(categoryKey);
-        if (existingGroup) {
-          existingGroup.questions.push(question);
+          const existingGroup = groups.get(categoryKey);
+          if (existingGroup) {
+            existingGroup.questions.push(question);
+            return groups;
+          }
+
+          groups.set(categoryKey, {
+            categoryKey,
+            categoryName,
+            questions: [question],
+          });
           return groups;
-        }
-
-        groups.set(categoryKey, {
-          categoryKey,
-          categoryName,
-          questions: [question],
-        });
-        return groups;
-      }, new Map<string, {
-        categoryKey: string;
-        categoryName: string;
-        questions: QueryQuestionWithDetailsDto[];
-      }>())
+        },
+        new Map<
+          string,
+          {
+            categoryKey: string;
+            categoryName: string;
+            questions: QueryQuestionWithDetailsDto[];
+          }
+        >(),
+      )
       .values(),
   );
 
@@ -325,7 +362,10 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
       setIsSubmitting(true);
       await apiClient.post(`/api/patients/${patientId}/responses`, payload);
       if (measurementPayload.length > 0) {
-        await apiClient.post(`/api/patients/${patientId}/measurements`, measurementPayload);
+        await apiClient.post(
+          `/api/patients/${patientId}/measurements`,
+          measurementPayload,
+        );
       }
       setAnswers({});
       setFormKey((k) => k + 1);
@@ -346,9 +386,44 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
           onSubmit={handleSubmit}
           className="max-w-4xl mx-auto p-6 space-y-8"
         >
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Helseskjema - Levevaner og Målinger
-          </h1>
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">
+              Helseskjema - Levevaner og Målinger
+            </h1>
+            <button
+              type="button"
+              onClick={() => setShowAll((prev) => !prev)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-colors ${
+                showAll
+                  ? "bg-brand-navy text-white border-brand-navy hover:opacity-90"
+                  : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+              }`}
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                {showAll ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 15l7-7 7 7"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                )}
+              </svg>
+              {showAll ? "Skjul alle seksjoner" : "Vis alle seksjoner"}
+            </button>
+          </div>
 
           {patientId == null && (
             <p className="text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-4 py-3">
@@ -372,6 +447,7 @@ export default function HealthQuestionnaire({ patientId }: HealthQuestionnairePr
                 key={`${formKey}-${group.categoryKey}`}
                 title={group.categoryName}
                 defaultOpen={index === 0}
+                forceOpen={showAll ? true : undefined}
               >
                 <div className="px-6 py-4">
                   {group.questions.map(renderQuestion)}
