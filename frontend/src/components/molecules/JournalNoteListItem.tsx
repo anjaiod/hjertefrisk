@@ -26,7 +26,7 @@ export function JournalNoteListItem({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left px-4 py-2.5 border-b border-gray-50 transition-colors ${
+      className={`w-full text-left px-3 py-2 border-b border-gray-50 transition-colors ${
         isSelected ? "bg-blue-50" : "hover:bg-gray-50"
       }`}
     >
@@ -52,13 +52,14 @@ export function JournalNoteListItem({
             />
           </svg>
         ) : (
-          <span className="text-xs px-1.5 py-0.5 rounded bg-brand-orange-lightest text-brand-orange shrink-0">
+          <span className="text-xs px-1.5 py-0.5 rounded bg-brand-mist-background text-brand-mist-text shrink-0">
             Utkast
           </span>
         )}
       </div>
-      <div className="text-sm text-gray-400">
-        {note.personnelName} · {formatDateTime(note.createdAt)}
+      <div className="text-xs text-gray-400 leading-tight">
+        <div>{note.personnelName}</div>
+        <div>{formatDateTime(note.createdAt)}</div>
       </div>
     </button>
   );

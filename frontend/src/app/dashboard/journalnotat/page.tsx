@@ -21,12 +21,14 @@ const FILTER_TABS: FilterType[] = [
   "JournalNotat",
   "Konsultasjon",
   "Henvisning",
+  "Epikrise",
 ];
 const FILTER_LABELS: Record<FilterType, string> = {
   Alle: "Alle",
   JournalNotat: "Journal",
   Konsultasjon: "Kons.",
   Henvisning: "Henvis.",
+  Epikrise: "Epikrise",
 };
 
 function groupByPeriod(
@@ -71,10 +73,16 @@ export default function JournalnotatPage() {
   const [editingNote, setEditingNote] = useState<JournalNoteDto | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<JournalNoteDto | null>(null);
+  const [page, setPage] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [newNoteType, setNewNoteType] =
     useState<JournalNoteType>("JournalNotat");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    listRef.current?.scrollTo({ top: 0 });
+  }, [page]);
 
   useEffect(() => {
     if (!dropdownOpen) return;
@@ -102,9 +110,16 @@ export default function JournalnotatPage() {
       .finally(() => setLoading(false));
   }, [user, patientId]);
 
+  const PAGE_SIZE = 10;
+
   const filteredNotes =
     filter === "Alle" ? notes : notes.filter((n) => n.type === filter);
-  const grouped = groupByPeriod(filteredNotes);
+  const totalPages = Math.ceil(filteredNotes.length / PAGE_SIZE);
+  const pagedNotes = filteredNotes.slice(
+    page * PAGE_SIZE,
+    (page + 1) * PAGE_SIZE,
+  );
+  const grouped = groupByPeriod(pagedNotes);
 
   function handleNewNote(type: JournalNoteType) {
     setNewNoteType(type);
@@ -165,9 +180,12 @@ export default function JournalnotatPage() {
 
   return (
     <>
-      <div className="flex h-full gap-4 print:block">
+      <div
+        className="flex gap-4 print:block"
+        style={{ height: "calc(100vh - 7rem)" }}
+      >
         {/* Note list */}
-        <aside className="w-80 shrink-0 flex flex-col bg-white rounded-xl shadow-sm border border-brand-sky-lighter overflow-hidden print:hidden">
+        <aside className="w-72 shrink-0 flex flex-col min-h-0 bg-white rounded-xl shadow-sm border border-brand-sky-lighter overflow-hidden print:hidden">
           <div className="px-4 pt-4 pb-3 border-b border-gray-100">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -233,6 +251,12 @@ export default function JournalnotatPage() {
                       desc: "Henvisning til spesialist",
                       dot: "bg-brand-sun-text",
                     },
+                    {
+                      type: "Epikrise" as JournalNoteType,
+                      label: "Epikrise",
+                      desc: "Sammendrag ved utskrivning",
+                      dot: "bg-brand-violet-text",
+                    },
                   ].map((item) => (
                     <button
                       key={item.type}
@@ -262,7 +286,10 @@ export default function JournalnotatPage() {
               <button
                 key={f}
                 type="button"
-                onClick={() => setFilter(f)}
+                onClick={() => {
+                  setFilter(f);
+                  setPage(0);
+                }}
                 className={`flex-1 py-2 text-center transition-colors ${
                   filter === f
                     ? "text-brand-navy border-b-2 border-brand-navy font-medium"
@@ -275,7 +302,7 @@ export default function JournalnotatPage() {
           </div>
 
           {/* Note list */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto" ref={listRef}>
             {loading ? (
               <div className="text-center text-xs text-gray-400 py-8">
                 Laster...
@@ -305,11 +332,36 @@ export default function JournalnotatPage() {
               ))
             )}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100 text-xs text-gray-500">
+              <button
+                type="button"
+                onClick={() => setPage((p) => p - 1)}
+                disabled={page === 0}
+                className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors"
+              >
+                ← Forrige
+              </button>
+              <span>
+                {page + 1} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= totalPages - 1}
+                className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors"
+              >
+                Neste →
+              </button>
+            </div>
+          )}
         </aside>
 
         {/* Note detail — hidden when editor is open without a note selected */}
         {(!editorOpen || selectedNote) && (
-          <section className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-brand-sky-lighter overflow-hidden print:flex print:border-none">
+          <section className="flex-1 min-h-0 flex flex-col bg-white rounded-xl shadow-sm border border-brand-sky-lighter overflow-hidden print:flex print:border-none">
             {selectedNote ? (
               <JournalDetail
                 note={selectedNote}
@@ -344,11 +396,7 @@ export default function JournalnotatPage() {
 
         {/* Editor — takes full width when no note is being read */}
         {editorOpen && (
-          <section
-            className={`flex flex-col bg-white rounded-xl shadow-sm border border-brand-sky-lighter overflow-hidden print:hidden ${
-              selectedNote ? "w-full lg:w-96 xl:w-[480px] shrink-0" : "flex-1"
-            }`}
-          >
+          <section className="flex-1 min-h-0 flex flex-col bg-white rounded-xl shadow-sm border border-brand-sky-lighter overflow-hidden print:hidden">
             <JournalEditor
               note={editingNote}
               patientId={patientId}

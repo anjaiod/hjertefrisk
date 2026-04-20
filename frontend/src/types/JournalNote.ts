@@ -1,4 +1,8 @@
-export type JournalNoteType = "JournalNotat" | "Konsultasjon" | "Henvisning";
+export type JournalNoteType =
+  | "JournalNotat"
+  | "Konsultasjon"
+  | "Henvisning"
+  | "Epikrise";
 
 export type CreateJournalNoteDto = {
   patientId: number;

@@ -10,11 +10,13 @@ import type {
 } from "@/types";
 import { RichTextEditor } from "@/components/molecules/RichTextEditor";
 import { NoteTypeTag } from "@/components/atoms/NoteTypeTag";
+import { getTemplates } from "@/lib/journalTemplates";
 
 const NOTE_TYPES: { value: JournalNoteType; label: string }[] = [
   { value: "Konsultasjon", label: "Konsultasjon" },
   { value: "JournalNotat", label: "Journal notat" },
   { value: "Henvisning", label: "Henvisning" },
+  { value: "Epikrise", label: "Epikrise" },
 ];
 
 function typeLabel(type: JournalNoteType) {
@@ -57,11 +59,15 @@ export function JournalEditor({
   const [autoSaveStatus, setAutoSaveStatus] = useState<
     "saved" | "saving" | "unsaved"
   >("saved");
+  const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false);
+  const templateDropdownRef = useRef<HTMLDivElement>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedNoteRef = useRef<JournalNoteDto | null>(note);
   const savingRef = useRef(false);
   // New notes are only persisted on explicit save — auto-save is disabled until then
   const isNewNoteRef = useRef(note === null);
+
+  const templates = getTemplates(type);
 
   useEffect(() => {
     savedNoteRef.current = note;
@@ -72,6 +78,20 @@ export function JournalEditor({
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!templateDropdownOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (
+        templateDropdownRef.current &&
+        !templateDropdownRef.current.contains(e.target as Node)
+      ) {
+        setTemplateDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [templateDropdownOpen]);
 
   const handleSave = useCallback(
     async (isAutoSave = false): Promise<JournalNoteDto | null> => {
@@ -152,9 +172,40 @@ export function JournalEditor({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-        <NoteTypeTag type={type} />
+        <div className="flex items-center gap-2">
+          <NoteTypeTag type={type} />
+          {templates.length > 0 && (
+            <div className="relative" ref={templateDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setTemplateDropdownOpen((o) => !o)}
+                className="px-2.5 py-1 text-xs text-gray-500 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+              >
+                Velg mal
+              </button>
+              {templateDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20 min-w-52">
+                  {templates.map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onClick={() => {
+                        setContent(tpl.content);
+                        setAutoSaveStatus("unsaved");
+                        setTemplateDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
+                    >
+                      {tpl.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center gap-2">
           <button
@@ -186,7 +237,7 @@ export function JournalEditor({
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         <RichTextEditor
           content={content}
           onChange={handleContentChange}

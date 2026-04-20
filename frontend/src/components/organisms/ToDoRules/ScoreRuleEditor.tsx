@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import type { CreateCategoryScoreRule, CategoryDto, Operator } from '@/types';
-import { Modal } from '@/components/atoms/Modal';
+import React, { useState } from "react";
+import type { CreateCategoryScoreRule, CategoryDto, Operator } from "@/types";
+import { Modal } from "@/components/atoms/Modal";
 
 interface ScoreRuleEditorProps {
   categoryId: number;
@@ -15,24 +15,24 @@ export default function ScoreRuleEditor({
   categoryId,
   category,
   onClose,
-  onRuleCreated
+  onRuleCreated,
 }: ScoreRuleEditorProps) {
-  const [toDoText, setToDoText] = useState('');
+  const [toDoText, setToDoText] = useState("");
   const [priority, setPriority] = useState(1);
-  const [operator, setOperator] = useState<Operator>('>=');
-  const [scoreThreshold, setScoreThreshold] = useState('');
+  const [operator, setOperator] = useState<Operator>(">=");
+  const [scoreThreshold, setScoreThreshold] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!toDoText.trim()) {
-      alert('Please enter a TODO text');
+      alert("Please enter a TODO text");
       return;
     }
 
     if (!scoreThreshold) {
-      alert('Please enter a score threshold');
+      alert("Please enter a score threshold");
       return;
     }
 
@@ -44,12 +44,12 @@ export default function ScoreRuleEditor({
         toDoText: toDoText.trim(),
         priority,
         operator: operator,
-        triggerType: 'Category'
+        triggerType: "Category",
       };
 
       await onRuleCreated(rule);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to create rule');
+      alert(err instanceof Error ? err.message : "Failed to create rule");
     } finally {
       setLoading(false);
     }
@@ -58,10 +58,11 @@ export default function ScoreRuleEditor({
   return (
     <Modal onClose={onClose} title={`Add Score Rule for ${category?.name}`}>
       <div className="max-w-md w-full p-2 space-y-4">
-
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">TODO Text *</label>
+            <label className="block text-sm font-medium text-gray-700">
+              TODO Text *
+            </label>
             <textarea
               value={toDoText}
               onChange={(e) => setToDoText(e.target.value)}
@@ -74,7 +75,9 @@ export default function ScoreRuleEditor({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Operator *</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Operator *
+              </label>
               <select
                 value={operator}
                 onChange={(e) => setOperator(e.target.value as Operator)}
@@ -91,7 +94,9 @@ export default function ScoreRuleEditor({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Score Threshold *</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Score Threshold *
+              </label>
               <input
                 type="number"
                 value={scoreThreshold}
@@ -106,11 +111,15 @@ export default function ScoreRuleEditor({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Priority</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Priority
+              </label>
               <input
                 type="number"
                 value={priority}
-                onChange={(e) => setPriority(Math.max(0, parseInt(e.target.value) || 0))}
+                onChange={(e) =>
+                  setPriority(Math.max(0, parseInt(e.target.value) || 0))
+                }
                 className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 min="0"
                 disabled={loading}
@@ -124,7 +133,7 @@ export default function ScoreRuleEditor({
               disabled={loading}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
             >
-              {loading ? 'Creating...' : 'Create Rule'}
+              {loading ? "Creating..." : "Create Rule"}
             </button>
             <button
               type="button"
