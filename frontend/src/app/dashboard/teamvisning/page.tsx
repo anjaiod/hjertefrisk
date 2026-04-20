@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import BackButton from "@/components/atoms/BackButton";
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/apiClient";
 import type { LatestMeasurementResultDto, PatientDto } from "@/types";
@@ -45,7 +46,6 @@ const CATEGORY_PDF: Record<string, string> = {
 };
 
 export default function TeamvisningPage() {
-  const router = useRouter();
   const patientId = useSearchParams().get("patientId");
 
   const [patient, setPatient] = useState<PatientDto | null>(null);
@@ -99,28 +99,7 @@ export default function TeamvisningPage() {
   return (
     <div className="flex flex-col gap-10 max-w-6xl mx-auto">
       <div>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="flex items-center gap-1 text-sm text-slate-600 hover:text-brand-navy transition-colors cursor-pointer"
-          aria-label="Tilbake"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          Tilbake
-        </button>
+        <BackButton />
       </div>
 
       {/* Patient header */}
