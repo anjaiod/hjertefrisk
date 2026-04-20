@@ -16,6 +16,8 @@ Use the documents in this order:
    Scripted bootstrap of the Google Cloud load balancer resources.
 7. `cloud_run_destroy_and_cleanup.md`
    Non-production teardown and image cleanup.
+8. `release_and_deploy_tags.md`
+   Simple explanation of how deploy tagging works today.
 
 Supporting docs:
 
