@@ -82,7 +82,7 @@ export function VarslingModal({
         <p className="text-slate-500 text-sm">Laster...</p>
       ) : visible.length === 0 ? (
         <p className="text-slate-500 text-sm">
-          Ingen varslinger for denne pasienten.
+          Ingen nye varslinger for denne pasienten.
         </p>
       ) : (
         <ul className="space-y-3">

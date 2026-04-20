@@ -1,8 +1,9 @@
 "use client";
 import { useUser } from "@/context/UserContext";
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { VarslingModal } from "../molecules/VarslingModal";
+import { fetchNotifications } from "@/lib/notifications";
 
 type NavItem = {
   label: string;
@@ -45,6 +46,7 @@ export function SidebarNav({
   const currentPath = activePath === "/" ? (pathname ?? "/") : activePath;
 
   const [showVarsling, setShowVarsling] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
 
   const patientId = searchParams?.get("patientId");
   const hasSelectedPatient = Boolean(patientId && patientId.trim() !== "");
@@ -219,6 +221,24 @@ export function SidebarNav({
     },
   ];
 
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const all = await fetchNotifications();
+        const forPatient = patientId
+          ? all.some((n) => n.patientId === Number(patientId) && !n.read)
+          : false;
+        if (mounted) setHasUnread(forPatient);
+      } catch (e) {
+        console.error("Failed to fetch notifications for sidebar", e);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [patientId]);
+
   return (
     <>
       <aside className="sticky top-0 hidden h-screen w-72 flex-col border-r border-brand-sky/30 bg-linear-to-b from-white to-brand-mist/10 p-6 md:flex">
@@ -262,7 +282,17 @@ export function SidebarNav({
                     />
                   </svg>
                 </span>
-                <span>Varslinger</span>
+                <span className="flex items-center gap-2">
+                  <span className="relative inline-flex items-center">
+                    <span className="min-w-[72px]">Varslinger</span>
+                    {hasUnread ? (
+                      <span
+                        className="absolute -right-2 top-1 inline-block w-2 h-2 rounded-full bg-red-500"
+                        aria-hidden
+                      />
+                    ) : null}
+                  </span>
+                </span>
               </button>
 
               {secondaryItems.map((item) => (
