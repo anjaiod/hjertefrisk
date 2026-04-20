@@ -25,27 +25,6 @@ export function PatientHeader() {
       <div></div>
       <div className="flex items-center gap-5">
         <button
-          onClick={() => (window.location.href = "../../pasientDashboard")}
-          className="bg-brand-navy hover:bg-brand-navy-light transition rounded-full w-10 h-10 flex items-center justify-center cursor-pointer"
-          aria-label="Hjem"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="white"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="w-6 h-6"
-          >
-            <path d="M3 10.5L12 3l9 7.5" />
-            <path d="M5 10v10h14V10" />
-            <path d="M9 20v-6h6v6" />
-          </svg>
-        </button>
-
-        <button
           onClick={handleLogout}
           className="bg-brand-navy hover:bg-brand-navy-light transition rounded-full w-10 h-10 flex items-center justify-center cursor-pointer"
           aria-label="Logg ut"

@@ -238,10 +238,10 @@ export function SidebarNav({
       <div className="my-6 h-px bg-linear-to-r from-transparent via-brand-sky to-transparent" />
 
       <nav className="flex flex-col space-y-2">
-        <Item key={dashboardItem.href} item={dashboardItem} />
-
         {hasSelectedPatient ? (
           <>
+            <Item key={dashboardItem.href} item={dashboardItem} />
+
             {primaryItems.map((item) => (
               <Item key={item.href} item={item} />
             ))}
