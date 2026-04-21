@@ -39,12 +39,14 @@ public class ToDoService : IToDoService
             .Select(t => new ToDoDto
             {
                 ToDoId = t.ToDoId,
+                CreatedAt = t.CreatedAt,
                 Finished = t.Finished,
                 FinishedAt = t.FinishedAt,
                 FinishedBy = t.FinishedBy,
                 ToDoText = t.ToDoText,
                 PatientId = t.PatientId,
-                PersonnelId = t.PersonnelId,
+                    PersonnelId = t.PersonnelId,
+                    ToDoRuleId = t.ToDoRuleId,
                 Public = t.Public
             })
             .ToListAsync();
@@ -62,6 +64,8 @@ public class ToDoService : IToDoService
             FinishedBy = dto.Finished ? dto.PersonnelId : null,
             Public = dto.Public
         };
+        // Ensure CreatedAt is set server-side for immediate availability
+        entity.CreatedAt = DateTime.UtcNow;
 
         _db.ToDos.Add(entity);
         await _db.SaveChangesAsync();
@@ -69,12 +73,14 @@ public class ToDoService : IToDoService
         return new ToDoDto
         {
             ToDoId = entity.ToDoId,
+            CreatedAt = entity.CreatedAt,
             Finished = entity.Finished,
             FinishedAt = entity.FinishedAt,
             FinishedBy = entity.FinishedBy,
             ToDoText = entity.ToDoText,
             PatientId = entity.PatientId,
             PersonnelId = entity.PersonnelId,
+            ToDoRuleId = entity.ToDoRuleId,
             Public = entity.Public
         };
     }
@@ -114,12 +120,14 @@ public class ToDoService : IToDoService
         return new ToDoDto
         {
             ToDoId = entity.ToDoId,
+            CreatedAt = entity.CreatedAt,
             Finished = entity.Finished,
             FinishedAt = entity.FinishedAt,
             FinishedBy = entity.FinishedBy,
             ToDoText = entity.ToDoText,
             PatientId = entity.PatientId,
             PersonnelId = entity.PersonnelId,
+            ToDoRuleId = entity.ToDoRuleId,
             Public = entity.Public
         };
     }
