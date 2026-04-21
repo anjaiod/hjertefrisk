@@ -21,14 +21,23 @@ public class BlodlipiderEvaluationService
         public const string CategoryHigh = "Blodlipider score 2";
         public const string CategoryMedium = "Blodlipider score 1";
         public const string CategoryLow = "Blodlipider score 0";
+        public const string LdlOptimal = "LDL < 1,8";
+        public const string LdlModerate = "LDL 1,8-2,9";
+        public const string LdlElevated = "LDL 3,0-3,9";
+        public const string LdlVeryHigh = "LDL > 4,9";
+        public const string HdlLow = "HDL lav";
     }
 
     private const int TotalCholesterolMeasurementId = 6;
+    private const int LdlMeasurementId = 7;
+    private const int HdlMeasurementId = 8;
     private const int TriglyceridesMeasurementId = 9;
 
     private readonly int[] _measurementIds =
     [
         TotalCholesterolMeasurementId,
+        LdlMeasurementId,
+        HdlMeasurementId,
         TriglyceridesMeasurementId
     ];
 
@@ -70,9 +79,11 @@ public class BlodlipiderEvaluationService
         }
 
         var totalCholesterol = latestMeasurements.GetValueOrDefault(TotalCholesterolMeasurementId);
+        var ldl = latestMeasurements.GetValueOrDefault(LdlMeasurementId);
+        var hdl = latestMeasurements.GetValueOrDefault(HdlMeasurementId);
         var trig = latestMeasurements.GetValueOrDefault(TriglyceridesMeasurementId);
 
-        bool hasAtLeastOneMeasurement = totalCholesterol.HasValue || trig.HasValue;
+        bool hasAtLeastOneMeasurement = totalCholesterol.HasValue || ldl.HasValue || hdl.HasValue || trig.HasValue;
 
         bool heartDisease = _heartDiseaseQuestionId.HasValue &&
             responses.TryGetValue(_heartDiseaseQuestionId.Value, out var heartResponse) &&
@@ -130,6 +141,47 @@ public class BlodlipiderEvaluationService
             else if (trig.Value >= 1.7m)
             {
                 AddTitle(MeasureTitleKeys.TriglyceridesLifestyle);
+            }
+        }
+
+        if (ldl.HasValue)
+        {
+            if (ldl.Value > 4.9m)
+            {
+                highRisk = true;
+                AddTitle(MeasureTitleKeys.LdlVeryHigh);
+            }
+            else if (ldl.Value >= 3.0m)
+            {
+                mediumRisk = true;
+                AddTitle(MeasureTitleKeys.LdlElevated);
+            }
+            else if (ldl.Value >= 1.8m)
+            {
+                AddTitle(MeasureTitleKeys.LdlModerate);
+            }
+            else
+            {
+                AddTitle(MeasureTitleKeys.LdlOptimal);
+            }
+        }
+
+        if (hdl.HasValue)
+        {
+            var gender = await _db.Patients
+                .AsNoTracking()
+                .Where(p => p.Id == patientId)
+                .Select(p => p.Gender)
+                .FirstOrDefaultAsync() ?? "";
+
+            bool hdlLow = gender.Equals("Mann", StringComparison.OrdinalIgnoreCase)
+                ? hdl.Value < 1.0m
+                : hdl.Value < 1.2m;
+
+            if (hdlLow)
+            {
+                mediumRisk = true;
+                AddTitle(MeasureTitleKeys.HdlLow);
             }
         }
 
