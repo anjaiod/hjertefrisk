@@ -30,7 +30,7 @@ export function getQuestionValidationRange(
   const text = question.fallbackText.toLowerCase();
 
   // Kroppsdata
-  if (text.includes("hvor høy")) return { min: 1, max: 250 };
+  if (text.includes("hvor høy")) return { min: 30, max: 250 };
   if (text.includes("hvor mye veier")) return { min: 10, max: 700 };
   if (text.includes("livvidde")) return { min: 30, max: 300 };
 
