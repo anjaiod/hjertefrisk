@@ -147,6 +147,8 @@ public class ResponseService : IResponseService
             processedCategories.Add(categoryId);
         }
 
+        await CreateFastingTodoIfApplicableAsync(patientId, entities);
+
         return entities.Select(r => new ResponseDto
         {
             AnsweredQueryId = r.AnsweredQueryId,
@@ -157,6 +159,48 @@ public class ResponseService : IResponseService
             NumberValue = r.NumberValue,
             CreatedAt = r.CreatedAt
         });
+    }
+
+    /// <summary>
+    /// Oppretter en todo hvis triglyserider er 4,0–9,9 OG prøven var ikke-fastende (spørsmål 177 = "nei").
+    /// Denne betingelsen er sammensatt (to spørsmål) og kan ikke uttrykkes med én QuestionAnswerRule.
+    /// </summary>
+    private async Task CreateFastingTodoIfApplicableAsync(int patientId, List<Response> entities)
+    {
+        const int TrigQuestionId = 96;
+        const int FastingQuestionId = 177;
+        const string TodoText = "Bestill ny fastende triglyseridprøve.";
+
+        var trigResponse = entities.FirstOrDefault(e => e.QuestionId == TrigQuestionId);
+        if (trigResponse?.NumberValue == null) return;
+        if (trigResponse.NumberValue < 4m || trigResponse.NumberValue >= 10m) return;
+
+        var fastingResponse = entities.FirstOrDefault(e => e.QuestionId == FastingQuestionId);
+        if (fastingResponse == null) return;
+
+        bool isFasting =
+            (!string.IsNullOrWhiteSpace(fastingResponse.TextValue) &&
+             fastingResponse.TextValue.Trim().Equals("ja", StringComparison.OrdinalIgnoreCase)) ||
+            (fastingResponse.NumberValue.HasValue && fastingResponse.NumberValue.Value >= 1);
+
+        if (isFasting) return;
+
+        bool exists = await _db.ToDos.AnyAsync(t =>
+            t.PatientId == patientId &&
+            !t.Finished &&
+            t.ToDoText == TodoText);
+
+        if (exists) return;
+
+        _db.ToDos.Add(new ToDo
+        {
+            PatientId = patientId,
+            ToDoText = TodoText,
+            Finished = false,
+            Public = true,
+            ToDoRuleId = null
+        });
+        await _db.SaveChangesAsync();
     }
 
     public async Task<IEnumerable<AnsweredQueryHistoryDto>> GetHistoryForPatientAsync(int patientId)
