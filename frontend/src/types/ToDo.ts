@@ -12,6 +12,7 @@ export type ToDoDto = {
   toDoText: string;
   patientId: number;
   personnelId: number;
+  toDoRuleId?: number;
   public: boolean;
   createdAt?: string;
 };

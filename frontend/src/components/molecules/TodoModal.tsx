@@ -19,7 +19,7 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
     const fetchTodos = async () => {
       try {
         const allTodos = await apiClient.get<
-          Array<{ toDoId: number; toDoText: string; finished: boolean; public: boolean; patientId: number; createdAt: string }>
+          Array<{ toDoId: number; toDoText: string; finished: boolean; public: boolean; patientId: number; createdAt: string; personnelId?: number; toDoRuleId?: number }>
         >("/api/todos");
         
         const filtered = allTodos
@@ -30,6 +30,8 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
             completed: t.finished,
             public: t.public,
             createdAt: t.createdAt,
+            personnelId: t.personnelId,
+            toDoRuleId: t.toDoRuleId,
           }));
         setTodos(filtered);
       } catch (error) {

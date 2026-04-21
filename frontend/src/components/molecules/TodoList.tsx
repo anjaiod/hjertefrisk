@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Checkbox } from "../atoms/Checkbox";
 import { apiClient } from "@/lib/apiClient";
 
-type Todo = { id: number; text: string; completed: boolean; public: boolean; createdAt?: string };
+type Todo = { id: number; text: string; completed: boolean; public: boolean; createdAt?: string; personnelId?: number; toDoRuleId?: number };
 
 export function TodoList({
   title,
@@ -28,6 +28,27 @@ export function TodoList({
   useEffect(() => {
     setTodos(initialTodos);
   }, [initialTodos]);
+
+  const [personnelMap, setPersonnelMap] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadPersonnel = async () => {
+      try {
+        const all = await apiClient.get<Array<{ id: number; name: string }>>("/api/personnel");
+        if (cancelled) return;
+        const map: Record<number, string> = {};
+        all.forEach((p) => (map[p.id] = p.name));
+        setPersonnelMap(map);
+      } catch (e) {
+        // ignore
+      }
+    };
+    loadPersonnel();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const toggleTodo = async (id: number) => {
     const todo = todos.find((t) => t.id === id);
@@ -232,17 +253,36 @@ export function TodoList({
               >
                 {todo.text}
               </span>
-              {todo.createdAt && (
-                <span className="text-xs text-slate-400">
-                  {new Date(todo.createdAt).toLocaleString("nb-NO", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              )}
+              <span className="text-xs text-slate-400">
+                {(() => {
+                  const parts: string[] = [];
+                  if (todo.toDoRuleId) {
+                    parts.push("Opprettet automatisk");
+                  } else if (todo.personnelId) {
+                    const name = personnelMap[todo.personnelId] || `Personell #${todo.personnelId}`;
+                    parts.push(`Opprettet av ${name}`);
+                  } else {
+                    parts.push("Opprettet");
+                  }
+
+                  if (todo.createdAt) {
+                    try {
+                      const date = new Date(todo.createdAt as string).toLocaleString("nb-NO", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                      parts.push(date);
+                    } catch (e) {
+                      // ignore date parse errors
+                    }
+                  }
+
+                  return parts.join(" • ");
+                })()}
+              </span>
             </div>
             <button
               onClick={() => deleteTodo(todo.id)}

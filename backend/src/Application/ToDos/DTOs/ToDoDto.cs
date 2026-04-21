@@ -10,5 +10,6 @@ public class ToDoDto
     public string ToDoText { get; set; } = "";
     public int PatientId { get; set; }
     public int? PersonnelId { get; set; }
+    public int? ToDoRuleId { get; set; }
     public bool Public { get; set; }
 }

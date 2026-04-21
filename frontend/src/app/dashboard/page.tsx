@@ -16,7 +16,7 @@ export default function DashboardPage() {
   const patientId = searchParams.get("patientId");
 
   const [selectedPatient, setSelectedPatient] = useState<PatientDto | null>(null);
-  const [todos, setTodos] = useState<{ id: number; text: string; completed: boolean; public: boolean }[]>([]);
+  const [todos, setTodos] = useState<{ id: number; text: string; completed: boolean; public: boolean; createdAt?: string; personnelId?: number; toDoRuleId?: number }[]>([]);
   const [latestMeasurements, setLatestMeasurements] = useState<LatestMeasurementResultDto[]>([]);
   const [risks, setRisks] = useState<CategoryRisk[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,6 +61,8 @@ export default function DashboardPage() {
             completed: t.finished,
             public: t.public,
             createdAt: t.createdAt,
+            personnelId: t.personnelId,
+            toDoRuleId: t.toDoRuleId,
           }));
         setTodos(filteredTodos || []);
 

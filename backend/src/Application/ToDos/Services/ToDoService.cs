@@ -45,7 +45,8 @@ public class ToDoService : IToDoService
                 FinishedBy = t.FinishedBy,
                 ToDoText = t.ToDoText,
                 PatientId = t.PatientId,
-                PersonnelId = t.PersonnelId,
+                    PersonnelId = t.PersonnelId,
+                    ToDoRuleId = t.ToDoRuleId,
                 Public = t.Public
             })
             .ToListAsync();
@@ -79,6 +80,7 @@ public class ToDoService : IToDoService
             ToDoText = entity.ToDoText,
             PatientId = entity.PatientId,
             PersonnelId = entity.PersonnelId,
+            ToDoRuleId = entity.ToDoRuleId,
             Public = entity.Public
         };
     }
@@ -125,6 +127,7 @@ public class ToDoService : IToDoService
             ToDoText = entity.ToDoText,
             PatientId = entity.PatientId,
             PersonnelId = entity.PersonnelId,
+            ToDoRuleId = entity.ToDoRuleId,
             Public = entity.Public
         };
     }
