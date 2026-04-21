@@ -51,7 +51,10 @@ export function JournalDetail({
             )}
           </div>
           <p className="text-sm text-gray-500 mt-0.5">
-            {note.personnelName} · {formatDate(note.createdAt)}
+            {note.personnelName} ·{" "}
+            {note.updatedAt && note.updatedAt !== note.createdAt
+              ? `Redigert ${formatDate(note.updatedAt)}`
+              : formatDate(note.createdAt)}
           </p>
         </div>
 
@@ -78,26 +81,28 @@ export function JournalDetail({
           </button>
           {isOwner && (
             <>
-              <button
-                type="button"
-                title="Rediger"
-                onClick={onEdit}
-                className="p-1.5 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100 transition-colors"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
+              {!isSigned && (
+                <button
+                  type="button"
+                  title="Rediger"
+                  onClick={onEdit}
+                  className="p-1.5 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100 transition-colors"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                </button>
+              )}
               {!isSigned && (
                 <button
                   type="button"
@@ -125,7 +130,39 @@ export function JournalDetail({
           <button
             type="button"
             title="Skriv ut"
-            onClick={() => window.print()}
+            onClick={() => {
+              const html = `<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <title>${note.title}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; font-size: 14px; color: #111; padding: 2rem; max-width: 800px; margin: 0 auto; }
+    h1 { font-size: 1.2rem; margin-bottom: 0.25rem; }
+    .meta { color: #6b7280; font-size: 0.85rem; margin-bottom: 1.5rem; }
+    h2 { font-size: 1rem; margin-top: 1.5rem; margin-bottom: 0.25rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.25rem; }
+    h3 { font-size: 0.95rem; margin-top: 1rem; margin-bottom: 0.25rem; }
+    ul { padding-left: 1.25rem; margin: 0.25rem 0; }
+    li { margin-bottom: 0.2rem; }
+    p { margin: 0.25rem 0; }
+    em { color: #6b7280; }
+    .signed { margin-top: 2rem; padding-top: 0.75rem; border-top: 1px solid #e5e7eb; font-size: 0.8rem; color: #6fa185; }
+  </style>
+</head>
+<body>
+  <h1>${note.title}</h1>
+  <div class="meta">${note.personnelName} · ${formatDate(note.createdAt)}</div>
+  ${note.content}
+  ${note.signedAt ? `<div class="signed">Signert av ${note.personnelName} · ${formatDateTime(note.signedAt)}</div>` : ""}
+</body>
+</html>`;
+              const win = window.open("", "_blank");
+              if (!win) return;
+              win.document.open();
+              win.document.write(html);
+              win.document.close();
+              win.addEventListener("load", () => win.print());
+            }}
             className="p-1.5 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100 transition-colors"
           >
             <svg

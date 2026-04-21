@@ -59,7 +59,11 @@ export function JournalNoteListItem({
       </div>
       <div className="text-xs text-gray-400 leading-tight">
         <div>{note.personnelName}</div>
-        <div>{formatDateTime(note.createdAt)}</div>
+        <div>
+          {note.updatedAt && note.updatedAt !== note.createdAt
+            ? formatDateTime(note.updatedAt)
+            : formatDateTime(note.createdAt)}
+        </div>
       </div>
     </button>
   );
