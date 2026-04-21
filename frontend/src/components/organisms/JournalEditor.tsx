@@ -201,17 +201,26 @@ function injectAfterLabel(li: Element, html: string) {
 
 function injectValue(li: Element, value: string, date: string | null) {
   const text = date ? `${value} [${date}]` : value;
-  injectAfterLabel(li, ` <span style="color:#6fa185">${text}</span>`);
+  injectAfterLabel(
+    li,
+    ` <span style="color:var(--color-brand-navy-light)">${text}</span>`,
+  );
 }
 
 function appendRisk(li: Element, riskText: string) {
-  injectAfterLabel(li, ` <span style="color:#6fa185">${riskText}</span>`);
+  injectAfterLabel(
+    li,
+    ` <span style="color:var(--color-brand-navy-light)">RISIKO: ${riskText.toUpperCase()}</span>`,
+  );
 }
 
 type JournalEditorProps = {
   note: JournalNoteDto | null;
   patientId: number;
   initialType?: JournalNoteType;
+  compact?: boolean;
+  hjertefriskOpen?: boolean;
+  onToggleHjertefrisk?: () => void;
   onSaved: (note: JournalNoteDto) => void;
   onApproved: (note: JournalNoteDto) => void;
   onCancel: () => void;
@@ -221,6 +230,9 @@ export function JournalEditor({
   note,
   patientId,
   initialType,
+  compact = false,
+  hjertefriskOpen = false,
+  onToggleHjertefrisk,
   onSaved,
   onApproved,
   onCancel,
@@ -238,7 +250,6 @@ export function JournalEditor({
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
   const [filling, setFilling] = useState(false);
   const templateDropdownRef = useRef<HTMLDivElement>(null);
-  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedNoteRef = useRef<JournalNoteDto | null>(note);
   const savingRef = useRef(false);
   // New notes are only persisted on explicit save — auto-save is disabled until then
@@ -251,12 +262,6 @@ export function JournalEditor({
   useEffect(() => {
     savedNoteRef.current = note;
   }, [note]);
-
-  useEffect(() => {
-    return () => {
-      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    };
-  }, []);
 
   useEffect(() => {
     if (!templateDropdownOpen) return;
@@ -396,85 +401,151 @@ export function JournalEditor({
   function handleContentChange(html: string) {
     setContent(html);
     setAutoSaveStatus("unsaved");
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(() => handleSave(true), 1500);
   }
+
+  const templateDropdown =
+    templates.length > 0 ? (
+      <div className="relative" ref={templateDropdownRef}>
+        <button
+          type="button"
+          onClick={() => setTemplateDropdownOpen((o) => !o)}
+          className="px-2.5 py-1 text-sm text-gray-500 border border-gray-200 rounded hover:bg-gray-50 transition-colors whitespace-nowrap"
+        >
+          Mal
+        </button>
+        {templateDropdownOpen && (
+          <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20 min-w-52">
+            {templates.map((tpl) => (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => {
+                  setContent(tpl.content);
+                  setActiveTemplateId(tpl.id);
+                  setAutoSaveStatus("unsaved");
+                  setTemplateDropdownOpen(false);
+                }}
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
+              >
+                {tpl.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    ) : null;
+
+  const fillButton = (
+    <button
+      type="button"
+      onClick={handleFillValues}
+      disabled={filling || !isHjertefriskTemplate}
+      className={`px-2.5 py-1 text-sm border rounded transition-colors whitespace-nowrap ${
+        isHjertefriskTemplate
+          ? "text-brand-navy border-brand-navy hover:bg-brand-sky-button disabled:opacity-50"
+          : "invisible"
+      }`}
+    >
+      {filling ? "Henter..." : "Hent verdier"}
+    </button>
+  );
+
+  const hjertefriskButton = onToggleHjertefrisk ? (
+    <button
+      type="button"
+      onClick={onToggleHjertefrisk}
+      className={`px-2.5 py-1 text-sm rounded border transition-colors whitespace-nowrap ${
+        hjertefriskOpen
+          ? "bg-brand-teal text-white border-brand-teal"
+          : "text-gray-500 border-gray-200 hover:bg-gray-50"
+      }`}
+    >
+      Siste besvarelse
+    </button>
+  ) : null;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          <NoteTypeTag type={type} />
-          {templates.length > 0 && (
-            <div className="relative" ref={templateDropdownRef}>
+      <div className="flex flex-col border-b border-gray-200">
+        {compact ? (
+          <>
+            {/* Compact: two rows */}
+            <div className="flex items-center justify-between gap-2 px-4 py-2">
+              <NoteTypeTag type={type} className="whitespace-nowrap shrink-0" />
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="px-2.5 py-1 text-sm text-gray-600 hover:text-gray-900 rounded border border-gray-200 hover:bg-gray-50 transition-colors"
+                >
+                  Avbryt
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await handleSave(false);
+                    onCancel();
+                  }}
+                  disabled={saving || approving}
+                  className="px-2.5 py-1 text-sm text-brand-navy rounded border border-brand-navy hover:bg-brand-sky-button disabled:opacity-50 transition-colors font-medium"
+                >
+                  Lagre
+                </button>
+                <button
+                  type="button"
+                  onClick={handleApprove}
+                  disabled={saving || approving}
+                  className="px-2.5 py-1 text-sm bg-brand-navy text-white rounded hover:bg-brand-navy-light disabled:opacity-50 transition-colors font-medium"
+                >
+                  Godkjenn
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-1.5 border-t border-gray-100">
+              {hjertefriskButton}
+              {templateDropdown}
+              {fillButton}
+            </div>
+          </>
+        ) : (
+          /* Wide: single row */
+          <div className="flex items-center justify-between px-4 py-2 gap-3">
+            <NoteTypeTag type={type} className="whitespace-nowrap" />
+            {hjertefriskButton}
+            <div className="flex items-center gap-1.5 flex-1">
+              {templateDropdown}
+              {fillButton}
+            </div>
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => setTemplateDropdownOpen((o) => !o)}
-                className="px-2.5 py-1 text-xs text-gray-500 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                onClick={onCancel}
+                className="px-2.5 py-1 text-sm text-gray-600 hover:text-gray-900 rounded border border-gray-200 hover:bg-gray-50 transition-colors"
               >
-                Velg mal
+                Avbryt
               </button>
-              {templateDropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20 min-w-52">
-                  {templates.map((tpl) => (
-                    <button
-                      key={tpl.id}
-                      type="button"
-                      onClick={() => {
-                        setContent(tpl.content);
-                        setActiveTemplateId(tpl.id);
-                        setAutoSaveStatus("unsaved");
-                        setTemplateDropdownOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
-                    >
-                      {tpl.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <button
+                type="button"
+                onClick={async () => {
+                  await handleSave(false);
+                  onCancel();
+                }}
+                disabled={saving || approving}
+                className="px-2.5 py-1 text-sm text-brand-navy rounded border border-brand-navy hover:bg-brand-sky-button disabled:opacity-50 transition-colors font-medium"
+              >
+                Lagre
+              </button>
+              <button
+                type="button"
+                onClick={handleApprove}
+                disabled={saving || approving}
+                className="px-2.5 py-1 text-sm bg-brand-navy text-white rounded hover:bg-brand-navy-light disabled:opacity-50 transition-colors font-medium"
+              >
+                Godkjenn
+              </button>
             </div>
-          )}
-          {isHjertefriskTemplate && (
-            <button
-              type="button"
-              onClick={handleFillValues}
-              disabled={filling}
-              className="px-2.5 py-1 text-xs text-brand-navy border border-brand-navy rounded hover:bg-brand-sky-button disabled:opacity-50 transition-colors"
-            >
-              {filling ? "Henter..." : "Fyll inn siste verdier"}
-            </button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 rounded border border-gray-200 hover:bg-gray-50 transition-colors"
-          >
-            Avbryt
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              await handleSave(false);
-              onCancel();
-            }}
-            disabled={saving || approving}
-            className="px-3 py-1.5 text-sm text-brand-navy rounded border border-brand-navy hover:bg-brand-sky-button disabled:opacity-50 transition-colors font-medium"
-          >
-            Lagre
-          </button>
-          <button
-            type="button"
-            onClick={handleApprove}
-            disabled={saving || approving}
-            className="px-4 py-1.5 text-sm bg-brand-navy text-white rounded hover:bg-brand-navy-light disabled:opacity-50 transition-colors font-medium"
-          >
-            Godkjenn
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -494,13 +565,13 @@ export function JournalEditor({
           )}
         </div>
         <span>
-          {isNewNoteRef.current
-            ? "Lagres når du trykker Lagre"
-            : autoSaveStatus === "saving"
-              ? "Lagrer..."
-              : autoSaveStatus === "saved"
-                ? "Lagres automatisk"
-                : "Endringer ikke lagret"}
+          {autoSaveStatus === "saving"
+            ? "Lagrer..."
+            : autoSaveStatus === "unsaved"
+              ? "Endringer ikke lagret"
+              : savedNoteRef.current
+                ? "Lagret"
+                : "Lagres når du trykker Lagre"}
         </span>
       </div>
     </div>

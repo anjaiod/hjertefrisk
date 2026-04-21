@@ -9,6 +9,7 @@ import { JournalNoteListItem } from "@/components/molecules/JournalNoteListItem"
 import { JournalDetail } from "@/components/organisms/JournalDetail";
 import { JournalEditor } from "@/components/organisms/JournalEditor";
 import { ConfirmModal } from "@/components/molecules/ConfirmModal";
+import { LatestQuestionnaire } from "@/components/molecules/LatestQuestionnaire";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -31,6 +32,10 @@ const FILTER_LABELS: Record<FilterType, string> = {
   Epikrise: "Epikrise",
 };
 
+function effectiveDate(note: JournalNoteDto): Date {
+  return new Date(note.updatedAt ?? note.createdAt);
+}
+
 function groupByPeriod(
   notes: JournalNoteDto[],
 ): { label: string; notes: JournalNoteDto[] }[] {
@@ -40,13 +45,12 @@ function groupByPeriod(
   thisWeekStart.setHours(0, 0, 0, 0);
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const thisWeek = notes.filter((n) => new Date(n.createdAt) >= thisWeekStart);
+  const thisWeek = notes.filter((n) => effectiveDate(n) >= thisWeekStart);
   const thisMonth = notes.filter(
     (n) =>
-      new Date(n.createdAt) >= thisMonthStart &&
-      new Date(n.createdAt) < thisWeekStart,
+      effectiveDate(n) >= thisMonthStart && effectiveDate(n) < thisWeekStart,
   );
-  const older = notes.filter((n) => new Date(n.createdAt) < thisMonthStart);
+  const older = notes.filter((n) => effectiveDate(n) < thisMonthStart);
 
   const groups = [];
   if (thisWeek.length) groups.push({ label: "Denne uken", notes: thisWeek });
@@ -73,6 +77,7 @@ export default function JournalnotatPage() {
   const [editingNote, setEditingNote] = useState<JournalNoteDto | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<JournalNoteDto | null>(null);
+  const [hjertefriskOpen, setHjertefriskOpen] = useState(false);
   const [page, setPage] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [newNoteType, setNewNoteType] =
@@ -112,8 +117,9 @@ export default function JournalnotatPage() {
 
   const PAGE_SIZE = 10;
 
-  const filteredNotes =
-    filter === "Alle" ? notes : notes.filter((n) => n.type === filter);
+  const filteredNotes = (
+    filter === "Alle" ? notes : notes.filter((n) => n.type === filter)
+  ).sort((a, b) => effectiveDate(b).getTime() - effectiveDate(a).getTime());
   const totalPages = Math.ceil(filteredNotes.length / PAGE_SIZE);
   const pagedNotes = filteredNotes.slice(
     page * PAGE_SIZE,
@@ -127,9 +133,14 @@ export default function JournalnotatPage() {
     setSelectedNote(null);
     setEditorOpen(true);
     setDropdownOpen(false);
+    isNewNoteRef.current = true;
   }
 
+  const isNewNoteRef = useRef(true);
+  const lastSavedRef = useRef<JournalNoteDto | null>(null);
+
   function handleSaved(saved: JournalNoteDto) {
+    lastSavedRef.current = saved;
     setNotes((prev) => {
       const exists = prev.find(
         (n) => n.journalnotatId === saved.journalnotatId,
@@ -140,15 +151,20 @@ export default function JournalnotatPage() {
         );
       return [saved, ...prev];
     });
+    // Only select the note on the very first save of a brand new note
+    if (isNewNoteRef.current) {
+      setSelectedNote(saved);
+      isNewNoteRef.current = false;
+    }
     setEditingNote(saved);
-    // Only set selectedNote on the first save of a new note
-    setSelectedNote((prev) => (prev === null ? saved : prev));
   }
 
   function handleCancelEdit() {
     setEditorOpen(false);
     setEditingNote(null);
-    if (!selectedNote && notes.length > 0) setSelectedNote(notes[0]);
+    setSelectedNote(lastSavedRef.current);
+    lastSavedRef.current = null;
+    isNewNoteRef.current = true;
   }
 
   async function confirmDelete() {
@@ -185,7 +201,7 @@ export default function JournalnotatPage() {
         style={{ height: "calc(100vh - 7rem)" }}
       >
         {/* Note list */}
-        <aside className="w-72 shrink-0 flex flex-col min-h-0 bg-white rounded-xl shadow-sm border border-brand-sky-lighter overflow-hidden print:hidden">
+        <aside className="w-[17rem] shrink-0 flex flex-col min-h-0 bg-white rounded-xl shadow-sm border border-brand-sky-lighter overflow-hidden print:hidden">
           <div className="px-4 pt-4 pb-3 border-b border-gray-100">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -281,7 +297,7 @@ export default function JournalnotatPage() {
           </div>
 
           {/* Filter tabs */}
-          <div className="flex border-b border-gray-100 text-xs">
+          <div className="flex justify-between border-b border-gray-100 text-xs px-2">
             {FILTER_TABS.map((f) => (
               <button
                 key={f}
@@ -290,7 +306,7 @@ export default function JournalnotatPage() {
                   setFilter(f);
                   setPage(0);
                 }}
-                className={`flex-1 py-2 text-center transition-colors ${
+                className={`py-0.5 px-1 text-sm text-center transition-colors ${
                   filter === f
                     ? "text-brand-navy border-b-2 border-brand-navy font-medium"
                     : "text-gray-500 hover:text-gray-800"
@@ -325,7 +341,10 @@ export default function JournalnotatPage() {
                         selectedNote?.journalnotatId === note.journalnotatId &&
                         !editorOpen
                       }
-                      onClick={() => setSelectedNote(note)}
+                      onClick={() => {
+                        setSelectedNote(note);
+                        setHjertefriskOpen(false);
+                      }}
                     />
                   ))}
                 </div>
@@ -359,13 +378,14 @@ export default function JournalnotatPage() {
           )}
         </aside>
 
-        {/* Note detail — hidden when editor is open without a note selected */}
-        {(!editorOpen || selectedNote) && (
+        {/* Note detail — hidden when editor is open without a note selected, or when hjertefrisk panel is open */}
+        {(!editorOpen || selectedNote) && !hjertefriskOpen && (
           <section className="flex-1 min-h-0 flex flex-col bg-white rounded-xl shadow-sm border border-brand-sky-lighter overflow-hidden print:flex print:border-none">
             {selectedNote ? (
               <JournalDetail
                 note={selectedNote}
                 onEdit={() => {
+                  isNewNoteRef.current = false;
                   setEditingNote(selectedNote);
                   setSelectedNote(null);
                   setEditorOpen(true);
@@ -394,6 +414,16 @@ export default function JournalnotatPage() {
           </section>
         )}
 
+        {/* Hjertefrisk panel */}
+        {editorOpen && hjertefriskOpen && (
+          <section className="w-72 shrink-0 min-h-0 flex flex-col bg-white rounded-xl shadow-sm border border-brand-sky-lighter overflow-hidden print:hidden">
+            <LatestQuestionnaire
+              patientId={patientId}
+              onClose={() => setHjertefriskOpen(false)}
+            />
+          </section>
+        )}
+
         {/* Editor — takes full width when no note is being read */}
         {editorOpen && (
           <section className="flex-1 min-h-0 flex flex-col bg-white rounded-xl shadow-sm border border-brand-sky-lighter overflow-hidden print:hidden">
@@ -401,6 +431,9 @@ export default function JournalnotatPage() {
               note={editingNote}
               patientId={patientId}
               initialType={editingNote === null ? newNoteType : undefined}
+              compact={!!selectedNote || hjertefriskOpen}
+              hjertefriskOpen={hjertefriskOpen}
+              onToggleHjertefrisk={() => setHjertefriskOpen((o) => !o)}
               onSaved={handleSaved}
               onApproved={(approved) => {
                 handleSaved(approved);
