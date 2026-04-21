@@ -130,6 +130,10 @@ public class AppDbContext : DbContext
             .Property(x => x.CreatedAt)
             .HasDefaultValueSql("NOW()");
 
+        modelBuilder.Entity<ToDo>()
+            .Property(x => x.CreatedAt)
+            .HasDefaultValueSql("NOW()");
+
         // -------------------------
         // RELATIONSHIPS
         // -------------------------

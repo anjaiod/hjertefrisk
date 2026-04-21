@@ -19,7 +19,15 @@ export default function DashboardPage() {
     null,
   );
   const [todos, setTodos] = useState<
-    { id: number; text: string; completed: boolean; public: boolean }[]
+    {
+      id: number;
+      text: string;
+      completed: boolean;
+      public: boolean;
+      createdAt?: string;
+      personnelId?: number;
+      toDoRuleId?: number;
+    }[]
   >([]);
   const [latestMeasurements, setLatestMeasurements] = useState<
     LatestMeasurementResultDto[]
@@ -66,6 +74,9 @@ export default function DashboardPage() {
             text: t.toDoText,
             completed: t.finished,
             public: t.public,
+            createdAt: t.createdAt,
+            personnelId: t.personnelId ?? undefined,
+            toDoRuleId: t.toDoRuleId,
           }));
         setTodos(filteredTodos || []);
 
