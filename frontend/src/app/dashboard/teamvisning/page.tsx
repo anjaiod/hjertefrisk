@@ -145,7 +145,7 @@ export default function TeamvisningPage() {
           </div>
 
           {/* Chart area */}
-          <div className="flex flex-1 flex-col rounded-xl bg-brand-navy p-6 min-h-[280px]">
+          <div className="flex flex-1 flex-col rounded-xl bg-brand-navy p-6 min-h-70">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-semibold text-white">
                 Risikoprofil
