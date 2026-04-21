@@ -4,7 +4,7 @@ public class Response
 {
     public int AnsweredQueryId { get; set; }      // PK part, FK -> AnsweredQuery
     public int PatientId { get; set; }            // PK part, FK -> Patient
-    public int? QuestionId { get; set; }           // PK part, FK -> Question
+    public int QuestionId { get; set; }           // PK part, FK -> Question
 
     public int? SelectedOptionId { get; set; }    // FK -> QuestionOption
     public string? TextValue { get; set; }
