@@ -14,7 +14,6 @@ export function getQuestionUnit(
   if (text.includes("systolisk") || text.includes("diastolisk")) return "mmHg";
   if (text.includes("blodtrykk")) return "mmHg";
   if (text.includes("hba1c")) return "mmol/mol";
-  if (text.includes("fastende")) return "mmol/L";
   if (text.includes("ldl") || text.includes("hdl")) return "mmol/L";
   if (text.includes("kolesterol")) return "mmol/L";
   if (text.includes("triglyserider")) return "mmol/L";
@@ -42,7 +41,7 @@ export function getQuestionValidationRange(
 
   // Glukoseregulering
   if (text.includes("hba1c")) return { min: 20, max: 150 };
-  if (text.includes("fastende")) return { min: 1, max: 50 };
+
 
   // Blodlipider — sjekk LDL/HDL før generell "kolesterol"
   if (text.includes("ldl")) return { min: 0.5, max: 15 };
