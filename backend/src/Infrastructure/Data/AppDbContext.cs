@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<QuestionDependency> QuestionDependencies => Set<QuestionDependency>();
     public DbSet<PatientAccess> PatientAccesses => Set<PatientAccess>();
     public DbSet<ToDo> ToDos => Set<ToDo>();
+    public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<QuestionAnswerRule> QuestionAnswerRules => Set<QuestionAnswerRule>();
     public DbSet<CategoryScoreRule> CategoryScoreRules => Set<CategoryScoreRule>();
     public DbSet<PatientMeasure> PatientMeasures => Set<PatientMeasure>();

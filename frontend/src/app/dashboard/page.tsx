@@ -15,9 +15,23 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
   const patientId = searchParams.get("patientId");
 
-  const [selectedPatient, setSelectedPatient] = useState<PatientDto | null>(null);
-  const [todos, setTodos] = useState<{ id: number; text: string; completed: boolean; public: boolean; createdAt?: string; personnelId?: number; toDoRuleId?: number }[]>([]);
-  const [latestMeasurements, setLatestMeasurements] = useState<LatestMeasurementResultDto[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<PatientDto | null>(
+    null,
+  );
+  const [todos, setTodos] = useState<
+    {
+      id: number;
+      text: string;
+      completed: boolean;
+      public: boolean;
+      createdAt?: string;
+      personnelId?: number;
+      toDoRuleId?: number;
+    }[]
+  >([]);
+  const [latestMeasurements, setLatestMeasurements] = useState<
+    LatestMeasurementResultDto[]
+  >([]);
   const [risks, setRisks] = useState<CategoryRisk[]>([]);
   const [loading, setLoading] = useState(true);
 
