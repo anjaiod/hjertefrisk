@@ -61,7 +61,7 @@ export default function DashboardPage() {
             completed: t.finished,
             public: t.public,
             createdAt: t.createdAt,
-            personnelId: t.personnelId,
+            personnelId: t.personnelId ?? undefined,
             toDoRuleId: t.toDoRuleId,
           }));
         setTodos(filteredTodos || []);

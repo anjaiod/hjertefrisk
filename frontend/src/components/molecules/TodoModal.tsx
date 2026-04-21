@@ -11,7 +11,7 @@ type Todo = {
   completed: boolean;
   public: boolean;
   createdAt?: string;
-  personnelId?: number | null;
+  personnelId?: number;
   toDoRuleId?: number;
 };
 
@@ -38,7 +38,7 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
             completed: t.finished,
             public: t.public,
             createdAt: t.createdAt,
-            personnelId: t.personnelId,
+            personnelId: t.personnelId ?? undefined,
             toDoRuleId: t.toDoRuleId,
           }));
         setTodos(filtered);
