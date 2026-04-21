@@ -12,6 +12,7 @@ interface PatientRowProps {
   name: string;
   lastVisited: string;
   riskLevel: TagVariant;
+  hasUnread?: boolean;
 }
 
 const tagLabel: Record<TagVariant, string> = {
@@ -31,8 +32,10 @@ export default function PatientRow({
   name,
   lastVisited,
   riskLevel,
+  hasUnread,
 }: PatientRowProps) {
   const [openModal, setOpenModal] = useState<ModalType>(null);
+  const unread = hasUnread ?? false;
   const router = useRouter();
 
   const dashboardHref = `/dashboard?patientId=${encodeURIComponent(id)}`;
@@ -71,7 +74,15 @@ export default function PatientRow({
               className={btnClass}
               onClick={() => setOpenModal("varsling")}
             >
-              Varsling
+              <span className="relative inline-flex items-center">
+                <span className="min-w-[64px] text-center">Varsling</span>
+                {unread ? (
+                  <span
+                    className="absolute -right-1 top-1 inline-block w-2 h-2 rounded-full bg-red-500"
+                    aria-hidden
+                  />
+                ) : null}
+              </span>
             </Button>
             <Button
               variant="primary"
@@ -91,13 +102,14 @@ export default function PatientRow({
         </td>
       </tr>
       {openModal === "todo" && (
-        <TodoModal
-          patientId={id}
-          onClose={() => setOpenModal(null)}
-        />
+        <TodoModal patientId={id} onClose={() => setOpenModal(null)} />
       )}
       {openModal === "varsling" && (
-        <VarslingModal patientName={name} onClose={() => setOpenModal(null)} />
+        <VarslingModal
+          patientId={Number(id)}
+          patientName={name}
+          onClose={() => setOpenModal(null)}
+        />
       )}
     </>
   );

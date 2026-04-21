@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<QuestionDependency> QuestionDependencies => Set<QuestionDependency>();
     public DbSet<PatientAccess> PatientAccesses => Set<PatientAccess>();
     public DbSet<ToDo> ToDos => Set<ToDo>();
+    public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<QuestionAnswerRule> QuestionAnswerRules => Set<QuestionAnswerRule>();
     public DbSet<CategoryScoreRule> CategoryScoreRules => Set<CategoryScoreRule>();
     public DbSet<PatientMeasure> PatientMeasures => Set<PatientMeasure>();
@@ -35,6 +36,7 @@ public class AppDbContext : DbContext
     public DbSet<MeasurementResult> MeasurementResults => Set<MeasurementResult>();
     public DbSet<PatientMeasureResult> PatientMeasureResults => Set<PatientMeasureResult>();
     public DbSet<PersonnelMeasureResult> PersonnelMeasureResults => Set<PersonnelMeasureResult>();
+    public DbSet<Journalnotat> Journalnots => Set<Journalnotat>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -129,6 +131,10 @@ public class AppDbContext : DbContext
             .Property(x => x.CreatedAt)
             .HasDefaultValueSql("NOW()");
 
+        modelBuilder.Entity<ToDo>()
+            .Property(x => x.CreatedAt)
+            .HasDefaultValueSql("NOW()");
+
         // -------------------------
         // RELATIONSHIPS
         // -------------------------
@@ -177,6 +183,12 @@ public class AppDbContext : DbContext
             .HasOne(x => x.Patient)
             .WithMany(p => p.AnsweredQueries)
             .HasForeignKey(x => x.PatientId);
+
+        modelBuilder.Entity<AnsweredQuery>()
+            .HasOne(x => x.Personnel)
+            .WithMany()
+            .HasForeignKey(x => x.PersonnelId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // Response
         modelBuilder.Entity<Response>()
@@ -539,5 +551,35 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(x => x.CategoryId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // -------------------------
+        // Journalnotat
+        // -------------------------
+        modelBuilder.Entity<Journalnotat>()
+            .Property(x => x.Content)
+            .HasColumnType("text");
+
+        modelBuilder.Entity<Journalnotat>()
+            .Property(x => x.CreatedAt)
+            .HasDefaultValueSql("NOW()");
+
+        modelBuilder.Entity<Journalnotat>()
+            .HasOne(x => x.Patient)
+            .WithMany(p => p.Journalnots)
+            .HasForeignKey(x => x.PatientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Journalnotat>()
+            .HasOne(x => x.CreatedBy)
+            .WithMany(p => p.Journalnots)
+            .HasForeignKey(x => x.PersonnelId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Journalnotat>()
+            .HasOne<Personnel>()
+            .WithMany()
+            .HasForeignKey(x => x.SignedByPersonnelId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

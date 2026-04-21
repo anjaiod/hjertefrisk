@@ -4,6 +4,7 @@ public class AnsweredQueryHistoryDto
 {
     public int Id { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? FilledInByName { get; set; }
     public List<ResponseHistoryItemDto> Responses { get; set; } = new();
 }
 

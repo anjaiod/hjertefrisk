@@ -16,6 +16,8 @@ public class PatientMeasureResultDto
     public int ScoreThreshold { get; set; }
     public bool IsExclusive { get; set; }
     public int Priority { get; set; }
+    public DateTime? BasedOnDate { get; set; }
+    public string? BasedOnPersonnelName { get; set; }
 }
 
 public class PersonnelMeasureResultDto
@@ -32,4 +34,6 @@ public class PersonnelMeasureResultDto
     public int ScoreThreshold { get; set; }
     public bool IsExclusive { get; set; }
     public int Priority { get; set; }
+    public DateTime? BasedOnDate { get; set; }
+    public string? BasedOnPersonnelName { get; set; }
 }

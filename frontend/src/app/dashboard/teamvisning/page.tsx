@@ -19,12 +19,13 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   ResponsiveContainer,
+  Customized,
 } from "recharts";
 
 const BAR_COLOR: Record<string, string> = {
-  high: "#ef4444",
-  medium: "#f97316",
-  low: "#22c55e",
+  high: "#e53e3e",
+  medium: "#e5c06a",
+  low: "#03c199",
 };
 const BAR_WIDTH: Record<string, string> = {
   high: "100%",
@@ -144,7 +145,7 @@ export default function TeamvisningPage() {
           </div>
 
           {/* Chart area */}
-          <div className="flex flex-1 flex-col rounded-xl bg-brand-navy p-6 min-h-[280px]">
+          <div className="flex flex-1 flex-col rounded-xl bg-brand-navy p-6 min-h-70">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-semibold text-white">
                 Risikoprofil
@@ -172,7 +173,7 @@ export default function TeamvisningPage() {
                 </p>
               </div>
             ) : view === "radar" && risks.length >= 3 ? (
-              <div className="flex-1 min-h-0">
+              <div className="flex-1 min-h-0 [&_.recharts-polar-grid-concentric-polygon:last-of-type]:opacity-0 [&_*:focus]:outline-none [&_*:focus-visible]:outline-none">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart
                     data={risks.map((r) => ({
@@ -186,6 +187,36 @@ export default function TeamvisningPage() {
                             : 1,
                     }))}
                   >
+                    <Customized
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      component={(props: any) => (
+                        <defs>
+                          <radialGradient
+                            id="radarRiskGradient"
+                            cx={props.cx}
+                            cy={props.cy}
+                            r={props.outerRadius}
+                            gradientUnits="userSpaceOnUse"
+                          >
+                            <stop
+                              offset="5%"
+                              stopColor="#007a64"
+                              stopOpacity={0.95}
+                            />
+                            <stop
+                              offset="35%"
+                              stopColor="#b88100"
+                              stopOpacity={0.9}
+                            />
+                            <stop
+                              offset="90%"
+                              stopColor="#FF0000"
+                              stopOpacity={0.95}
+                            />
+                          </radialGradient>
+                        </defs>
+                      )}
+                    />
                     <PolarGrid stroke="rgba(255,255,255,0.2)" />
                     <PolarAngleAxis
                       dataKey="category"
@@ -198,10 +229,12 @@ export default function TeamvisningPage() {
                     />
                     <Radar
                       dataKey="value"
-                      fill="#03c199"
-                      fillOpacity={0.35}
-                      stroke="#03c199"
-                      strokeWidth={2}
+                      fill="url(#radarRiskGradient)"
+                      fillOpacity={1}
+                      stroke="rgba(255,255,255,0.4)"
+                      strokeWidth={1.5}
+                      dot={false}
+                      activeDot={false}
                     />
                   </RadarChart>
                 </ResponsiveContainer>

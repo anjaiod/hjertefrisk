@@ -1,7 +1,7 @@
 /**
  * Operator type for rule conditions
  */
-export type Operator = '=' | '!=' | '<' | '>' | '<=' | '>=';
+export type Operator = "=" | "!=" | "<" | ">" | "<=" | ">=";
 
 /**
  * Base interface for all ToDoRule types
@@ -19,7 +19,7 @@ export interface ToDoRuleBase {
  * Rule triggered by a question answer (option, text, or numeric value)
  */
 export interface QuestionAnswerRule extends ToDoRuleBase {
-  triggerType: 'Question';
+  triggerType: "Question";
   questionId: number;
   requiredOption?: number;
   requiredText?: string;
@@ -30,7 +30,7 @@ export interface QuestionAnswerRule extends ToDoRuleBase {
  * Rule triggered by a category score threshold
  */
 export interface CategoryScoreRule extends ToDoRuleBase {
-  triggerType: 'Category';
+  triggerType: "Category";
   categoryId: number;
   scoreThreshold: number;
 }
@@ -41,7 +41,7 @@ export type ToDoRule = QuestionAnswerRule | CategoryScoreRule;
  * Create a new question answer rule
  */
 export interface CreateQuestionAnswerRule {
-  triggerType: 'Question';
+  triggerType: "Question";
   questionId: number;
   requiredOption?: number;
   requiredText?: string;
@@ -55,7 +55,7 @@ export interface CreateQuestionAnswerRule {
  * Create a new category score rule
  */
 export interface CreateCategoryScoreRule {
-  triggerType: 'Category';
+  triggerType: "Category";
   categoryId: number;
   scoreThreshold: number;
   operator: Operator;

@@ -12,6 +12,11 @@ import type {
   QueryWithQuestionsDto,
 } from "@/types";
 import QuestionWizard from "../molecules/QuestionWizard";
+import {
+  getQuestionUnit,
+  getQuestionValidationRange,
+  getQuestionRows,
+} from "@/lib/questionHelpers";
 import QuestionRadio from "../molecules/QuestionRadio";
 import QuestionNumber from "../molecules/QuestionNumber";
 import QuestionTextArea from "../molecules/QuestionTextArea";
@@ -160,6 +165,19 @@ export default function PatientHealthQuestionnaire() {
       return;
     }
 
+    const invalidFields = visibleQuestions.filter((q) => {
+      if (q.questionType !== "number") return false;
+      const raw = (answers[q.questionId] ?? "").trim();
+      if (!raw) return false;
+      const val = Number(raw.replace(",", "."));
+      const { min, max } = getQuestionValidationRange(q);
+      return !Number.isFinite(val) || val < min || val > max;
+    });
+    if (invalidFields.length > 0) {
+      setSubmitError("Noen tall-svar er ugyldige. Sjekk de markerte feltene.");
+      return;
+    }
+
     const payload: CreateResponseDto[] = [];
 
     for (const question of visibleQuestions) {
@@ -289,9 +307,36 @@ export default function PatientHealthQuestionnaire() {
     .filter((q) => q.requiredRole !== "clinician")
     .filter(shouldShowQuestion);
 
-  // Bygg kategorier dynamisk fra spørsmålene
+  // Grupper blodtrykk-spørsmål (systolisk + diastolisk) i ett wizard-steg
+  const isBpQuestion = (q: QueryQuestionWithDetailsDto): boolean => {
+    const text = q.fallbackText.toLowerCase();
+    return (
+      text.includes("systolisk") ||
+      text.includes("diastolisk") ||
+      text.includes("blodtrykk")
+    );
+  };
+
+  const bpVisibleQuestions = visibleQuestions.filter(isBpQuestion);
+  const bpQuestionIds = new Set(bpVisibleQuestions.map((q) => q.questionId));
+
+  // Erstatt alle BP-spørsmål med én grupperepresentant i wizard-steg-listen
+  const wizardSteps: QueryQuestionWithDetailsDto[] = [];
+  let bpGroupAdded = false;
+  for (const q of visibleQuestions) {
+    if (bpQuestionIds.has(q.questionId)) {
+      if (!bpGroupAdded) {
+        wizardSteps.push(q);
+        bpGroupAdded = true;
+      }
+    } else {
+      wizardSteps.push(q);
+    }
+  }
+
+  // Bygg kategorier dynamisk fra wizard-stegene
   const categoryMap = new Map<number, string>();
-  visibleQuestions.forEach((q) => {
+  wizardSteps.forEach((q) => {
     if (q.categoryId != null && q.categoryName) {
       categoryMap.set(q.categoryId, q.categoryName);
     }
@@ -304,7 +349,7 @@ export default function PatientHealthQuestionnaire() {
     }),
   );
 
-  const questionCategories = visibleQuestions.map((q) =>
+  const questionCategories = wizardSteps.map((q) =>
     uniqueCategories.findIndex((c) => c.categoryId === q.categoryId),
   );
 
@@ -342,23 +387,6 @@ export default function PatientHealthQuestionnaire() {
       return undefined;
     };
 
-    const getUnit = (): string | undefined => {
-      const text = question.fallbackText.toLowerCase();
-      if (text.includes("hvor høy")) return "cm";
-      if (text.includes("hvor mye veier")) return "kg";
-      if (text.includes("livvidde")) return "cm";
-      return undefined;
-    };
-
-    const getRows = (): number | undefined => {
-      const text = question.fallbackText.toLowerCase();
-      if (text.includes("hvor mye røyker")) return 2;
-      if (text.includes("vekten din endret")) return 2;
-      if (text.includes("begrensninger") || text.includes("barrierer"))
-        return 3;
-      return undefined;
-    };
-
     if (question.questionType === "boolean") {
       return (
         <ConditionalQuestion
@@ -392,6 +420,7 @@ export default function PatientHealthQuestionnaire() {
     }
 
     if (question.questionType === "number") {
+      const { min, max } = getQuestionValidationRange(question);
       return (
         <QuestionNumber
           key={question.questionId}
@@ -401,8 +430,10 @@ export default function PatientHealthQuestionnaire() {
           onChange={(val) => updateAnswer(question.questionId, val)}
           onAnswer={handleNext}
           placeholder={getPlaceholder()}
-          unit={getUnit()}
+          unit={getQuestionUnit(question)}
           required={question.isRequired}
+          min={min}
+          max={max}
         />
       );
     }
@@ -416,19 +447,53 @@ export default function PatientHealthQuestionnaire() {
         onChange={(val) => updateAnswer(question.questionId, val)}
         onAnswer={handleNext}
         placeholder={getPlaceholder()}
-        rows={getRows()}
+        rows={getQuestionRows(question)}
         required={question.isRequired}
       />
     );
   };
 
-  const questionElements = visibleQuestions.map(buildQuestionElement);
+  // Blodtrykk-gruppeelementet: header + begge felter side om side
+  const buildBpGroupElement = (): ReactElement => (
+    <div key="bp-group">
+      <p className="text-2xl font-medium text-gray-800 mb-10">
+        Har du instrumenter til å måle blodtrykket ditt? I så fall, fyll inn
+        her:
+      </p>
+      <div className="flex gap-6 flex-wrap">
+        {bpVisibleQuestions.map((bpQ) => {
+          const isSystolic = bpQ.fallbackText.toLowerCase().includes("systolisk");
+          const label = isSystolic ? "Systolisk blodtrykk:" : "Diastolisk blodtrykk:";
+          return (
+            <div key={bpQ.questionId} className="flex-1 min-w-40">
+              <QuestionNumber
+                question={label}
+                name={`question-${bpQ.questionId}`}
+                value={answers[bpQ.questionId] ?? ""}
+                onChange={(val) => updateAnswer(bpQ.questionId, val)}
+                placeholder={isSystolic ? "120" : "80"}
+                unit="mmHg"
+                required={false}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const questionElements = wizardSteps.map((q) => {
+    if (bpQuestionIds.has(q.questionId) && bpVisibleQuestions.length > 0) {
+      return buildBpGroupElement();
+    }
+    return buildQuestionElement(q);
+  });
 
   useEffect(() => {
-    if (currentStep >= visibleQuestions.length && visibleQuestions.length > 0) {
-      setCurrentStep(visibleQuestions.length - 1);
+    if (currentStep >= wizardSteps.length && wizardSteps.length > 0) {
+      setCurrentStep(wizardSteps.length - 1);
     }
-  }, [visibleQuestions.length, currentStep]);
+  }, [wizardSteps.length, currentStep]);
 
   const isLoading = isQuestionsLoading || isPatientLoading;
   const mainError = questionsError ?? patientError;

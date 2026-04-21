@@ -76,7 +76,7 @@ public class ResponseService : IResponseService
         };
     }
 
-    public async Task<IEnumerable<ResponseDto>> UpsertManyAsync(IEnumerable<CreateResponseDto> dtos)
+    public async Task<IEnumerable<ResponseDto>> UpsertManyAsync(IEnumerable<CreateResponseDto> dtos, int? personnelId = null)
     {
         var incoming = dtos.ToList();
         if (incoming.Count == 0)
@@ -93,7 +93,7 @@ public class ResponseService : IResponseService
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        var answeredQuery = new AnsweredQuery { PatientId = patientId };
+        var answeredQuery = new AnsweredQuery { PatientId = patientId, PersonnelId = personnelId };
 
         var entities = normalized.Select(dto => new Response
         {
@@ -114,6 +114,40 @@ public class ResponseService : IResponseService
             patientId,
             answeredQuery.Id,
             entities.Count);
+
+        // Create notifications for personnel who have access to this patient
+        try
+        {
+            var patient = await _db.Patients.FindAsync(patientId);
+            if (patient != null)
+            {
+                var personnelIds = await _db.PatientAccesses
+                    .Where(x => x.PatientId == patientId)
+                    .Select(x => x.PersonnelId)
+                    .ToListAsync();
+
+                var notifications = personnelIds.Select(pid => new backend.src.Domain.Models.Notification
+                {
+                    PersonnelId = pid,
+                    PatientId = patientId,
+                    AnsweredQueryId = answeredQuery.Id,
+                    Message = $"Pasienten {patient.Name} har besvart et nytt skjema",
+                    CreatedAt = DateTime.UtcNow,
+                    Read = false
+                }).ToList();
+
+                if (notifications.Any())
+                {
+                    _db.Notifications.AddRange(notifications);
+                    await _db.SaveChangesAsync();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ResponseService] Failed to create notifications: {ex}");
+            // don't fail the whole request if notifications can't be created
+        }
 
         // Build a map of question IDs to their categories for score-based rules
         var questionIds = entities.Select(e => e.QuestionId).Distinct().ToList();
@@ -176,6 +210,8 @@ public class ResponseService : IResponseService
             processedCategories.Add(categoryId);
         }
 
+        await CreateFastingTodoIfApplicableAsync(patientId, entities);
+
         return entities.Select(r => new ResponseDto
         {
             AnsweredQueryId = r.AnsweredQueryId,
@@ -188,12 +224,55 @@ public class ResponseService : IResponseService
         });
     }
 
+    /// <summary>
+    /// Oppretter en todo hvis triglyserider er 4,0–9,9 OG prøven var ikke-fastende (spørsmål 177 = "nei").
+    /// Denne betingelsen er sammensatt (to spørsmål) og kan ikke uttrykkes med én QuestionAnswerRule.
+    /// </summary>
+    private async Task CreateFastingTodoIfApplicableAsync(int patientId, List<Response> entities)
+    {
+        const int TrigQuestionId = 96;
+        const int FastingQuestionId = 177;
+        const string TodoText = "Bestill ny fastende triglyseridprøve.";
+
+        var trigResponse = entities.FirstOrDefault(e => e.QuestionId == TrigQuestionId);
+        if (trigResponse?.NumberValue == null) return;
+        if (trigResponse.NumberValue < 4m || trigResponse.NumberValue >= 10m) return;
+
+        var fastingResponse = entities.FirstOrDefault(e => e.QuestionId == FastingQuestionId);
+        if (fastingResponse == null) return;
+
+        bool isFasting =
+            (!string.IsNullOrWhiteSpace(fastingResponse.TextValue) &&
+             fastingResponse.TextValue.Trim().Equals("ja", StringComparison.OrdinalIgnoreCase)) ||
+            (fastingResponse.NumberValue.HasValue && fastingResponse.NumberValue.Value >= 1);
+
+        if (isFasting) return;
+
+        bool exists = await _db.ToDos.AnyAsync(t =>
+            t.PatientId == patientId &&
+            !t.Finished &&
+            t.ToDoText == TodoText);
+
+        if (exists) return;
+
+        _db.ToDos.Add(new ToDo
+        {
+            PatientId = patientId,
+            ToDoText = TodoText,
+            Finished = false,
+            Public = true,
+            ToDoRuleId = null
+        });
+        await _db.SaveChangesAsync();
+    }
+
     public async Task<IEnumerable<AnsweredQueryHistoryDto>> GetHistoryForPatientAsync(int patientId)
     {
         var queries = await _db.AnsweredQueries
             .AsNoTracking()
             .Where(aq => aq.PatientId == patientId)
             .OrderByDescending(aq => aq.CreatedAt)
+            .Include(aq => aq.Personnel)
             .Include(aq => aq.Responses)
                 .ThenInclude(r => r.Question)
                     .ThenInclude(q => q.QueryQuestions)
@@ -205,6 +284,7 @@ public class ResponseService : IResponseService
         {
             Id = aq.Id,
             CreatedAt = DateTime.SpecifyKind(aq.CreatedAt, DateTimeKind.Utc),
+            FilledInByName = aq.Personnel?.Name,
             Responses = aq.Responses
                 .OrderBy(r => r.Question.QueryQuestions.FirstOrDefault()?.DisplayOrder ?? r.QuestionId)
                 .Select(r => new ResponseHistoryItemDto
