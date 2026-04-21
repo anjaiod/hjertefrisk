@@ -303,15 +303,6 @@ export function SidebarNav({
         ) : null}
       </aside>
 
-      {showVarsling && (
-        <VarslingModal
-          onClose={() => setShowVarsling(false)}
-          patientId={Number(patientId)}
-        />
-      )}
-    </>
-      </nav>
-
       {/* <div className="mt-auto border-t border-brand-sky/30 pt-6">
         <nav className="flex flex-col space-y-2">
           {adminItems.map((item) => (
@@ -319,6 +310,13 @@ export function SidebarNav({
           ))}
         </nav>
       </div> */}
-    </aside>
+
+      {showVarsling && (
+        <VarslingModal
+          onClose={() => setShowVarsling(false)}
+          patientId={Number(patientId)}
+        />
+      )}
+    </>
   );
 }
