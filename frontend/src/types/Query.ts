@@ -20,6 +20,7 @@ export type QueryQuestionDependencyDto = {
   parentQuestionId: number;
   childQuestionId: number;
   triggerTextValue?: string | null;
+  triggerNumberValue?: number | null;
   operator: string;
 };
 

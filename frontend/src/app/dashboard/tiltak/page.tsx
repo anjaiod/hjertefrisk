@@ -20,6 +20,8 @@ type PersonnelMeasureResult = {
   text: string;
   resourceUrl: string | null;
   priority: number;
+  basedOnDate: string | null;
+  basedOnPersonnelName: string | null;
 };
 
 type MeasureEvaluationResponse = {
@@ -341,6 +343,11 @@ export default function TiltakPage() {
                     >
                       Les mer her
                     </a>
+                  )}
+                  {formatBasedOn(measure.basedOnDate, measure.basedOnPersonnelName) && (
+                    <p className="text-xs text-slate-400 italic border-t border-slate-100 pt-2 mt-1">
+                      {formatBasedOn(measure.basedOnDate, measure.basedOnPersonnelName)}
+                    </p>
                   )}
                 </div>
               ))}

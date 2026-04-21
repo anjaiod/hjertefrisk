@@ -184,6 +184,12 @@ public class AppDbContext : DbContext
             .WithMany(p => p.AnsweredQueries)
             .HasForeignKey(x => x.PatientId);
 
+        modelBuilder.Entity<AnsweredQuery>()
+            .HasOne(x => x.Personnel)
+            .WithMany()
+            .HasForeignKey(x => x.PersonnelId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // Response
         modelBuilder.Entity<Response>()
             .HasOne(x => x.Patient)
