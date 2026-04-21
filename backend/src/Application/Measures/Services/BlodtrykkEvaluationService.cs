@@ -24,7 +24,12 @@ namespace backend.src.Application.Measures.Services;
 ///   Score >= 1, flere målinger:     "blodtrykk_malingsteknikk"   (pasienttiltak)
 ///   Score >= 1, kun én måling:      "blodtrykk_hjemmemaling"     (behandlertiltak)
 /// </summary>
-public record BlodtrykkEvaluationResult(int CategoryId, int Score, IReadOnlyList<string> Titles);
+public record BlodtrykkEvaluationResult(
+    int CategoryId,
+    int Score,
+    IReadOnlyList<string> Titles,
+    DateTime? BasedOnDate,
+    string? BasedOnPersonnelName);
 
 public class BlodtrykkEvaluationService
 {
@@ -43,6 +48,7 @@ public class BlodtrykkEvaluationService
     {
         var allRows = await _db.MeasurementResults
             .AsNoTracking()
+            .Include(r => r.RegisteredByPersonnel)
             .Where(r => r.PatientId == patientId &&
                         (r.MeasurementId == SystolicMeasurementId ||
                          r.MeasurementId == DiastolicMeasurementId))
@@ -92,6 +98,10 @@ public class BlodtrykkEvaluationService
                 titles.Add("Tips for korrekt blodtrykksmåling");
         }
 
-        return new BlodtrykkEvaluationResult(BlodtrykkCategoryId, score, titles);
+        var mostRecentRow = allRows.FirstOrDefault();
+        var basedOnDate = mostRecentRow?.RegisteredAt;
+        var basedOnPersonnelName = mostRecentRow?.RegisteredByPersonnel?.Name;
+
+        return new BlodtrykkEvaluationResult(BlodtrykkCategoryId, score, titles, basedOnDate, basedOnPersonnelName);
     }
 }

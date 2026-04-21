@@ -6,6 +6,6 @@ public interface IResponseService
 {
     Task<IEnumerable<ResponseDto>> GetAllAsync();
     Task<ResponseDto> CreateAsync(CreateResponseDto dto);
-    Task<IEnumerable<ResponseDto>> UpsertManyAsync(IEnumerable<CreateResponseDto> dtos);
+    Task<IEnumerable<ResponseDto>> UpsertManyAsync(IEnumerable<CreateResponseDto> dtos, int? personnelId = null);
     Task<IEnumerable<AnsweredQueryHistoryDto>> GetHistoryForPatientAsync(int patientId);
 }

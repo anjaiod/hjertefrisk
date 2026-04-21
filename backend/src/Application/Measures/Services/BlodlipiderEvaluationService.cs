@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace backend.src.Application.Measures.Services;
 
-public record BlodlipiderEvaluationResult(int CategoryId, int Score, IReadOnlyList<string> Titles);
+public record BlodlipiderEvaluationResult(int CategoryId, int Score, IReadOnlyList<string> Titles, DateTime? BasedOnDate, string? BasedOnPersonnelName);
 
 public class BlodlipiderEvaluationService
 {
@@ -62,6 +62,7 @@ public class BlodlipiderEvaluationService
         var measurementRows = await _db.MeasurementResults
             .AsNoTracking()
             .Where(r => r.PatientId == patientId && _measurementIds.Contains(r.MeasurementId))
+            .Include(r => r.RegisteredByPersonnel)
             .OrderByDescending(r => r.RegisteredAt)
             .ToListAsync();
 
@@ -211,7 +212,11 @@ public class BlodlipiderEvaluationService
             _ => MeasureTitleKeys.CategoryLow
         });
 
-        return new BlodlipiderEvaluationResult(measurementCategoryId, finalScore, titles);
+        var mostRecentRow = measurementRows.FirstOrDefault();
+        var basedOnDate = mostRecentRow?.RegisteredAt;
+        var basedOnPersonnelName = mostRecentRow?.RegisteredByPersonnel?.Name;
+
+        return new BlodlipiderEvaluationResult(measurementCategoryId, finalScore, titles, basedOnDate, basedOnPersonnelName);
     }
 
     private async Task EnsureQuestionLookupAsync()

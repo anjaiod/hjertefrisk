@@ -314,7 +314,7 @@ public class PatientsController : ControllerBase
                     return Unauthorized(new { error = "User not found" });
             }
 
-            var created = await _responseService.UpsertManyAsync(dtos);
+            var created = await _responseService.UpsertManyAsync(dtos, personnelId);
 
             // Recompute and store overall risk level
             _ = Task.Run(async () =>
@@ -394,6 +394,10 @@ public class PatientsController : ControllerBase
                 if (!patientIdForUser.HasValue || patientIdForUser.Value != id)
                     return Unauthorized(new { error = "User not found" });
             }
+
+            if (personnelId.HasValue)
+                foreach (var dto in dtos)
+                    dto.RegisteredBy = personnelId.Value;
 
             var created = await _measurementResultService.UpsertManyAsync(dtos);
             return Ok(created);

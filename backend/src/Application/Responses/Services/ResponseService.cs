@@ -66,7 +66,7 @@ public class ResponseService : IResponseService
         };
     }
 
-    public async Task<IEnumerable<ResponseDto>> UpsertManyAsync(IEnumerable<CreateResponseDto> dtos)
+    public async Task<IEnumerable<ResponseDto>> UpsertManyAsync(IEnumerable<CreateResponseDto> dtos, int? personnelId = null)
     {
         var incoming = dtos.ToList();
         if (incoming.Count == 0)
@@ -83,7 +83,7 @@ public class ResponseService : IResponseService
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        var answeredQuery = new AnsweredQuery { PatientId = patientId };
+        var answeredQuery = new AnsweredQuery { PatientId = patientId, PersonnelId = personnelId };
 
         var entities = normalized.Select(dto => new Response
         {
@@ -243,6 +243,7 @@ public class ResponseService : IResponseService
             .AsNoTracking()
             .Where(aq => aq.PatientId == patientId)
             .OrderByDescending(aq => aq.CreatedAt)
+            .Include(aq => aq.Personnel)
             .Include(aq => aq.Responses)
                 .ThenInclude(r => r.Question)
                     .ThenInclude(q => q.QueryQuestions)
@@ -254,6 +255,7 @@ public class ResponseService : IResponseService
         {
             Id = aq.Id,
             CreatedAt = DateTime.SpecifyKind(aq.CreatedAt, DateTimeKind.Utc),
+            FilledInByName = aq.Personnel?.Name,
             Responses = aq.Responses
                 .OrderBy(r => r.Question.QueryQuestions.FirstOrDefault()?.DisplayOrder ?? r.QuestionId)
                 .Select(r => new ResponseHistoryItemDto

@@ -48,14 +48,19 @@ public class MeasureEvaluationService : IMeasureEvaluationService
             .Include(q => q.Severities)
             .ToListAsync();
 
-        // Fetch answered queries for this patient, newest first, to support fallback logic:
-        // if the latest answered query is missing responses for some questions, we fall back
-        // to the most recent earlier query that does have an answer for each question.
-        var answeredQueryOrder = await _db.AnsweredQueries
+        // Fetch answered queries for this patient, newest first, to support fallback logic.
+        // We also need metadata (date + who filled it out) so tiltak can show the correct source
+        // even when some questions fall back to older answered queries.
+        var answeredQueries = await _db.AnsweredQueries
             .AsNoTracking()
             .Where(aq => aq.PatientId == dto.PatientId)
             .OrderByDescending(aq => aq.CreatedAt)
-            .Select(aq => aq.Id)
+            .Select(aq => new
+            {
+                aq.Id,
+                aq.CreatedAt,
+                PersonnelName = aq.Personnel != null ? aq.Personnel.Name : null
+            })
             .ToListAsync();
 
         var allResponses = await _db.Responses
@@ -63,9 +68,12 @@ public class MeasureEvaluationService : IMeasureEvaluationService
             .Where(r => r.PatientId == dto.PatientId && questionIds.Contains(r.QuestionId))
             .ToListAsync();
 
-        var orderLookup = answeredQueryOrder
-            .Select((id, index) => (id, index))
-            .ToDictionary(x => x.id, x => x.index);
+        var orderLookup = answeredQueries
+            .Select((aq, index) => (aq.Id, index))
+            .ToDictionary(x => x.Id, x => x.index);
+
+        var answeredQueryDates = answeredQueries.ToDictionary(x => x.Id, x => x.CreatedAt);
+        var answeredQueryPersonnelNames = answeredQueries.ToDictionary(x => x.Id, x => x.PersonnelName);
 
         // For each question, pick the response from the most recent answered query.
         var responses = allResponses
@@ -158,14 +166,78 @@ public class MeasureEvaluationService : IMeasureEvaluationService
         var languageCode = NormalizeLanguage(dto.LanguageCode);
         var generatedAt = DateTime.UtcNow;
 
+        // Build per-question source maps so each tiltak can show which answered query it was based on.
+        var questionDates = responses.ToDictionary(
+            kv => kv.Key,
+            kv => answeredQueryDates.TryGetValue(kv.Value.AnsweredQueryId, out var d) ? d : kv.Value.CreatedAt);
+
+        var questionPersonnelNames = responses.ToDictionary(
+            kv => kv.Key,
+            kv => answeredQueryPersonnelNames.GetValueOrDefault(kv.Value.AnsweredQueryId));
+
+        // For category-based measures, use the newest answered query that contributed data to that category.
+        var categoryDates = new Dictionary<int, DateTime>();
+        var categoryPersonnelNames = new Dictionary<int, string?>();
+
+        var categoryAnsweredQueryIds = questions
+            .Where(q => q.CategoryId.HasValue && responses.ContainsKey(q.QuestionId))
+            .GroupBy(q => q.CategoryId!.Value)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(q => responses[q.QuestionId].AnsweredQueryId)
+                      .OrderBy(id => orderLookup.GetValueOrDefault(id, int.MaxValue))
+                      .FirstOrDefault());
+
+        foreach (var (categoryId, answeredQueryId) in categoryAnsweredQueryIds)
+        {
+            if (answeredQueryDates.TryGetValue(answeredQueryId, out var d))
+            {
+                categoryDates[categoryId] = d;
+            }
+
+            categoryPersonnelNames[categoryId] = answeredQueryPersonnelNames.GetValueOrDefault(answeredQueryId);
+        }
+
+        if (blodlipiderResult is not null)
+        {
+            if (blodlipiderResult.BasedOnDate.HasValue)
+                categoryDates[blodlipiderResult.CategoryId] = blodlipiderResult.BasedOnDate.Value;
+            if (blodlipiderResult.BasedOnPersonnelName is not null)
+                categoryPersonnelNames[blodlipiderResult.CategoryId] = blodlipiderResult.BasedOnPersonnelName;
+        }
+
+        if (blodtrykkResult is not null)
+        {
+            if (blodtrykkResult.BasedOnDate.HasValue)
+                categoryDates[blodtrykkResult.CategoryId] = blodtrykkResult.BasedOnDate.Value;
+            if (blodtrykkResult.BasedOnPersonnelName is not null)
+                categoryPersonnelNames[blodtrykkResult.CategoryId] = blodtrykkResult.BasedOnPersonnelName;
+        }
+
+        if (glukoseResult is not null)
+        {
+            if (glukoseResult.BasedOnDate.HasValue)
+                categoryDates[glukoseResult.CategoryId] = glukoseResult.BasedOnDate.Value;
+            if (glukoseResult.BasedOnPersonnelName is not null)
+                categoryPersonnelNames[glukoseResult.CategoryId] = glukoseResult.BasedOnPersonnelName;
+        }
+
+        if (kroppsDataResult is not null)
+        {
+            if (kroppsDataResult.BasedOnDate.HasValue)
+                categoryDates[KroppsDataCategoryId] = kroppsDataResult.BasedOnDate.Value;
+            if (kroppsDataResult.BasedOnPersonnelName is not null)
+                categoryPersonnelNames[KroppsDataCategoryId] = kroppsDataResult.BasedOnPersonnelName;
+        }
+
         var patientResults = new List<PatientMeasureResultDto>();
         var personnelResults = new List<PersonnelMeasureResultDto>();
 
-        EvaluateQuestionMeasures(patientQuestionMeasures, responses, categoryScores, languageCode, generatedAt, patientResults);
-        EvaluateQuestionMeasures(personnelQuestionMeasures, responses, categoryScores, languageCode, generatedAt, personnelResults);
+        EvaluateQuestionMeasures(patientQuestionMeasures, responses, categoryScores, languageCode, generatedAt, questionDates, questionPersonnelNames, patientResults);
+        EvaluateQuestionMeasures(personnelQuestionMeasures, responses, categoryScores, languageCode, generatedAt, questionDates, questionPersonnelNames, personnelResults);
 
-        EvaluateCategoryMeasures(patientCategoryMeasures, categoryScores, answeredCategoryIds, languageCode, generatedAt, patientResults);
-        EvaluateCategoryMeasures(personnelCategoryMeasures, categoryScores, answeredCategoryIds, languageCode, generatedAt, personnelResults);
+        EvaluateCategoryMeasures(patientCategoryMeasures, categoryScores, answeredCategoryIds, languageCode, generatedAt, categoryDates, categoryPersonnelNames, patientResults);
+        EvaluateCategoryMeasures(personnelCategoryMeasures, categoryScores, answeredCategoryIds, languageCode, generatedAt, categoryDates, categoryPersonnelNames, personnelResults);
 
         // Custom evaluations for categories with specialized scoring logic
         if (answeredCategoryIds.Contains(SleepCategoryId))
@@ -180,6 +252,8 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                          && sleepTitles.Contains(m.Title))
                 .ToListAsync();
 
+            var sleepDate = categoryDates.GetValueOrDefault(SleepCategoryId);
+            var sleepPersonnelName = categoryPersonnelNames.GetValueOrDefault(SleepCategoryId);
             foreach (var measure in sleepPatientMeasures)
             {
                 patientResults.Add(new PatientMeasureResultDto
@@ -195,7 +269,9 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
                     IsExclusive = measure.IsExclusive,
-                    Priority = measure.Priority
+                    Priority = measure.Priority,
+                    BasedOnDate = sleepDate == default ? null : sleepDate,
+                    BasedOnPersonnelName = sleepPersonnelName
                 });
             }
         }
@@ -228,7 +304,9 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
                     IsExclusive = measure.IsExclusive,
-                    Priority = measure.Priority
+                    Priority = measure.Priority,
+                    BasedOnDate = kroppsDataResult.BasedOnDate,
+                    BasedOnPersonnelName = kroppsDataResult.BasedOnPersonnelName
                 });
             }
 
@@ -256,7 +334,9 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
                     IsExclusive = measure.IsExclusive,
-                    Priority = measure.Priority
+                    Priority = measure.Priority,
+                    BasedOnDate = kroppsDataResult.BasedOnDate,
+                    BasedOnPersonnelName = kroppsDataResult.BasedOnPersonnelName
                 });
             }
         }
@@ -289,7 +369,9 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
                     IsExclusive = measure.IsExclusive,
-                    Priority = measure.Priority
+                    Priority = measure.Priority,
+                    BasedOnDate = blodlipiderResult.BasedOnDate,
+                    BasedOnPersonnelName = blodlipiderResult.BasedOnPersonnelName
                 });
             }
 
@@ -317,7 +399,9 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
                     IsExclusive = measure.IsExclusive,
-                    Priority = measure.Priority
+                    Priority = measure.Priority,
+                    BasedOnDate = blodlipiderResult.BasedOnDate,
+                    BasedOnPersonnelName = blodlipiderResult.BasedOnPersonnelName
                 });
             }
         }
@@ -350,7 +434,9 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
                     IsExclusive = measure.IsExclusive,
-                    Priority = measure.Priority
+                    Priority = measure.Priority,
+                    BasedOnDate = blodtrykkResult.BasedOnDate,
+                    BasedOnPersonnelName = blodtrykkResult.BasedOnPersonnelName
                 });
             }
 
@@ -378,7 +464,9 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
                     IsExclusive = measure.IsExclusive,
-                    Priority = measure.Priority
+                    Priority = measure.Priority,
+                    BasedOnDate = blodtrykkResult.BasedOnDate,
+                    BasedOnPersonnelName = blodtrykkResult.BasedOnPersonnelName
                 });
             }
         }
@@ -400,7 +488,7 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                          && measurementOnlyCategoryIds.Contains(m.CategoryId.Value))
                 .ToListAsync();
 
-            EvaluateCategoryMeasures(extraPatientCategoryMeasures, categoryScores, answeredCategoryIds, languageCode, generatedAt, patientResults);
+            EvaluateCategoryMeasures(extraPatientCategoryMeasures, categoryScores, answeredCategoryIds, languageCode, generatedAt, categoryDates, categoryPersonnelNames, patientResults);
         }
 
         return new MeasureEvaluationResultDto
@@ -478,6 +566,8 @@ public class MeasureEvaluationService : IMeasureEvaluationService
         IReadOnlyDictionary<int, int> categoryScores,
         string? languageCode,
         DateTime generatedAt,
+        IReadOnlyDictionary<int, DateTime> questionDates,
+        IReadOnlyDictionary<int, string?> questionPersonnelNames,
         ICollection<PatientMeasureResultDto> results)
     {
         var grouped = measures.GroupBy(m => m.QuestionId!.Value);
@@ -498,6 +588,8 @@ public class MeasureEvaluationService : IMeasureEvaluationService
 
                 var categoryId = measure.CategoryId;
                 var categoryScore = categoryId.HasValue ? categoryScores.GetValueOrDefault(categoryId.Value) : 0;
+                var basedOnDate = questionDates.TryGetValue(group.Key, out var d) ? d : (DateTime?)null;
+                var basedOnPersonnelName = questionPersonnelNames.GetValueOrDefault(group.Key);
 
                 results.Add(new PatientMeasureResultDto
                 {
@@ -512,7 +604,9 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
                     IsExclusive = measure.IsExclusive,
-                    Priority = measure.Priority
+                    Priority = measure.Priority,
+                    BasedOnDate = basedOnDate == default ? null : basedOnDate,
+                    BasedOnPersonnelName = basedOnPersonnelName
                 });
             }
         }
@@ -524,6 +618,8 @@ public class MeasureEvaluationService : IMeasureEvaluationService
         IReadOnlyDictionary<int, int> categoryScores,
         string? languageCode,
         DateTime generatedAt,
+        IReadOnlyDictionary<int, DateTime> questionDates,
+        IReadOnlyDictionary<int, string?> questionPersonnelNames,
         ICollection<PersonnelMeasureResultDto> results)
     {
         var grouped = measures.GroupBy(m => m.QuestionId!.Value);
@@ -544,6 +640,8 @@ public class MeasureEvaluationService : IMeasureEvaluationService
 
                 var categoryId = measure.CategoryId;
                 var categoryScore = categoryId.HasValue ? categoryScores.GetValueOrDefault(categoryId.Value) : 0;
+                var basedOnDate = questionDates.TryGetValue(group.Key, out var d) ? d : (DateTime?)null;
+                var basedOnPersonnelName = questionPersonnelNames.GetValueOrDefault(group.Key);
 
                 results.Add(new PersonnelMeasureResultDto
                 {
@@ -558,7 +656,9 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
                     IsExclusive = measure.IsExclusive,
-                    Priority = measure.Priority
+                    Priority = measure.Priority,
+                    BasedOnDate = basedOnDate == default ? null : basedOnDate,
+                    BasedOnPersonnelName = basedOnPersonnelName
                 });
             }
         }
@@ -570,6 +670,8 @@ public class MeasureEvaluationService : IMeasureEvaluationService
         IReadOnlySet<int> answeredCategoryIds,
         string? languageCode,
         DateTime generatedAt,
+        IReadOnlyDictionary<int, DateTime> categoryDates,
+        IReadOnlyDictionary<int, string?> categoryPersonnelNames,
         ICollection<PatientMeasureResultDto> results)
     {
         var grouped = measures.GroupBy(m => m.CategoryId!.Value);
@@ -580,6 +682,8 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                 continue;
 
             var categoryScore = categoryScores.GetValueOrDefault(group.Key);
+            var basedOnDate = categoryDates.TryGetValue(group.Key, out var d) ? d : (DateTime?)null;
+            var basedOnPersonnelName = categoryPersonnelNames.GetValueOrDefault(group.Key);
 
             foreach (var measure in group
                 .OrderByDescending(m => m.Priority)
@@ -603,7 +707,9 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
                     IsExclusive = measure.IsExclusive,
-                    Priority = measure.Priority
+                    Priority = measure.Priority,
+                    BasedOnDate = basedOnDate == default ? null : basedOnDate,
+                    BasedOnPersonnelName = basedOnPersonnelName
                 });
 
                 if (measure.IsExclusive)
@@ -620,6 +726,8 @@ public class MeasureEvaluationService : IMeasureEvaluationService
         IReadOnlySet<int> answeredCategoryIds,
         string? languageCode,
         DateTime generatedAt,
+        IReadOnlyDictionary<int, DateTime> categoryDates,
+        IReadOnlyDictionary<int, string?> categoryPersonnelNames,
         ICollection<PersonnelMeasureResultDto> results)
     {
         var grouped = measures.GroupBy(m => m.CategoryId!.Value);
@@ -630,6 +738,8 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                 continue;
 
             var categoryScore = categoryScores.GetValueOrDefault(group.Key);
+            var basedOnDate = categoryDates.TryGetValue(group.Key, out var d) ? d : (DateTime?)null;
+            var basedOnPersonnelName = categoryPersonnelNames.GetValueOrDefault(group.Key);
 
             foreach (var measure in group
                 .OrderByDescending(m => m.Priority)
@@ -653,7 +763,9 @@ public class MeasureEvaluationService : IMeasureEvaluationService
                     GeneratedAt = generatedAt,
                     ScoreThreshold = measure.ScoreThreshold,
                     IsExclusive = measure.IsExclusive,
-                    Priority = measure.Priority
+                    Priority = measure.Priority,
+                    BasedOnDate = basedOnDate == default ? null : basedOnDate,
+                    BasedOnPersonnelName = basedOnPersonnelName
                 });
 
                 if (measure.IsExclusive)

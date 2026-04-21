@@ -15,6 +15,8 @@ type PersonnelMeasureResult = {
   text: string;
   resourceUrl: string | null;
   priority: number;
+  basedOnDate: string | null;
+  basedOnPersonnelName: string | null;
 };
 
 type MeasureEvaluationResponse = {
@@ -68,6 +70,19 @@ function sleepTagVariant(
   if (titles.some((t) => t === "Noen s\u00F8vnproblemer")) return "medium";
   if (titles.some((t) => t === "God s\u00F8vn")) return "low";
   return null;
+}
+
+function formatBasedOn(date: string | null, personnelName: string | null): string | null {
+  if (!date) return null;
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
+  const formatted = d.toLocaleDateString("nb-NO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const name = personnelName ?? "pasienten selv";
+  return `Basert på verdier fylt inn av ${name} den ${formatted}`;
 }
 
 function tagTextFromVariant(variant: TagVariant): string {
@@ -378,6 +393,11 @@ export default function TiltakPage() {
                     >
                       Les mer her
                     </a>
+                  )}
+                  {formatBasedOn(measure.basedOnDate, measure.basedOnPersonnelName) && (
+                    <p className="text-xs text-slate-400 italic border-t border-slate-100 pt-2 mt-1">
+                      {formatBasedOn(measure.basedOnDate, measure.basedOnPersonnelName)}
+                    </p>
                   )}
                 </div>
               ))}

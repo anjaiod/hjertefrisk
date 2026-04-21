@@ -13,15 +13,18 @@ interface ResponseHistoryItem {
 interface AnsweredQueryHistory {
   id: number;
   createdAt: string;
+  filledInByName: string | null;
   responses: ResponseHistoryItem[];
 }
 
 export default function QuestionnaireHistory({
   patientId,
   initialOpenId,
+  patientLabel = "pasienten selv",
 }: {
   patientId: number;
   initialOpenId?: number | null;
+  patientLabel?: string;
 }) {
   const [history, setHistory] = useState<AnsweredQueryHistory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +84,7 @@ export default function QuestionnaireHistory({
           hour: "2-digit",
           minute: "2-digit",
         });
+        const filledBy = entry.filledInByName ?? patientLabel ?? "ukjent";
         return (
           <div
             key={entry.id}
@@ -90,7 +94,12 @@ export default function QuestionnaireHistory({
               className="flex w-full items-center justify-between px-5 py-4 text-left"
               onClick={() => setExpandedId(isOpen ? null : entry.id)}
             >
-              <span className="font-medium text-slate-800">{date}</span>
+              <div className="flex flex-col">
+                <span className="font-medium text-slate-800">{date}</span>
+                <span className="text-xs text-slate-400">
+                  Fylt inn av {filledBy}
+                </span>
+              </div>
               <span className="text-slate-400">{isOpen ? "▲" : "▼"}</span>
             </button>
             {isOpen && (

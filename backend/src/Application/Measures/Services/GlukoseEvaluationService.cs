@@ -13,7 +13,7 @@ namespace backend.src.Application.Measures.Services;
 ///
 /// CategoryId hentes dynamisk fra Measurements-tabellen.
 /// </summary>
-public record GlukoseEvaluationResult(int CategoryId, int Score);
+public record GlukoseEvaluationResult(int CategoryId, int Score, DateTime? BasedOnDate, string? BasedOnPersonnelName);
 
 public class GlukoseEvaluationService
 {
@@ -46,18 +46,23 @@ public class GlukoseEvaluationService
         if (measurementIds.Count == 0) return null;
 
         // Hent siste måling for pasienten
-        var latestResult = await _db.MeasurementResults
+        var latest = await _db.MeasurementResults
             .AsNoTracking()
             .Where(r => r.PatientId == patientId && measurementIds.Contains(r.MeasurementId))
             .OrderByDescending(r => r.RegisteredAt)
-            .Select(r => (decimal?)r.Result)
+            .Select(r => new
+            {
+                Result = (decimal?)r.Result,
+                r.RegisteredAt,
+                PersonnelName = r.RegisteredByPersonnel != null ? r.RegisteredByPersonnel.Name : null
+            })
             .FirstOrDefaultAsync();
 
-        if (!latestResult.HasValue) return null;
+        if (latest is null || !latest.Result.HasValue) return null;
 
-        var hba1c = latestResult.Value;
+        var hba1c = latest.Result.Value;
         int score = hba1c >= 48 ? 2 : hba1c >= 42 ? 1 : 0;
 
-        return new GlukoseEvaluationResult(glukoseCategory, score);
+        return new GlukoseEvaluationResult(glukoseCategory, score, latest.RegisteredAt, latest.PersonnelName);
     }
 }
