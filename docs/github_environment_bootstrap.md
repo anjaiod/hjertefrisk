@@ -13,6 +13,7 @@ Examples:
 - public frontend URL
 - Supabase public URL
 - Supabase publishable key
+- `RUN_DB_MIGRATIONS`
 - Workload Identity Provider resource name
 - service account email
 
@@ -87,6 +88,7 @@ The script will:
 - `GCP_FRONTEND_MEMORY`
 - `GCP_BACKEND_CPU`
 - `GCP_FRONTEND_CPU`
+- `RUN_DB_MIGRATIONS`
 - `FRONTEND_ORIGINS`
 - `NEXT_PUBLIC_API_URL`
 - `API_URL_INTERNAL`
@@ -104,3 +106,26 @@ The script will:
 - Keep real `*.secrets` out of git.
 - Optionally commit real `*.vars` if the team wants environment config visible in version control.
 - Let the bootstrap script create placeholder GitHub secrets first, then replace them manually in GitHub or by re-running the bootstrap script with a real `*.secrets` file later.
+
+## Database Migration Variable
+
+`RUN_DB_MIGRATIONS` belongs in GitHub environment vars, not secrets. Keep it set to:
+
+```text
+RUN_DB_MIGRATIONS=false
+```
+
+For a one-time migration deploy:
+
+1. Change the target GitHub Environment var to `RUN_DB_MIGRATIONS=true`.
+2. Run `Cloud Run Deploy` for that environment, or push the staging `stage-*` tag if deploying staging by tag.
+3. Confirm the backend revision starts and `/health/db` succeeds.
+4. Change the GitHub Environment var back to `RUN_DB_MIGRATIONS=false`.
+
+When using the local bootstrap files, update `ops/github/environments/<env>.vars` and run:
+
+```bash
+scripts/bootstrap_github_cloud_run_env.sh <env>
+```
+
+This writes the value into the selected GitHub Environment. For tag-triggered staging deploys, do this before pushing the `stage-*` tag.

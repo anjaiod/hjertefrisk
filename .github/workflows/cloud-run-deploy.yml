@@ -60,6 +60,7 @@ jobs:
       FRONTEND_MEMORY: ${{ vars.GCP_FRONTEND_MEMORY != '' && vars.GCP_FRONTEND_MEMORY || '512Mi' }}
       BACKEND_CPU: ${{ vars.GCP_BACKEND_CPU != '' && vars.GCP_BACKEND_CPU || '1' }}
       FRONTEND_CPU: ${{ vars.GCP_FRONTEND_CPU != '' && vars.GCP_FRONTEND_CPU || '1' }}
+      RUN_DB_MIGRATIONS: ${{ vars.RUN_DB_MIGRATIONS != '' && vars.RUN_DB_MIGRATIONS || 'false' }}
     steps:
       - name: Checkout selected ref
         uses: actions/checkout@v4
@@ -250,7 +251,8 @@ jobs:
             --set-env-vars "ConnectionStrings__Default=${{ steps.backend_env.outputs.connection_string }}" \
             --set-env-vars "Supabase__Url=${{ steps.backend_env.outputs.supabase_url }}" \
             --set-env-vars "Supabase__AnonKey=${{ secrets.Supabase__AnonKey }}" \
-            --set-env-vars "FRONTEND_ORIGINS=${{ steps.backend_env.outputs.frontend_origins }}"
+            --set-env-vars "FRONTEND_ORIGINS=${{ steps.backend_env.outputs.frontend_origins }}" \
+            --set-env-vars "RUN_DB_MIGRATIONS=${RUN_DB_MIGRATIONS}"
 
       - name: Fetch backend startup logs on failure
         if: ${{ steps.deploy_backend.outcome == 'failure' }}

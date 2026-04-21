@@ -36,6 +36,10 @@ Automatic EF Core migrations are enabled by default in development only.
 
 For Cloud Run, the backend now starts without running migrations unless `RUN_DB_MIGRATIONS=true` is set explicitly. This avoids Cloud Run startup failures when database connectivity or schema changes are not ready yet.
 
+The deploy workflow reads `RUN_DB_MIGRATIONS` from the selected GitHub Environment vars and passes it to the backend Cloud Run service. Keep it as `false` for normal deploys. To run migrations during one deploy, temporarily set the GitHub Environment var to `true`, run the deploy, verify the backend starts, then set it back to `false`.
+
+For tag-based staging deploys, the workflow uses the `staging` GitHub Environment automatically. That means a pushed `stage-*` tag will use whatever `RUN_DB_MIGRATIONS` value is currently configured under GitHub `Settings` -> `Environments` -> `staging`.
+
 ## Registry
 Use Google Artifact Registry as the container registry for Cloud Run deploys.
 

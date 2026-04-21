@@ -35,6 +35,7 @@ Minimum values to verify in `dev.vars`:
 - `GCP_ARTIFACT_REPOSITORY`
 - `GCP_BACKEND_SERVICE`
 - `GCP_FRONTEND_SERVICE`
+- `RUN_DB_MIGRATIONS=false`
 - `FRONTEND_ORIGINS=https://hjertefrisk-dev.naerverk.no`
 - `NEXT_PUBLIC_API_URL=https://hjertefrisk-dev.naerverk.no`
 - `API_URL_INTERNAL=https://hjertefrisk-dev.naerverk.no`
@@ -76,6 +77,20 @@ In GitHub:
    - `target_environment=dev`
    - `git_ref=infra/gcp-terraform-deploy` or the branch/ref you want to test
 4. Run workflow
+
+For a normal deploy, keep the selected environment variable `RUN_DB_MIGRATIONS=false`.
+
+If the database schema must be updated during this deploy:
+
+1. Open GitHub `Settings`
+2. Open `Environments`
+3. Select the target environment, for example `staging`
+4. Set environment variable `RUN_DB_MIGRATIONS=true`
+5. Run `Cloud Run Deploy`
+6. Verify the backend starts and `/health/db` succeeds
+7. Set `RUN_DB_MIGRATIONS=false` again before the next normal deploy
+
+For staging tag deploys, push the `stage-*` tag only after setting the `staging` environment variable to the intended value. The tag-triggered workflow does not ask for inputs; it automatically uses the `staging` GitHub Environment.
 
 ## 5. Verify
 Check:
