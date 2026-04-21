@@ -79,6 +79,7 @@ public class QueryService : IQueryService
                                 TriggerOptionId = d.TriggerOptionId,
                                 TriggerOptionValue = d.TriggerOption != null ? d.TriggerOption.OptionValue : null,
                                 TriggerTextValue = d.TriggerTextValue,
+                                TriggerNumberValue = d.TriggerNumberValue,
                                 Operator = d.Operator
                             }).ToList()
                     }).ToList()
@@ -127,6 +128,7 @@ public class QueryService : IQueryService
                                 TriggerOptionId = d.TriggerOptionId,
                                 TriggerOptionValue = d.TriggerOption != null ? d.TriggerOption.OptionValue : null,
                                 TriggerTextValue = d.TriggerTextValue,
+                                TriggerNumberValue = d.TriggerNumberValue,
                                 Operator = d.Operator
                             }).ToList()
                     }).ToList()

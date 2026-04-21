@@ -26,9 +26,11 @@ public class BlodlipiderEvaluationService
         public const string LdlElevated = "LDL 3,0-3,9";
         public const string LdlVeryHigh = "LDL > 4,9";
         public const string HdlLow = "HDL lav";
+        public const string FastendeProve = "Fastende prøve";
     }
 
     private const int TotalCholesterolMeasurementId = 6;
+    private const int FastendeQuestionId = 177;
     private const int LdlMeasurementId = 7;
     private const int HdlMeasurementId = 8;
     private const int TriglyceridesMeasurementId = 9;
@@ -137,6 +139,14 @@ public class BlodlipiderEvaluationService
             {
                 mediumRisk = true;
                 AddTitle(MeasureTitleKeys.TriglyceridesElevated);
+
+                bool notFasting = responses.TryGetValue(FastendeQuestionId, out var fasteResponse) &&
+                                  fasteResponse != null &&
+                                  !IsAffirmative(fasteResponse);
+                if (notFasting)
+                {
+                    AddTitle(MeasureTitleKeys.FastendeProve);
+                }
             }
             else if (trig.Value >= 1.7m)
             {
