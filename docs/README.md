@@ -23,3 +23,7 @@ Supporting docs:
 
 - `contributions_jens_lien.md`
   Personal contribution log for the student project.
+- `agents/`
+  AI-assisted engineering and deployment workflows.
+- `ai_infra_template_adoption.md`
+  Notes from adopting selected files from `ai-infra-template`.
