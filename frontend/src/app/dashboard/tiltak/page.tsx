@@ -36,15 +36,15 @@ type RiskThreshold = {
 
 const CATEGORY_RISK_THRESHOLDS: Record<string, RiskThreshold> = {
   "fysisk aktivitet": { high: 9, medium: 5 },
-  "kosthold": { high: 9, medium: 5 },
-  "rusmidler": { high: 3, medium: 1 },
-  "alkohol": { high: 15, medium: 8 },
-  "røyking": { high: 2, medium: 1 },
-  "tannhelse": { high: 1, medium: null },
-  "kroppsdata": { high: 2, medium: 1 },
-  "blodtrykk": { high: 2, medium: 1 },
-  "blodlipider": { high: 2, medium: 1 },
-  "glukoseregulering": { high: 2, medium: 1 },
+  kosthold: { high: 9, medium: 5 },
+  rusmidler: { high: 3, medium: 1 },
+  alkohol: { high: 15, medium: 8 },
+  røyking: { high: 2, medium: 1 },
+  tannhelse: { high: 1, medium: null },
+  kroppsdata: { high: 2, medium: 1 },
+  blodtrykk: { high: 2, medium: 1 },
+  blodlipider: { high: 2, medium: 1 },
+  glukoseregulering: { high: 2, medium: 1 },
 };
 
 function tagVariantFromCategoryScore(
@@ -87,16 +87,21 @@ export default function TiltakPage() {
   const patientId = Number.isFinite(parsedPatientId) ? parsedPatientId : null;
 
   const [categories, setCategories] = useState<CategoryDto[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null,
+  );
   const [measuresByCategory, setMeasuresByCategory] = useState<
     Record<number, PersonnelMeasureResult[]>
   >({});
-  const [categoryScores, setCategoryScores] = useState<Record<number, number>>({});
+  const [categoryScores, setCategoryScores] = useState<Record<number, number>>(
+    {},
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const hasPatientId = typeof patientId === "number" && Number.isFinite(patientId);
+  const hasPatientId =
+    typeof patientId === "number" && Number.isFinite(patientId);
 
   useEffect(() => {
     if (!hasPatientId) return;
@@ -155,7 +160,9 @@ export default function TiltakPage() {
           if (current && grouped[current]?.length) return current;
           return (
             fetchedCategories.find((cat) => grouped[cat.categoryId]?.length)
-              ?.categoryId ?? fetchedCategories[0]?.categoryId ?? null
+              ?.categoryId ??
+            fetchedCategories[0]?.categoryId ??
+            null
           );
         });
       } catch {
@@ -190,45 +197,54 @@ export default function TiltakPage() {
 
     window.addEventListener("measurements:updated", handler as EventListener);
     return () => {
-      window.removeEventListener("measurements:updated", handler as EventListener);
+      window.removeEventListener(
+        "measurements:updated",
+        handler as EventListener,
+      );
     };
   }, [hasPatientId, patientId]);
 
   const riskOrder: Record<TagVariant, number> = { high: 0, medium: 1, low: 2, none: 3 };
 
-  const categoryVariant = useCallback((cat: CategoryDto): TagVariant | null => {
-    const normalized = cat.name.toLowerCase().trim();
-    const isSleepCategory = normalized === "søvn";
-    const score = categoryScores[cat.categoryId];
-    const measures = measuresByCategory[cat.categoryId] ?? [];
-    const answered = isSleepCategory ? measures.length > 0 : score !== undefined;
-    if (!answered) return null;
-    if (isSleepCategory) {
-      return sleepTagVariant(measures);
-    }
-    return tagVariantFromCategoryScore(cat.name, score ?? 0);
-  }, [categoryScores, measuresByCategory]);
+  const categoryVariant = useCallback(
+    (cat: CategoryDto): TagVariant | null => {
+      const normalized = cat.name.toLowerCase().trim();
+      const isSleepCategory = normalized === "søvn";
+      const score = categoryScores[cat.categoryId];
+      const measures = measuresByCategory[cat.categoryId] ?? [];
+      const answered = isSleepCategory
+        ? measures.length > 0
+        : score !== undefined;
+      if (!answered) return null;
+      if (isSleepCategory) {
+        return sleepTagVariant(measures);
+      }
+      return tagVariantFromCategoryScore(cat.name, score ?? 0);
+    },
+    [categoryScores, measuresByCategory],
+  );
 
   const sortedCategories = useMemo(() => {
     return [...categories].sort((a, b) => {
       const variantA = categoryVariant(a);
       const variantB = categoryVariant(b);
-      const orderA = variantA ? riskOrder[variantA] ?? 3 : 4;
-      const orderB = variantB ? riskOrder[variantB] ?? 3 : 4;
+      const orderA = variantA ? (riskOrder[variantA] ?? 3) : 4;
+      const orderB = variantB ? (riskOrder[variantB] ?? 3) : 4;
       if (orderA !== orderB) return orderA - orderB;
       return a.name.localeCompare(b.name);
     });
   }, [categories, categoryVariant]);
 
   const selectedCategory = useMemo(
-    () => categories.find((cat) => cat.categoryId === selectedCategoryId) ?? null,
+    () =>
+      categories.find((cat) => cat.categoryId === selectedCategoryId) ?? null,
     [categories, selectedCategoryId],
   );
 
   const selectedMeasures = useMemo(
     () =>
       selectedCategoryId != null
-        ? measuresByCategory[selectedCategoryId] ?? []
+        ? (measuresByCategory[selectedCategoryId] ?? [])
         : [],
     [measuresByCategory, selectedCategoryId],
   );
@@ -260,7 +276,9 @@ export default function TiltakPage() {
 
       <div className="flex gap-6">
         <div className="w-80 shrink-0 bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-          <h2 className="text-lg font-bold text-brand-navy mb-4">Risikoprofiler</h2>
+          <h2 className="text-lg font-bold text-brand-navy mb-4">
+            Risikoprofiler
+          </h2>
           <div className="flex flex-col gap-2">
             {loading && categories.length === 0 ? (
               <p className="text-slate-400 text-sm">Laster...</p>
@@ -280,7 +298,9 @@ export default function TiltakPage() {
                         : "border border-transparent hover:bg-slate-50",
                     ].join(" ")}
                   >
-                    <span className="text-slate-800 font-medium">{cat.name}</span>
+                    <span className="text-slate-800 font-medium">
+                      {cat.name}
+                    </span>
                     {variant && (
                       <Tag variant={variant} className="text-sm">
                         {tagTextFromVariant(variant)}
@@ -318,7 +338,8 @@ export default function TiltakPage() {
                 />
               </svg>
               <p className="text-slate-600 font-medium">
-                Ingen tiltak registrert for {selectedCategory.name.toLowerCase()}.
+                Ingen tiltak registrert for{" "}
+                {selectedCategory.name.toLowerCase()}.
               </p>
               <p className="text-slate-400 text-sm max-w-sm">
                 Fyll ut kategorien{" "}
@@ -341,7 +362,9 @@ export default function TiltakPage() {
                   className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-3"
                 >
                   {measure.title && (
-                    <h3 className="font-bold text-brand-navy">{measure.title}</h3>
+                    <h3 className="font-bold text-brand-navy">
+                      {measure.title}
+                    </h3>
                   )}
                   <p className="text-slate-700 text-sm leading-relaxed">
                     {measure.text}

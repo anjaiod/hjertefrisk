@@ -11,6 +11,8 @@ interface QuestionNumberProps {
   unit?: string;
   required?: boolean;
   compact?: boolean;
+  min?: number;
+  max?: number;
 }
 
 export default function QuestionNumber({
@@ -23,7 +25,20 @@ export default function QuestionNumber({
   unit,
   required = false,
   compact = false,
+  min,
+  max,
 }: QuestionNumberProps) {
+  const numVal = parseFloat(value.replace(",", "."));
+  const hasValue = value.trim() !== "" && !isNaN(numVal);
+  let error: string | undefined;
+  if (hasValue) {
+    if (min !== undefined && numVal < min) {
+      error = `Verdien må være minst ${min}`;
+    } else if (max !== undefined && numVal > max) {
+      error = `Verdien kan ikke overstige ${max}`;
+    }
+  }
+
   return (
     <div className="mb-6">
       <QuestionLabel text={question} required={required} compact={compact} />
@@ -36,6 +51,9 @@ export default function QuestionNumber({
             placeholder={placeholder}
             unit={unit}
             compact={compact}
+            min={min}
+            max={max}
+            error={error}
             onChange={onChange}
           />
         </div>

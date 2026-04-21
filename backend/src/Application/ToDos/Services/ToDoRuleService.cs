@@ -16,8 +16,10 @@ public class ToDoRuleService : IToDoRuleService
 
     public async Task ProcessResponseAsync(Response response)
     {
-        if (response.QuestionId == null)
-            return;
+        // if (response.QuestionId == null)
+        //     return;
+        if (response == null)
+            throw new ArgumentNullException(nameof(response));
 
         // Find all QuestionAnswerRules for this question
         var rules = await _db.QuestionAnswerRules
@@ -72,8 +74,10 @@ public class ToDoRuleService : IToDoRuleService
 
     public async Task ProcessResponseWithScoreAsync(Response response, int? categoryScore)
     {
-        if (response.QuestionId == null)
-            return;
+        // if (response.QuestionId == null)
+        //     return;
+        if (response == null)
+            throw new ArgumentNullException(nameof(response));
 
         Console.WriteLine($"[ToDoRuleService] Processing response for question {response.QuestionId} with categoryScore: {categoryScore}");
 

@@ -1,7 +1,9 @@
 "use client";
 import { useUser } from "@/context/UserContext";
-import type { ReactNode } from "react";
+import { useState, type ReactNode, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { VarslingModal } from "../molecules/VarslingModal";
+import { fetchNotifications } from "@/lib/notifications";
 
 type NavItem = {
   label: string;
@@ -43,6 +45,9 @@ export function SidebarNav({
   const searchParams = useSearchParams();
   const currentPath = activePath === "/" ? (pathname ?? "/") : activePath;
 
+  const [showVarsling, setShowVarsling] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
+
   const patientId = searchParams?.get("patientId");
   const hasSelectedPatient = Boolean(patientId && patientId.trim() !== "");
   const withPatientId = (href: string) => {
@@ -77,8 +82,8 @@ export function SidebarNav({
   const primaryItems: NavItem[] = [
     {
       label: "Varslinger",
-      href: withPatientId("/dashboard/varslinger"),
-      active: isActive("/dashboard/varslinger"),
+      href: "#",
+      active: false,
       icon: (
         <svg
           fill="none"
@@ -216,50 +221,102 @@ export function SidebarNav({
     },
   ];
 
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const all = await fetchNotifications();
+        const forPatient = patientId
+          ? all.some((n) => n.patientId === Number(patientId) && !n.read)
+          : false;
+        if (mounted) setHasUnread(forPatient);
+      } catch (e) {
+        console.error("Failed to fetch notifications for sidebar", e);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [patientId]);
+
   return (
-    <aside className="sticky top-0 hidden h-screen w-72 flex-col border-r border-brand-sky/30 bg-linear-to-b from-white to-brand-mist/10 p-6 md:flex">
-      <div className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm">
-        <img
-          src={
-            profileImage ??
-            "https://api.dicebear.com/7.x/avataaars/svg?seed=default"
-          }
-          alt="Profile"
-          className="h-14 w-14 rounded-full border-2 border-brand-sky bg-brand-mist object-cover"
-        />
-        <div className="space-y-0.5">
-          <p className="font-bold text-brand-navy">
-            {user?.name ?? userName ?? "Bruker"}
-          </p>
-          <p className="text-sm text-slate-600">{clinicName}</p>
+    <>
+      <aside className="sticky top-0 hidden h-screen w-72 flex-col border-r border-brand-sky/30 bg-linear-to-b from-white to-brand-mist/10 p-6 md:flex">
+        <div className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm">
+          <img
+            src={
+              profileImage ??
+              "https://api.dicebear.com/7.x/avataaars/svg?seed=default"
+            }
+            alt="Profile"
+            className="h-14 w-14 rounded-full border-2 border-brand-sky bg-brand-mist object-cover"
+          />
+          <div className="space-y-0.5">
+            <p className="font-bold text-brand-navy">
+              {user?.name ?? userName ?? "Bruker"}
+            </p>
+            <p className="text-sm text-slate-600">{clinicName}</p>
+          </div>
         </div>
-      </div>
 
-      <div className="my-6 h-px bg-linear-to-r from-transparent via-brand-sky to-transparent" />
-
-      <nav className="flex flex-col space-y-2">
         {hasSelectedPatient ? (
           <>
-            <Item key={dashboardItem.href} item={dashboardItem} />
+            <div className="my-6 h-px bg-linear-to-r from-transparent via-brand-sky to-transparent" />
 
-            {primaryItems.map((item) => (
-              <Item key={item.href} item={item} />
-            ))}
+            <nav className="flex flex-col space-y-2">
+              <button
+                onClick={() => setShowVarsling(true)}
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold transition-all text-slate-700 hover:bg-brand-mist/40 hover:text-brand-navy hover:shadow-sm"
+              >
+                <span className="w-5 h-5">
+                  <svg
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                    />
+                  </svg>
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="relative inline-flex items-center">
+                    <span className="min-w-[72px]">Varslinger</span>
+                    {hasUnread ? (
+                      <span
+                        className="absolute -right-2 top-1 inline-block w-2 h-2 rounded-full bg-red-500"
+                        aria-hidden
+                      />
+                    ) : null}
+                  </span>
+                </span>
+              </button>
 
-            {secondaryItems.map((item) => (
-              <Item key={item.href} item={item} />
-            ))}
+              {secondaryItems.map((item) => (
+                <Item key={item.href} item={item} />
+              ))}
+            </nav>
           </>
         ) : null}
-      </nav>
+      </aside>
 
-      <div className="mt-auto border-t border-brand-sky/30 pt-6">
+      {/* <div className="mt-auto border-t border-brand-sky/30 pt-6">
         <nav className="flex flex-col space-y-2">
           {adminItems.map((item) => (
             <Item key={item.href} item={item} />
           ))}
         </nav>
-      </div>
-    </aside>
+      </div> */}
+
+      {showVarsling && (
+        <VarslingModal
+          onClose={() => setShowVarsling(false)}
+          patientId={Number(patientId)}
+        />
+      )}
+    </>
   );
 }

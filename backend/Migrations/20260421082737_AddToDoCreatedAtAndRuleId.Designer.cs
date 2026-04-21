@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.src.Infrastructure.Data;
@@ -11,9 +12,11 @@ using backend.src.Infrastructure.Data;
 namespace api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260421082737_AddToDoCreatedAtAndRuleId")]
+    partial class AddToDoCreatedAtAndRuleId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -148,47 +151,6 @@ namespace api.Migrations
                     b.HasIndex("LanguageCode");
 
                     b.ToTable("MeasurementTexts");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.Notification", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AnsweredQueryId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("PatientId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("PersonnelId")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("Read")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("ReadAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AnsweredQueryId");
-
-                    b.HasIndex("PatientId");
-
-                    b.HasIndex("PersonnelId");
-
-                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.OptionText", b =>
@@ -1059,33 +1021,6 @@ namespace api.Migrations
                     b.Navigation("Language");
 
                     b.Navigation("Measurement");
-                });
-
-            modelBuilder.Entity("backend.src.Domain.Models.Notification", b =>
-                {
-                    b.HasOne("backend.src.Domain.Models.AnsweredQuery", "AnsweredQuery")
-                        .WithMany()
-                        .HasForeignKey("AnsweredQueryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.src.Domain.Models.Patient", "Patient")
-                        .WithMany()
-                        .HasForeignKey("PatientId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.src.Domain.Models.Personnel", "Personnel")
-                        .WithMany()
-                        .HasForeignKey("PersonnelId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AnsweredQuery");
-
-                    b.Navigation("Patient");
-
-                    b.Navigation("Personnel");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.OptionText", b =>

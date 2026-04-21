@@ -99,6 +99,40 @@ public class ResponseService : IResponseService
         await _db.SaveChangesAsync();
         await transaction.CommitAsync();
 
+        // Create notifications for personnel who have access to this patient
+        try
+        {
+            var patient = await _db.Patients.FindAsync(patientId);
+            if (patient != null)
+            {
+                var personnelIds = await _db.PatientAccesses
+                    .Where(x => x.PatientId == patientId)
+                    .Select(x => x.PersonnelId)
+                    .ToListAsync();
+
+                var notifications = personnelIds.Select(pid => new backend.src.Domain.Models.Notification
+                {
+                    PersonnelId = pid,
+                    PatientId = patientId,
+                    AnsweredQueryId = answeredQuery.Id,
+                    Message = $"Pasienten {patient.Name} har besvart et nytt skjema",
+                    CreatedAt = DateTime.UtcNow,
+                    Read = false
+                }).ToList();
+
+                if (notifications.Any())
+                {
+                    _db.Notifications.AddRange(notifications);
+                    await _db.SaveChangesAsync();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ResponseService] Failed to create notifications: {ex}");
+            // don't fail the whole request if notifications can't be created
+        }
+
         // Build a map of question IDs to their categories for score-based rules
         var questionIds = entities.Select(e => e.QuestionId).Distinct().ToList();
         var questionsWithCategories = await _db.Questions

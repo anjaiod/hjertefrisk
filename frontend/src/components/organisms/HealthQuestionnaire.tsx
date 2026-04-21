@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactElement, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import CollapsibleSection from "../molecules/CollapsibleSection";
 import QuestionRadio from "../molecules/QuestionRadio";
 import QuestionNumber from "../molecules/QuestionNumber";
@@ -8,6 +9,11 @@ import QuestionTextArea from "../molecules/QuestionTextArea";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
 import { apiClient } from "@/lib/apiClient";
 import { useUser } from "@/context/UserContext";
+import {
+  getQuestionUnit,
+  getQuestionValidationRange,
+  getQuestionRows,
+} from "@/lib/questionHelpers";
 import type {
   CreateMeasurementResultDto,
   CreateResponseDto,
@@ -16,24 +22,6 @@ import type {
   SeverityDto,
 } from "@/types";
 
-function toPatientPerspective(text: string): string {
-  return text
-    .replace(/\b[Dd]u\b/g, (match) =>
-      match === "Du" ? "Pasienten" : "pasienten",
-    )
-    .replace(/\b[Dd]eg\b/g, (match) =>
-      match === "Deg" ? "Pasienten" : "pasienten",
-    )
-    .replace(/\b[Dd]in\b/g, (match) =>
-      match === "Din" ? "Pasientens" : "pasientens",
-    )
-    .replace(/\b[Dd]itt\b/g, (match) =>
-      match === "Ditt" ? "Pasientens" : "pasientens",
-    )
-    .replace(/\b[Dd]ine\b/g, (match) =>
-      match === "Dine" ? "Pasientens" : "pasientens",
-    );
-}
 
 interface HealthQuestionnaireProps {
   patientId: number | null;
@@ -44,6 +32,7 @@ export default function HealthQuestionnaire({
   patientId,
   compact = false,
 }: HealthQuestionnaireProps) {
+  const router = useRouter();
   const { user } = useUser();
   const [questions, setQuestions] = useState<QueryQuestionWithDetailsDto[]>([]);
   const [severities, setSeverities] = useState<SeverityDto[]>([]);
@@ -157,38 +146,13 @@ export default function HealthQuestionnaire({
     return undefined;
   };
 
-  const getUnit = (
-    question: QueryQuestionWithDetailsDto,
-  ): string | undefined => {
-    const text = question.fallbackText.toLowerCase();
-    if (text.includes("hvor høy")) return "cm";
-    if (text.includes("hvor mye veier")) return "kg";
-    if (text.includes("livvidde")) return "cm";
-    if (text.includes("blodtrykk")) return "mmHg";
-    if (text.includes("hba1c")) return "mmol/mol";
-    if (text.includes("fastende")) return "mmol/L";
-    if (text.includes("kolesterol")) return "mmol/L";
-    if (text.includes("triglyserider")) return "mmol/L";
-
-    return undefined;
-  };
-
-  const getRows = (
-    question: QueryQuestionWithDetailsDto,
-  ): number | undefined => {
-    const text = question.fallbackText.toLowerCase();
-    if (text.includes("hvor mye røyker")) return 2;
-    if (text.includes("vekten din endret")) return 2;
-    if (text.includes("begrensninger") || text.includes("barrierer")) return 3;
-    return undefined;
-  };
 
   const renderQuestion = (
     question: QueryQuestionWithDetailsDto,
   ): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
-    const questionText = toPatientPerspective(question.fallbackText);
+    const questionText = question.fallbackText;
 
     if (question.questionType === "boolean") {
       return (
@@ -231,6 +195,7 @@ export default function HealthQuestionnaire({
     }
 
     if (question.questionType === "number") {
+      const { min, max } = getQuestionValidationRange(question);
       return (
         <QuestionNumber
           key={question.questionId}
@@ -239,9 +204,11 @@ export default function HealthQuestionnaire({
           value={value}
           onChange={(val) => updateAnswer(question.questionId, val)}
           placeholder={getPlaceholder(question)}
-          unit={getUnit(question)}
+          unit={getQuestionUnit(question)}
           required={question.isRequired}
           compact={compact}
+          min={min}
+          max={max}
         />
       );
     }
@@ -254,7 +221,7 @@ export default function HealthQuestionnaire({
         value={value}
         onChange={(val) => updateAnswer(question.questionId, val)}
         placeholder={getPlaceholder(question)}
-        rows={getRows(question)}
+        rows={getQuestionRows(question)}
         required={question.isRequired}
         compact={compact}
       />
@@ -303,6 +270,19 @@ export default function HealthQuestionnaire({
 
     if (patientId == null) {
       setSubmitError("Ingen pasient er valgt. Gå tilbake og velg en pasient.");
+      return;
+    }
+
+    const invalidFields = visibleQuestions.filter((q) => {
+      if (q.questionType !== "number") return false;
+      const raw = (answers[q.questionId] ?? "").trim();
+      if (!raw) return false;
+      const val = Number(raw.replace(",", "."));
+      const { min, max } = getQuestionValidationRange(q);
+      return !Number.isFinite(val) || val < min || val > max;
+    });
+    if (invalidFields.length > 0) {
+      setSubmitError("Noen tall-svar er ugyldige. Sjekk de markerte feltene.");
       return;
     }
 
@@ -472,6 +452,7 @@ export default function HealthQuestionnaire({
           <div className="flex gap-4 justify-end pt-6">
             <button
               type="button"
+              onClick={() => router.back()}
               className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
             >
               Avbryt
