@@ -22,7 +22,6 @@ import type {
   SeverityDto,
 } from "@/types";
 
-
 interface HealthQuestionnaireProps {
   patientId: number | null;
   compact?: boolean;
@@ -131,7 +130,6 @@ export default function HealthQuestionnaire({
     if (text.includes("fyll inn")) return "Skriv tall";
     return undefined;
   };
-
 
   const renderQuestion = (
     question: QueryQuestionWithDetailsDto,

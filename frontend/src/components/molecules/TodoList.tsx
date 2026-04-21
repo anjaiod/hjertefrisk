@@ -4,7 +4,15 @@ import { useEffect, useState } from "react";
 import { Checkbox } from "../atoms/Checkbox";
 import { apiClient } from "@/lib/apiClient";
 
-type Todo = { id: number; text: string; completed: boolean; public: boolean; createdAt?: string; personnelId?: number; toDoRuleId?: number };
+type Todo = {
+  id: number;
+  text: string;
+  completed: boolean;
+  public: boolean;
+  createdAt?: string;
+  personnelId?: number;
+  toDoRuleId?: number;
+};
 
 export function TodoList({
   title,
@@ -35,7 +43,10 @@ export function TodoList({
     let cancelled = false;
     const loadPersonnel = async () => {
       try {
-        const all = await apiClient.get<Array<{ id: number; name: string }>>("/api/personnel");
+        const all =
+          await apiClient.get<Array<{ id: number; name: string }>>(
+            "/api/personnel",
+          );
         if (cancelled) return;
         const map: Record<number, string> = {};
         all.forEach((p) => (map[p.id] = p.name));
@@ -259,7 +270,9 @@ export function TodoList({
                   if (todo.toDoRuleId) {
                     parts.push("Opprettet automatisk");
                   } else if (todo.personnelId) {
-                    const name = personnelMap[todo.personnelId] || `Personell #${todo.personnelId}`;
+                    const name =
+                      personnelMap[todo.personnelId] ||
+                      `Personell #${todo.personnelId}`;
                     parts.push(`Opprettet av ${name}`);
                   } else {
                     parts.push("Opprettet");

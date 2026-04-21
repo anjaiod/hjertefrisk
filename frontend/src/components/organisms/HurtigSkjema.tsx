@@ -197,7 +197,6 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
     return undefined;
   };
 
-
   const renderQuestion = (
     question: QueryQuestionWithDetailsDto,
     compact = false,

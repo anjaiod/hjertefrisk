@@ -42,13 +42,21 @@ export default function NumberInput({
           }
         />
         {unit && (
-          <span className={compact ? "text-sm text-gray-600" : "text-base md:text-lg text-gray-600"}>
+          <span
+            className={
+              compact
+                ? "text-sm text-gray-600"
+                : "text-base md:text-lg text-gray-600"
+            }
+          >
             {unit}
           </span>
         )}
       </div>
       {error && (
-        <p className={compact ? "text-xs text-red-600" : "text-sm text-red-600"}>
+        <p
+          className={compact ? "text-xs text-red-600" : "text-sm text-red-600"}
+        >
           {error}
         </p>
       )}
