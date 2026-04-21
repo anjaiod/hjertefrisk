@@ -9,6 +9,7 @@ interface QuestionnaireSummaryProps {
   onSubmit: () => void;
   isSubmitting: boolean;
   submitError: string | null;
+  onGoToQuestion?: (questionId: number) => void;
 }
 
 /** Converts a boolean question into a readable Norwegian statement. */
@@ -174,6 +175,7 @@ export default function QuestionnaireSummary({
   onSubmit,
   isSubmitting,
   submitError,
+  onGoToQuestion,
 }: QuestionnaireSummaryProps) {
   const answeredQuestions = questions.filter((q) => {
     const val = (answers[q.questionId] ?? "").trim();
@@ -217,9 +219,26 @@ export default function QuestionnaireSummary({
                   return (
                     <li
                       key={q.questionId}
-                      className="py-3 border-b border-gray-100 last:border-0 text-gray-800 text-sm md:text-base"
+                      className="border-b border-gray-100 last:border-0"
                     >
-                      {sentence}
+                      {onGoToQuestion ? (
+                        <div className="py-3 flex items-center justify-between gap-3">
+                          <span className="text-gray-800 text-sm md:text-base">
+                            {sentence}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => onGoToQuestion(q.questionId)}
+                            className="shrink-0 px-3 py-1.5 text-sm font-medium rounded-md border border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400 hover:text-slate-800 transition-colors"
+                          >
+                            Endre
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="block py-3 text-gray-800 text-sm md:text-base">
+                          {sentence}
+                        </span>
+                      )}
                     </li>
                   );
                 })}
