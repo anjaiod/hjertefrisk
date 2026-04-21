@@ -11,7 +11,7 @@ type Todo = {
   completed: boolean;
   public: boolean;
   createdAt?: string;
-  personnelId?: number;
+  personnelId?: number | null;
   toDoRuleId?: number;
 };
 
@@ -27,7 +27,7 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
     const fetchTodos = async () => {
       try {
         const allTodos = await apiClient.get<
-          Array<{ toDoId: number; toDoText: string; finished: boolean; public: boolean; patientId: number; createdAt: string; personnelId?: number; toDoRuleId?: number }>
+          Array<{ toDoId: number; toDoText: string; finished: boolean; public: boolean; patientId: number; createdAt: string; personnelId?: number | null; toDoRuleId?: number }>
         >("/api/todos");
         
         const filtered = allTodos
