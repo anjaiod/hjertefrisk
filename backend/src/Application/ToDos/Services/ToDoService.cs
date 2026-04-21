@@ -91,8 +91,9 @@ public class ToDoService : IToDoService
         if (entity == null)
             return null;
 
-        // Authorization: Only the creator (PersonnelId owner) can update the todo
-        if (personnelId.HasValue && entity.PersonnelId != personnelId.Value)
+        // Authorization: Only the creator (PersonnelId owner) can update the todo,
+        // but allow updates when the todo was created by a rule (PersonnelId is null).
+        if (entity.PersonnelId.HasValue && personnelId.HasValue && entity.PersonnelId != personnelId.Value)
             return null;
 
         var wasFinished = entity.Finished;
