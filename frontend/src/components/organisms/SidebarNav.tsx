@@ -253,13 +253,13 @@ export function SidebarNav({
         ) : null}
       </nav>
 
-      <div className="mt-auto border-t border-brand-sky/30 pt-6">
+      {/* <div className="mt-auto border-t border-brand-sky/30 pt-6">
         <nav className="flex flex-col space-y-2">
           {adminItems.map((item) => (
             <Item key={item.href} item={item} />
           ))}
         </nav>
-      </div>
+      </div> */}
     </aside>
   );
 }
