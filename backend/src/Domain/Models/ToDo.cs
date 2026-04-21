@@ -11,6 +11,7 @@ public class ToDo
     public int? PersonnelId { get; set; }      // FK -> Personnel 
     public int? ToDoRuleId { get; set; }      // FK -> ToDoRule (nullable for manually created todos)
     public bool Public { get; set; }
+    public DateTime CreatedAt { get; set; }
 
     public Patient Patient { get; set; } = null!;
     public Personnel Personnel { get; set; } = null!;

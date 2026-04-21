@@ -13,4 +13,5 @@ export type ToDoDto = {
   patientId: number;
   personnelId: number;
   public: boolean;
+  createdAt?: string;
 };

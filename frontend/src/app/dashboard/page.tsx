@@ -55,7 +55,13 @@ export default function DashboardPage() {
 
         const filteredTodos = allTodos
           .filter((t) => String(t.patientId) === patientId)
-          .map((t) => ({ id: t.toDoId, text: t.toDoText, completed: t.finished, public: t.public }));
+          .map((t) => ({
+            id: t.toDoId,
+            text: t.toDoText,
+            completed: t.finished,
+            public: t.public,
+            createdAt: t.createdAt,
+          }));
         setTodos(filteredTodos || []);
 
         setLatestMeasurements(measurements || []);

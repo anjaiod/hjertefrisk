@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { TodoList } from "./TodoList";
 import { apiClient } from "@/lib/apiClient";
 
-type Todo = { id: number; text: string; completed: boolean; public: boolean };
+type Todo = { id: number; text: string; completed: boolean; public: boolean; createdAt?: string };
 
 interface TodoModalProps {
   patientId: string;
@@ -19,7 +19,7 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
     const fetchTodos = async () => {
       try {
         const allTodos = await apiClient.get<
-          Array<{ toDoId: number; toDoText: string; finished: boolean; public: boolean; patientId: number }>
+          Array<{ toDoId: number; toDoText: string; finished: boolean; public: boolean; patientId: number; createdAt: string }>
         >("/api/todos");
         
         const filtered = allTodos
@@ -29,6 +29,7 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
             text: t.toDoText,
             completed: t.finished,
             public: t.public,
+            createdAt: t.createdAt,
           }));
         setTodos(filtered);
       } catch (error) {

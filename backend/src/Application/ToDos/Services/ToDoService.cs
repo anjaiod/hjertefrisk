@@ -39,6 +39,7 @@ public class ToDoService : IToDoService
             .Select(t => new ToDoDto
             {
                 ToDoId = t.ToDoId,
+                CreatedAt = t.CreatedAt,
                 Finished = t.Finished,
                 FinishedAt = t.FinishedAt,
                 FinishedBy = t.FinishedBy,
@@ -62,6 +63,8 @@ public class ToDoService : IToDoService
             FinishedBy = dto.Finished ? dto.PersonnelId : null,
             Public = dto.Public
         };
+        // Ensure CreatedAt is set server-side for immediate availability
+        entity.CreatedAt = DateTime.UtcNow;
 
         _db.ToDos.Add(entity);
         await _db.SaveChangesAsync();
@@ -69,6 +72,7 @@ public class ToDoService : IToDoService
         return new ToDoDto
         {
             ToDoId = entity.ToDoId,
+            CreatedAt = entity.CreatedAt,
             Finished = entity.Finished,
             FinishedAt = entity.FinishedAt,
             FinishedBy = entity.FinishedBy,
@@ -114,6 +118,7 @@ public class ToDoService : IToDoService
         return new ToDoDto
         {
             ToDoId = entity.ToDoId,
+            CreatedAt = entity.CreatedAt,
             Finished = entity.Finished,
             FinishedAt = entity.FinishedAt,
             FinishedBy = entity.FinishedBy,
