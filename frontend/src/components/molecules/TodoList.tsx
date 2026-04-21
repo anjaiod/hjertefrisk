@@ -266,17 +266,16 @@ export function TodoList({
                   }
 
                   if (todo.createdAt) {
-                    try {
-                      const date = new Date(todo.createdAt as string).toLocaleString("nb-NO", {
+                    const date = new Date(todo.createdAt as string);
+                    if (!Number.isNaN(date.getTime())) {
+                      const formattedDate = date.toLocaleString("nb-NO", {
                         day: "2-digit",
                         month: "2-digit",
                         year: "numeric",
                         hour: "2-digit",
                         minute: "2-digit",
                       });
-                      parts.push(date);
-                    } catch (e) {
-                      // ignore date parse errors
+                      parts.push(formattedDate);
                     }
                   }
 
