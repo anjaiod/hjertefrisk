@@ -5,7 +5,15 @@ import { createPortal } from "react-dom";
 import { TodoList } from "./TodoList";
 import { apiClient } from "@/lib/apiClient";
 
-type Todo = { id: number; text: string; completed: boolean; public: boolean; createdAt?: string };
+type Todo = {
+  id: number;
+  text: string;
+  completed: boolean;
+  public: boolean;
+  createdAt?: string;
+  personnelId?: number;
+  toDoRuleId?: number;
+};
 
 interface TodoModalProps {
   patientId: string;
