@@ -31,17 +31,17 @@ export function getQuestionValidationRange(
   const text = question.fallbackText.toLowerCase();
 
   // Kroppsdata
-  if (text.includes("hvor høy")) return { min: 50, max: 250 };
+  if (text.includes("hvor høy")) return { min: 1, max: 250 };
   if (text.includes("hvor mye veier")) return { min: 10, max: 700 };
   if (text.includes("livvidde")) return { min: 30, max: 300 };
 
   // Blodtrykk — sjekk systolisk/diastolisk før generell "blodtrykk"
-  if (text.includes("systolisk")) return { min: 50, max: 300 };
-  if (text.includes("diastolisk")) return { min: 20, max: 200 };
+  if (text.includes("systolisk")) return { min: 50, max: 400 };
+  if (text.includes("diastolisk")) return { min: 20, max: 400 };
   if (text.includes("blodtrykk")) return { min: 20, max: 300 };
 
   // Glukoseregulering
-  if (text.includes("hba1c")) return { min: 20, max: 200 };
+  if (text.includes("hba1c")) return { min: 20, max: 150 };
   if (text.includes("fastende")) return { min: 1, max: 50 };
 
   // Blodlipider — sjekk LDL/HDL før generell "kolesterol"
