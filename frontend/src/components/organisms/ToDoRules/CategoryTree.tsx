@@ -6,8 +6,8 @@ import type {
   QuestionDto,
   ToDoRule,
   CreateToDoRule,
-  QuestionAnswerRule,
   CategoryScoreRule,
+  QuestionAnswerRule,
 } from "@/types";
 import RuleEditor from "./RuleEditor";
 import ScoreRuleEditor from "./ScoreRuleEditor";

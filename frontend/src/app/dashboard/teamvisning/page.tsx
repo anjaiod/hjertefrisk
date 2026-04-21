@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import BackButton from "@/components/atoms/BackButton";
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/apiClient";
 import type { LatestMeasurementResultDto, PatientDto } from "@/types";
@@ -18,12 +19,13 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   ResponsiveContainer,
+  Customized,
 } from "recharts";
 
 const BAR_COLOR: Record<string, string> = {
-  high: "#ef4444",
-  medium: "#f97316",
-  low: "#22c55e",
+  high: "#e53e3e",
+  medium: "#e5c06a",
+  low: "#03c199",
 };
 const BAR_WIDTH: Record<string, string> = {
   high: "100%",
@@ -45,7 +47,6 @@ const CATEGORY_PDF: Record<string, string> = {
 };
 
 export default function TeamvisningPage() {
-  const router = useRouter();
   const patientId = useSearchParams().get("patientId");
 
   const [patient, setPatient] = useState<PatientDto | null>(null);
@@ -99,28 +100,7 @@ export default function TeamvisningPage() {
   return (
     <div className="flex flex-col gap-10 max-w-6xl mx-auto">
       <div>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="flex items-center gap-1 text-sm text-slate-600 hover:text-brand-navy transition-colors cursor-pointer"
-          aria-label="Tilbake"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          Tilbake
-        </button>
+        <BackButton />
       </div>
 
       {/* Patient header */}
@@ -165,7 +145,7 @@ export default function TeamvisningPage() {
           </div>
 
           {/* Chart area */}
-          <div className="flex flex-1 flex-col rounded-xl bg-brand-navy p-6 min-h-[280px]">
+          <div className="flex flex-1 flex-col rounded-xl bg-brand-navy p-6 min-h-70">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-semibold text-white">
                 Risikoprofil
@@ -193,7 +173,7 @@ export default function TeamvisningPage() {
                 </p>
               </div>
             ) : view === "radar" && risks.length >= 3 ? (
-              <div className="flex-1 min-h-0">
+              <div className="flex-1 min-h-0 [&_.recharts-polar-grid-concentric-polygon:last-of-type]:opacity-0 [&_*:focus]:outline-none [&_*:focus-visible]:outline-none">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart
                     data={risks.map((r) => ({
@@ -207,6 +187,24 @@ export default function TeamvisningPage() {
                             : 1,
                     }))}
                   >
+                    <Customized
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      component={(props: any) => (
+                        <defs>
+                          <radialGradient
+                            id="radarRiskGradient"
+                            cx={props.cx}
+                            cy={props.cy}
+                            r={props.outerRadius}
+                            gradientUnits="userSpaceOnUse"
+                          >
+                            <stop offset="5%" stopColor="#007a64" stopOpacity={0.95} />
+                            <stop offset="35%" stopColor="#b88100" stopOpacity={0.90} />
+                            <stop offset="90%" stopColor="#FF0000" stopOpacity={0.95} />
+                          </radialGradient>
+                        </defs>
+                      )}
+                    />
                     <PolarGrid stroke="rgba(255,255,255,0.2)" />
                     <PolarAngleAxis
                       dataKey="category"
@@ -219,10 +217,12 @@ export default function TeamvisningPage() {
                     />
                     <Radar
                       dataKey="value"
-                      fill="#03c199"
-                      fillOpacity={0.35}
-                      stroke="#03c199"
-                      strokeWidth={2}
+                      fill="url(#radarRiskGradient)"
+                      fillOpacity={1}
+                      stroke="rgba(255,255,255,0.4)"
+                      strokeWidth={1.5}
+                      dot={false}
+                      activeDot={false}
                     />
                   </RadarChart>
                 </ResponsiveContainer>

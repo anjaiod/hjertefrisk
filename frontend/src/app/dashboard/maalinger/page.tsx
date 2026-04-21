@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { apiClient } from "@/lib/apiClient";
 import { useUser } from "@/context/UserContext";
 import type { MeasurementDto, MeasurementResultDto } from "@/types";
+import BackButton from "@/components/atoms/BackButton";
 
 export default function Page() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const patientId = searchParams?.get("patientId");
   const { user } = useUser();
@@ -154,28 +154,7 @@ export default function Page() {
 
   return (
     <div className="relative p-8">
-      <button
-        type="button"
-        onClick={() => router.back()}
-        className="absolute top-8 left-8 flex items-center gap-1 text-sm text-slate-600 hover:text-brand-navy transition-colors cursor-pointer"
-        aria-label="Tilbake"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-        Tilbake
-      </button>
+      <BackButton className="absolute top-8 left-8" />
       <div className="max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Målinger</h1>
 

@@ -127,6 +127,7 @@ builder.Services.AddScoped<IMeasurementResultService, MeasurementResultService>(
 builder.Services.AddScoped<IAccessAuthorizationService, AccessAuthorizationService>();
 builder.Services.AddScoped<IQuickMeasureService, QuickMeasureService>();
 builder.Services.AddScoped<IJournalnotatService, JournalnotatService>();
+builder.Services.AddScoped<backend.src.Application.Notifications.Interfaces.INotificationService, backend.src.Application.Notifications.Services.NotificationService>();
 
 // Optional but recommended for API documentation
 builder.Services.AddEndpointsApiExplorer();

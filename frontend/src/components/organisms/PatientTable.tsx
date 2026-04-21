@@ -2,11 +2,14 @@
 
 import PatientRow from "../molecules/PatientRow";
 import { TagVariant } from "../atoms/Tag";
+import { useEffect, useState } from "react";
+import { fetchNotifications } from "@/lib/notifications";
 
 export interface Patient {
   id: string;
   name: string;
   lastVisited: string;
+  lastVisitedRaw: string;
   riskLevel: TagVariant;
 }
 
@@ -39,6 +42,29 @@ export default function PatientTable({
   sortDir,
   onSort,
 }: PatientTableProps) {
+  const [unreadPatientIds, setUnreadPatientIds] = useState<Set<number>>(
+    new Set(),
+  );
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const all = await fetchNotifications();
+        const unreadIds = new Set<number>();
+        for (const n of all) {
+          if (!n.read) unreadIds.add(n.patientId);
+        }
+        if (mounted) setUnreadPatientIds(unreadIds);
+      } catch (e) {
+        console.error("Failed to fetch notifications for patient table", e);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [patients]);
+
   const thClass = "px-6 py-4 text-left text-brand-navy font-semibold";
   const sortThClass = `${thClass} select-none`;
 
@@ -81,6 +107,7 @@ export default function PatientTable({
               name={patient.name}
               lastVisited={patient.lastVisited}
               riskLevel={patient.riskLevel}
+              hasUnread={unreadPatientIds.has(Number(patient.id))}
             />
           ))}
         </tbody>

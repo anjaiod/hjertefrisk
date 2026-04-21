@@ -5,7 +5,15 @@ import { createPortal } from "react-dom";
 import { TodoList } from "./TodoList";
 import { apiClient } from "@/lib/apiClient";
 
-type Todo = { id: number; text: string; completed: boolean; public: boolean };
+type Todo = {
+  id: number;
+  text: string;
+  completed: boolean;
+  public: boolean;
+  createdAt?: string;
+  personnelId?: number;
+  toDoRuleId?: number;
+};
 
 interface TodoModalProps {
   patientId: string;
@@ -18,15 +26,19 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
   useEffect(() => {
     const fetchTodos = async () => {
       try {
-        const allTodos = await apiClient.get<
-          Array<{
-            toDoId: number;
-            toDoText: string;
-            finished: boolean;
-            public: boolean;
-            patientId: number;
-          }>
-        >("/api/todos");
+        const allTodos =
+          await apiClient.get<
+            Array<{
+              toDoId: number;
+              toDoText: string;
+              finished: boolean;
+              public: boolean;
+              patientId: number;
+              createdAt: string;
+              personnelId?: number | null;
+              toDoRuleId?: number;
+            }>
+          >("/api/todos");
 
         const filtered = allTodos
           .filter((t) => t.patientId === Number(patientId))
@@ -35,6 +47,9 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
             text: t.toDoText,
             completed: t.finished,
             public: t.public,
+            createdAt: t.createdAt,
+            personnelId: t.personnelId ?? undefined,
+            toDoRuleId: t.toDoRuleId,
           }));
         setTodos(filtered);
       } catch (error) {

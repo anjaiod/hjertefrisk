@@ -13,6 +13,6 @@ public class Response
 
     public AnsweredQuery AnsweredQuery { get; set; } = null!;
     public Patient Patient { get; set; } = null!;
-    public Question Question { get; set; } = null!;
+    public Question? Question { get; set; } = null!;
     public QuestionOption? SelectedOption { get; set; }
 }

@@ -1,0 +1,121 @@
+name: Cloud Run Destroy Nonprod
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: "Environment to destroy"
+        required: true
+        type: choice
+        default: dev
+        options:
+          - dev
+          - staging
+      delete_services:
+        description: "Delete Cloud Run services"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: cloud-run-destroy-${{ inputs.target_environment }}
+  cancel-in-progress: false
+
+jobs:
+  destroy:
+    name: Destroy Cloud Run Services
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target_environment }}
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT_EMAIL: ${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}
+      GCP_BACKEND_SERVICE: ${{ vars.GCP_BACKEND_SERVICE }}
+      GCP_FRONTEND_SERVICE: ${{ vars.GCP_FRONTEND_SERVICE }}
+    steps:
+      - name: Validate required settings
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          required=(
+            GCP_PROJECT_ID
+            GCP_REGION
+            GCP_WORKLOAD_IDENTITY_PROVIDER
+            GCP_SERVICE_ACCOUNT_EMAIL
+            GCP_BACKEND_SERVICE
+            GCP_FRONTEND_SERVICE
+          )
+
+          missing=0
+          for var_name in "${required[@]}"; do
+            if [[ -z "${!var_name:-}" ]]; then
+              echo "Missing required value: ${var_name}" >&2
+              missing=1
+            fi
+          done
+
+          if [[ "$missing" -ne 0 ]]; then
+            exit 1
+          fi
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Delete backend service
+        if: ${{ inputs.delete_services }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if gcloud run services describe "${GCP_BACKEND_SERVICE}" \
+            --region "${GCP_REGION}" \
+            --project "${GCP_PROJECT_ID}" >/dev/null 2>&1; then
+            gcloud run services delete "${GCP_BACKEND_SERVICE}" \
+              --region "${GCP_REGION}" \
+              --project "${GCP_PROJECT_ID}" \
+              --quiet
+          else
+            echo "Backend service not found: ${GCP_BACKEND_SERVICE}"
+          fi
+
+      - name: Delete frontend service
+        if: ${{ inputs.delete_services }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if gcloud run services describe "${GCP_FRONTEND_SERVICE}" \
+            --region "${GCP_REGION}" \
+            --project "${GCP_PROJECT_ID}" >/dev/null 2>&1; then
+            gcloud run services delete "${GCP_FRONTEND_SERVICE}" \
+              --region "${GCP_REGION}" \
+              --project "${GCP_PROJECT_ID}" \
+              --quiet
+          else
+            echo "Frontend service not found: ${GCP_FRONTEND_SERVICE}"
+          fi
+
+      - name: Summary
+        shell: bash
+        run: |
+          {
+            echo "environment=${{ inputs.target_environment }}"
+            echo "backend_service=${GCP_BACKEND_SERVICE}"
+            echo "frontend_service=${GCP_FRONTEND_SERVICE}"
+            echo "services_deleted=${{ inputs.delete_services }}"
+            echo "note=This workflow does not delete load balancer, IP, DNS, or Artifact Registry resources."
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Checkbox } from "../atoms/Checkbox";
 import { apiClient } from "@/lib/apiClient";
 
-type Todo = { id: number; text: string; completed: boolean; public: boolean };
+type Todo = { id: number; text: string; completed: boolean; public: boolean; createdAt?: string; personnelId?: number; toDoRuleId?: number };
 
 export function TodoList({
   title,
@@ -28,6 +28,27 @@ export function TodoList({
   useEffect(() => {
     setTodos(initialTodos);
   }, [initialTodos]);
+
+  const [personnelMap, setPersonnelMap] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadPersonnel = async () => {
+      try {
+        const all = await apiClient.get<Array<{ id: number; name: string }>>("/api/personnel");
+        if (cancelled) return;
+        const map: Record<number, string> = {};
+        all.forEach((p) => (map[p.id] = p.name));
+        setPersonnelMap(map);
+      } catch (e) {
+        // ignore
+      }
+    };
+    loadPersonnel();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const toggleTodo = async (id: number) => {
     const todo = todos.find((t) => t.id === id);
@@ -74,6 +95,7 @@ export function TodoList({
         toDoText: string;
         finished: boolean;
         public: boolean;
+        createdAt: string;
       }>("/api/todos", {
         toDoText: newTodoText.trim(),
         patientId: patientId,
@@ -88,6 +110,7 @@ export function TodoList({
           text: created.toDoText,
           completed: created.finished,
           public: created.public,
+          createdAt: created.createdAt,
         },
       ]);
       setNewTodoText("");
@@ -220,15 +243,46 @@ export function TodoList({
               className="h-5 w-5 accent-brand-navy"
               disabled={updatingId === todo.id || deletingId === todo.id}
             />
-            <span
-              className={`flex-1 text-base ${
-                todo.completed
-                  ? "line-through text-slate-400"
-                  : "text-slate-700"
-              }`}
-            >
-              {todo.text}
-            </span>
+            <div className="flex-1">
+              <span
+                className={`block text-base ${
+                  todo.completed
+                    ? "line-through text-slate-400"
+                    : "text-slate-700"
+                }`}
+              >
+                {todo.text}
+              </span>
+              <span className="text-xs text-slate-400">
+                {(() => {
+                  const parts: string[] = [];
+                  if (todo.toDoRuleId) {
+                    parts.push("Opprettet automatisk");
+                  } else if (todo.personnelId) {
+                    const name = personnelMap[todo.personnelId] || `Personell #${todo.personnelId}`;
+                    parts.push(`Opprettet av ${name}`);
+                  } else {
+                    parts.push("Opprettet");
+                  }
+
+                  if (todo.createdAt) {
+                    const date = new Date(todo.createdAt as string);
+                    if (!Number.isNaN(date.getTime())) {
+                      const formattedDate = date.toLocaleString("nb-NO", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                      parts.push(formattedDate);
+                    }
+                  }
+
+                  return parts.join(" • ");
+                })()}
+              </span>
+            </div>
             <button
               onClick={() => deleteTodo(todo.id)}
               disabled={updatingId === todo.id || deletingId === todo.id}

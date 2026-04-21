@@ -12,6 +12,11 @@ import type {
   QueryWithQuestionsDto,
 } from "@/types";
 import QuestionWizard from "../molecules/QuestionWizard";
+import {
+  getQuestionUnit,
+  getQuestionValidationRange,
+  getQuestionRows,
+} from "@/lib/questionHelpers";
 import QuestionRadio from "../molecules/QuestionRadio";
 import QuestionNumber from "../molecules/QuestionNumber";
 import QuestionTextArea from "../molecules/QuestionTextArea";
@@ -157,6 +162,19 @@ export default function PatientHealthQuestionnaire() {
 
     if (patientId == null) {
       setSubmitError("Fant ikke pasientprofil for innlogget bruker.");
+      return;
+    }
+
+    const invalidFields = visibleQuestions.filter((q) => {
+      if (q.questionType !== "number") return false;
+      const raw = (answers[q.questionId] ?? "").trim();
+      if (!raw) return false;
+      const val = Number(raw.replace(",", "."));
+      const { min, max } = getQuestionValidationRange(q);
+      return !Number.isFinite(val) || val < min || val > max;
+    });
+    if (invalidFields.length > 0) {
+      setSubmitError("Noen tall-svar er ugyldige. Sjekk de markerte feltene.");
       return;
     }
 
@@ -342,23 +360,6 @@ export default function PatientHealthQuestionnaire() {
       return undefined;
     };
 
-    const getUnit = (): string | undefined => {
-      const text = question.fallbackText.toLowerCase();
-      if (text.includes("hvor høy")) return "cm";
-      if (text.includes("hvor mye veier")) return "kg";
-      if (text.includes("livvidde")) return "cm";
-      return undefined;
-    };
-
-    const getRows = (): number | undefined => {
-      const text = question.fallbackText.toLowerCase();
-      if (text.includes("hvor mye røyker")) return 2;
-      if (text.includes("vekten din endret")) return 2;
-      if (text.includes("begrensninger") || text.includes("barrierer"))
-        return 3;
-      return undefined;
-    };
-
     if (question.questionType === "boolean") {
       return (
         <ConditionalQuestion
@@ -392,6 +393,7 @@ export default function PatientHealthQuestionnaire() {
     }
 
     if (question.questionType === "number") {
+      const { min, max } = getQuestionValidationRange(question);
       return (
         <QuestionNumber
           key={question.questionId}
@@ -401,8 +403,10 @@ export default function PatientHealthQuestionnaire() {
           onChange={(val) => updateAnswer(question.questionId, val)}
           onAnswer={handleNext}
           placeholder={getPlaceholder()}
-          unit={getUnit()}
+          unit={getQuestionUnit(question)}
           required={question.isRequired}
+          min={min}
+          max={max}
         />
       );
     }
@@ -416,7 +420,7 @@ export default function PatientHealthQuestionnaire() {
         onChange={(val) => updateAnswer(question.questionId, val)}
         onAnswer={handleNext}
         placeholder={getPlaceholder()}
-        rows={getRows()}
+        rows={getQuestionRows(question)}
         required={question.isRequired}
       />
     );
@@ -536,6 +540,13 @@ export default function PatientHealthQuestionnaire() {
               onSubmit={handleSubmit}
               isSubmitting={isSubmitting}
               submitError={submitError}
+              onGoToQuestion={(questionId) => {
+                const stepIndex = visibleQuestions.findIndex(
+                  (q) => q.questionId === questionId,
+                );
+                if (stepIndex !== -1) setCurrentStep(stepIndex);
+                setShowSummary(false);
+              }}
             />
           ) : (
             <QuestionWizard

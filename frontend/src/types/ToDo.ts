@@ -11,6 +11,8 @@ export type ToDoDto = {
   finished: boolean;
   toDoText: string;
   patientId: number;
-  personnelId: number;
+  personnelId: number | null;
+  toDoRuleId?: number;
   public: boolean;
+  createdAt?: string;
 };

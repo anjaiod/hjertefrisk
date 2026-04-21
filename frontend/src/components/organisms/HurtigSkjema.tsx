@@ -9,6 +9,11 @@ import QuestionTextArea from "../molecules/QuestionTextArea";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
 import { apiClient } from "@/lib/apiClient";
 import { useUser } from "@/context/UserContext";
+import {
+  getQuestionUnit,
+  getQuestionValidationRange,
+  getQuestionRows,
+} from "@/lib/questionHelpers";
 import type {
   CreateMeasurementResultDto,
   CreateResponseDto,
@@ -192,30 +197,6 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
     return undefined;
   };
 
-  const getUnit = (
-    question: QueryQuestionWithDetailsDto,
-  ): string | undefined => {
-    const text = question.fallbackText.toLowerCase();
-    if (text.includes("hvor høy")) return "cm";
-    if (text.includes("hvor mye veier")) return "kg";
-    if (text.includes("livvidde")) return "cm";
-    if (text.includes("blodtrykk")) return "mmHg";
-    if (text.includes("hba1c")) return "mmol/mol";
-    if (text.includes("fastende")) return "mmol/L";
-    if (text.includes("kolesterol")) return "mmol/L";
-    if (text.includes("triglyserider")) return "mmol/L";
-    return undefined;
-  };
-
-  const getRows = (
-    question: QueryQuestionWithDetailsDto,
-  ): number | undefined => {
-    const text = question.fallbackText.toLowerCase();
-    if (text.includes("hvor mye røyker")) return 2;
-    if (text.includes("vekten din endret")) return 2;
-    if (text.includes("begrensninger") || text.includes("barrierer")) return 3;
-    return undefined;
-  };
 
   const renderQuestion = (
     question: QueryQuestionWithDetailsDto,
@@ -288,6 +269,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
     }
 
     if (question.questionType === "number") {
+      const { min, max } = getQuestionValidationRange(question);
       return (
         <QuestionNumber
           key={question.questionId}
@@ -296,9 +278,11 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
           value={value}
           onChange={(val) => updateAnswer(question.questionId, val)}
           placeholder={getPlaceholder(question)}
-          unit={getUnit(question)}
+          unit={getQuestionUnit(question)}
           required={question.isRequired}
           compact={compact}
+          min={min}
+          max={max}
         />
       );
     }
@@ -311,7 +295,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
         value={value}
         onChange={(val) => updateAnswer(question.questionId, val)}
         placeholder={getPlaceholder(question)}
-        rows={getRows(question)}
+        rows={getQuestionRows(question)}
         required={question.isRequired}
         compact={compact}
       />
@@ -360,6 +344,19 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
 
     if (patientId == null) {
       setSubmitError("Ingen pasient er valgt. Gå tilbake og velg en pasient.");
+      return;
+    }
+
+    const invalidFields = visibleQuestions.filter((q) => {
+      if (q.questionType !== "number") return false;
+      const raw = (answers[q.questionId] ?? "").trim();
+      if (!raw) return false;
+      const val = Number(raw.replace(",", "."));
+      const { min, max } = getQuestionValidationRange(q);
+      return !Number.isFinite(val) || val < min || val > max;
+    });
+    if (invalidFields.length > 0) {
+      setSubmitError("Noen tall-svar er ugyldige. Sjekk de markerte feltene.");
       return;
     }
 
@@ -503,6 +500,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
           <div className="flex gap-4 justify-end pt-6">
             <button
               type="button"
+              onClick={() => router.back()}
               className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
             >
               Avbryt
