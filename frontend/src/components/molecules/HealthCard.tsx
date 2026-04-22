@@ -29,7 +29,7 @@ export function HealthCard({
   return (
     <div
       onClick={handleClick}
-      className="bg-white rounded-2xl p-5 shadow-sm w-[220px] h-[140px] flex flex-col justify-between hover:shadow-md transition cursor-pointer"
+      className="bg-white rounded-2xl p-5 shadow-sm w-full h-[140px] flex flex-col justify-between hover:shadow-md transition cursor-pointer"
     >
       <div>
         <h3 className="text-brand-navy font-semibold">{title}</h3>

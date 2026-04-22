@@ -130,7 +130,7 @@ export default function PasientRisikoSide() {
               <BackButton />
 
               <h1 className="text-2xl font-semibold text-brand-navy">
-                Din somatiske helseoversikt
+                Dine risikoer
               </h1>
             </div>
           </div>
