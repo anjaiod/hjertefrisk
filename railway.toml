@@ -1,5 +1,5 @@
 [build]
-dockerfilePath = "backend/Dockerfile.cloudrun"
+dockerfilePath = "Dockerfile.railway"
 
 [deploy]
 startCommand = "dotnet api.dll"
