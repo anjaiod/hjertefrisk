@@ -22,6 +22,8 @@ import QuestionNumber from "../molecules/QuestionNumber";
 import QuestionTextArea from "../molecules/QuestionTextArea";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
 import QuestionnaireSummary from "../molecules/QuestionnaireSummary";
+import { useTTS } from "@/hooks/useTTS";
+import QuestionWithTTS from "../molecules/QuestionWithTTS";
 
 export default function PatientHealthQuestionnaire() {
   const router = useRouter();
@@ -42,6 +44,30 @@ export default function PatientHealthQuestionnaire() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
+
+  const { speak, stop } = useTTS();
+  const [activeQuestionId, setActiveQuestionId] = useState<number | null>(null);
+  const buildSpeechText = (question: QueryQuestionWithDetailsDto) => {
+    let text = question.fallbackText;
+
+    if (question.options?.length) {
+      const optionsText = question.options
+        .map((o, i) => `${i + 1}. ${o.fallbackText}`)
+        .join(". ");
+
+      text += `. Alternativer: ${optionsText}`;
+    }
+
+    return text;
+  };
+  const handleSpeak = (questionId: number, text: string) => {
+    if (activeQuestionId === questionId) {
+      stop();
+    } else {
+      setActiveQuestionId(questionId);
+      speak(text);
+    }
+  };
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -146,9 +172,19 @@ export default function PatientHealthQuestionnaire() {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  const handleNext = () => setCurrentStep((prev) => prev + 1);
-  const handleSkip = () => setCurrentStep((prev) => prev + 1);
+  const handleNext = () => {
+    stop();
+    setActiveQuestionId(null);
+    setCurrentStep((prev) => prev + 1);
+  };
+  const handleSkip = () => {
+    stop();
+    setActiveQuestionId(null);
+    setCurrentStep((prev) => prev + 1);
+  };
   const handlePrevious = () => {
+    stop();
+    setActiveQuestionId(null);
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
   const handleSubmit = async () => {
@@ -370,6 +406,7 @@ export default function PatientHealthQuestionnaire() {
   ): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
+    const speechText = buildSpeechText(question);
 
     const getPlaceholder = (): string | undefined => {
       const text = question.fallbackText.toLowerCase();
@@ -389,40 +426,77 @@ export default function PatientHealthQuestionnaire() {
 
     if (question.questionType === "boolean") {
       return (
-        <ConditionalQuestion
+        <QuestionWithTTS
           key={question.questionId}
-          question={question.fallbackText}
-          name={name}
-          value={value as "ja" | "nei" | ""}
-          onChange={(val) => updateAnswer(question.questionId, val)}
-          onAnswer={handleNext}
-          required={question.isRequired}
-        />
+          isActive={activeQuestionId === question.questionId}
+          onToggle={() => handleSpeak(question.questionId, speechText)}
+        >
+          <ConditionalQuestion
+            question={question.fallbackText}
+            name={name}
+            value={value as "ja" | "nei" | ""}
+            onChange={(val) => updateAnswer(question.questionId, val)}
+            onAnswer={handleNext}
+            required={question.isRequired}
+          />
+        </QuestionWithTTS>
       );
     }
 
     if (question.questionType === "radio") {
       return (
-        <QuestionRadio
+        <QuestionWithTTS
           key={question.questionId}
-          question={question.fallbackText}
-          name={name}
-          options={question.options.map((o) => ({
-            value: o.optionValue,
-            label: o.fallbackText,
-          }))}
-          value={value}
-          onChange={(val) => updateAnswer(question.questionId, val)}
-          onAnswer={handleNext}
-          required={question.isRequired}
-        />
+          isActive={activeQuestionId === question.questionId}
+          onToggle={() => handleSpeak(question.questionId, speechText)}
+        >
+          <QuestionRadio
+            question={question.fallbackText}
+            name={name}
+            options={question.options.map((o) => ({
+              value: o.optionValue,
+              label: o.fallbackText,
+            }))}
+            value={value}
+            onChange={(val) => updateAnswer(question.questionId, val)}
+            onAnswer={handleNext}
+            required={question.isRequired}
+          />
+        </QuestionWithTTS>
       );
     }
 
     if (question.questionType === "number") {
       const { min, max } = getQuestionValidationRange(question);
       return (
-        <QuestionNumber
+        <QuestionWithTTS
+          key={question.questionId}
+          isActive={activeQuestionId === question.questionId}
+          onToggle={() => handleSpeak(question.questionId, speechText)}
+        >
+          <QuestionNumber
+            question={question.fallbackText}
+            name={name}
+            value={value}
+            onChange={(val) => updateAnswer(question.questionId, val)}
+            onAnswer={handleNext}
+            placeholder={getPlaceholder()}
+            unit={getQuestionUnit(question)}
+            required={question.isRequired}
+            min={min}
+            max={max}
+          />
+        </QuestionWithTTS>
+      );
+    }
+
+    return (
+      <QuestionWithTTS
+        key={question.questionId}
+        isActive={activeQuestionId === question.questionId}
+        onToggle={() => handleSpeak(question.questionId, speechText)}
+      >
+        <QuestionTextArea
           key={question.questionId}
           question={question.fallbackText}
           name={name}
@@ -430,26 +504,10 @@ export default function PatientHealthQuestionnaire() {
           onChange={(val) => updateAnswer(question.questionId, val)}
           onAnswer={handleNext}
           placeholder={getPlaceholder()}
-          unit={getQuestionUnit(question)}
+          rows={getQuestionRows(question)}
           required={question.isRequired}
-          min={min}
-          max={max}
         />
-      );
-    }
-
-    return (
-      <QuestionTextArea
-        key={question.questionId}
-        question={question.fallbackText}
-        name={name}
-        value={value}
-        onChange={(val) => updateAnswer(question.questionId, val)}
-        onAnswer={handleNext}
-        placeholder={getPlaceholder()}
-        rows={getQuestionRows(question)}
-        required={question.isRequired}
-      />
+      </QuestionWithTTS>
     );
   };
 
@@ -462,8 +520,12 @@ export default function PatientHealthQuestionnaire() {
       </p>
       <div className="flex gap-6 flex-wrap">
         {bpVisibleQuestions.map((bpQ) => {
-          const isSystolic = bpQ.fallbackText.toLowerCase().includes("systolisk");
-          const label = isSystolic ? "Systolisk blodtrykk:" : "Diastolisk blodtrykk:";
+          const isSystolic = bpQ.fallbackText
+            .toLowerCase()
+            .includes("systolisk");
+          const label = isSystolic
+            ? "Systolisk blodtrykk:"
+            : "Diastolisk blodtrykk:";
           return (
             <div key={bpQ.questionId} className="flex-1 min-w-40">
               <QuestionNumber
