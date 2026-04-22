@@ -1,0 +1,5 @@
+[build]
+dockerfilePath = "backend/Dockerfile.cloudrun"
+
+[deploy]
+startCommand = "dotnet api.dll"
