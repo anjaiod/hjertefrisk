@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace backend.src.Application.Measures.Services;
 
-public record BlodlipiderEvaluationResult(int CategoryId, int Score, IReadOnlyList<string> Titles);
+public record BlodlipiderEvaluationResult(int CategoryId, int Score, IReadOnlyList<string> Titles, DateTime? BasedOnDate, string? BasedOnPersonnelName);
 
 public class BlodlipiderEvaluationService
 {
@@ -17,18 +17,20 @@ public class BlodlipiderEvaluationService
         public const string TriglyceridesVeryHigh = "Triglyserider >= 10,0";
         public const string TriglyceridesElevated = "Triglyserider 4,0-9,9";
         public const string TriglyceridesLifestyle = "Triglyserider 1,7-3,9";
-        public const string LdlVeryHigh = "LDL > 4,9";
-        public const string LdlElevated = "LDL 3,0-4,9";
-        public const string LdlModerate = "LDL 1,8-2,9";
-        public const string LdlOptimal = "LDL < 1,8";
-        public const string HdlLow = "HDL lav";
         public const string ComorbidityTreatment = "Lipidsenkende behandling (komorbiditet)";
         public const string CategoryHigh = "Blodlipider score 2";
         public const string CategoryMedium = "Blodlipider score 1";
         public const string CategoryLow = "Blodlipider score 0";
+        public const string LdlOptimal = "LDL < 1,8";
+        public const string LdlModerate = "LDL 1,8-2,9";
+        public const string LdlElevated = "LDL 3,0-3,9";
+        public const string LdlVeryHigh = "LDL > 4,9";
+        public const string HdlLow = "HDL lav";
+        public const string FastendeProve = "Fastende prøve";
     }
 
     private const int TotalCholesterolMeasurementId = 6;
+    private const int FastendeQuestionId = 177;
     private const int LdlMeasurementId = 7;
     private const int HdlMeasurementId = 8;
     private const int TriglyceridesMeasurementId = 9;
@@ -43,6 +45,7 @@ public class BlodlipiderEvaluationService
 
     private int? _heartDiseaseQuestionId;
     private int? _diabetesQuestionId;
+    private int? _fhQuestionId;
     private bool _questionLookupLoaded;
 
     public BlodlipiderEvaluationService(AppDbContext db)
@@ -56,15 +59,10 @@ public class BlodlipiderEvaluationService
     {
         await EnsureQuestionLookupAsync();
 
-        var patient = await _db.Patients
-            .AsNoTracking()
-            .Where(p => p.Id == patientId)
-            .Select(p => new { p.Gender })
-            .FirstOrDefaultAsync();
-
         var measurementRows = await _db.MeasurementResults
             .AsNoTracking()
             .Where(r => r.PatientId == patientId && _measurementIds.Contains(r.MeasurementId))
+            .Include(r => r.RegisteredByPersonnel)
             .OrderByDescending(r => r.RegisteredAt)
             .ToListAsync();
 
@@ -98,12 +96,16 @@ public class BlodlipiderEvaluationService
             responses.TryGetValue(_diabetesQuestionId.Value, out var diabetesResponse) &&
             IsAffirmative(diabetesResponse);
 
-        if (!hasAtLeastOneMeasurement && !heartDisease && !diabetes)
+        bool fh = _fhQuestionId.HasValue &&
+            responses.TryGetValue(_fhQuestionId.Value, out var fhResponse) &&
+            IsAffirmative(fhResponse);
+
+        if (!hasAtLeastOneMeasurement && !heartDisease && !diabetes && !fh)
         {
             return null;
         }
 
-        bool highRisk = heartDisease || diabetes;
+        bool highRisk = heartDisease || diabetes || fh;
         bool mediumRisk = false;
 
         var titles = new List<string>();
@@ -138,6 +140,14 @@ public class BlodlipiderEvaluationService
             {
                 mediumRisk = true;
                 AddTitle(MeasureTitleKeys.TriglyceridesElevated);
+
+                bool notFasting = responses.TryGetValue(FastendeQuestionId, out var fasteResponse) &&
+                                  fasteResponse != null &&
+                                  !IsAffirmative(fasteResponse);
+                if (notFasting)
+                {
+                    AddTitle(MeasureTitleKeys.FastendeProve);
+                }
             }
             else if (trig.Value >= 1.7m)
             {
@@ -152,7 +162,7 @@ public class BlodlipiderEvaluationService
                 highRisk = true;
                 AddTitle(MeasureTitleKeys.LdlVeryHigh);
             }
-            else if (ldl.Value >= 3m)
+            else if (ldl.Value >= 3.0m)
             {
                 mediumRisk = true;
                 AddTitle(MeasureTitleKeys.LdlElevated);
@@ -169,54 +179,72 @@ public class BlodlipiderEvaluationService
 
         if (hdl.HasValue)
         {
-            var gender = patient?.Gender ?? "";
-            bool lowHdl = gender.Equals("Mann", StringComparison.OrdinalIgnoreCase)
+            var gender = await _db.Patients
+                .AsNoTracking()
+                .Where(p => p.Id == patientId)
+                .Select(p => p.Gender)
+                .FirstOrDefaultAsync() ?? "";
+
+            bool hdlLow = gender.Equals("Mann", StringComparison.OrdinalIgnoreCase)
                 ? hdl.Value < 1.0m
                 : hdl.Value < 1.2m;
 
-            if (lowHdl)
+            if (hdlLow)
             {
                 mediumRisk = true;
                 AddTitle(MeasureTitleKeys.HdlLow);
             }
         }
 
-        if (heartDisease || diabetes)
+        if (heartDisease || diabetes || fh)
         {
             AddTitle(MeasureTitleKeys.ComorbidityTreatment);
         }
 
         int finalScore = highRisk ? 2 : mediumRisk ? 1 : 0;
 
-        if (titles.Count == 0)
+        // Alltid legg til kategori-score tittel slik at pasienten alltid
+        // får de score-baserte tiltakene (score 0/1/2) vist.
+        AddTitle(finalScore switch
         {
-            titles.Add(finalScore switch
-            {
-                2 => MeasureTitleKeys.CategoryHigh,
-                1 => MeasureTitleKeys.CategoryMedium,
-                _ => MeasureTitleKeys.CategoryLow
-            });
-        }
+            2 => MeasureTitleKeys.CategoryHigh,
+            1 => MeasureTitleKeys.CategoryMedium,
+            _ => MeasureTitleKeys.CategoryLow
+        });
 
-        return new BlodlipiderEvaluationResult(measurementCategoryId, finalScore, titles);
+        var mostRecentRow = measurementRows.FirstOrDefault();
+        var basedOnDate = mostRecentRow?.RegisteredAt;
+        var basedOnPersonnelName = mostRecentRow?.RegisteredByPersonnel?.Name;
+
+        return new BlodlipiderEvaluationResult(measurementCategoryId, finalScore, titles, basedOnDate, basedOnPersonnelName);
     }
 
     private async Task EnsureQuestionLookupAsync()
     {
         if (_questionLookupLoaded) return;
 
-        var texts = await _db.QuestionTexts
+        var questions = await _db.Questions
             .AsNoTracking()
-            .Where(t => t.LanguageCode == "no" &&
-                        (t.Text.ToLower().Contains("hjerte") || t.Text.ToLower().Contains("karsykdom") || t.Text.ToLower().Contains("diabetes")))
-            .Select(t => new { t.QuestionId, t.Text })
+            .Where(q => q.FallbackText != null &&
+                        (q.FallbackText.ToLower().Contains("hjerte") ||
+                         q.FallbackText.ToLower().Contains("karsykdom") ||
+                         q.FallbackText.ToLower().Contains("diabetes") ||
+                         q.FallbackText.ToLower().Contains("hyperkolesterol")))
+            .Select(q => new { q.QuestionId, q.FallbackText })
             .ToListAsync();
 
-        _heartDiseaseQuestionId = texts
-            .FirstOrDefault(t => t.Text.Contains("hjerte", StringComparison.OrdinalIgnoreCase))?.QuestionId;
+        _heartDiseaseQuestionId = questions
+            .FirstOrDefault(q => q.FallbackText != null &&
+                                 (q.FallbackText.Contains("hjerte", StringComparison.OrdinalIgnoreCase) ||
+                                  q.FallbackText.Contains("karsykdom", StringComparison.OrdinalIgnoreCase)))?.QuestionId;
 
-        _diabetesQuestionId = texts
-            .FirstOrDefault(t => t.Text.Contains("diabetes", StringComparison.OrdinalIgnoreCase))?.QuestionId;
+        _diabetesQuestionId = questions
+            .FirstOrDefault(q => q.FallbackText != null &&
+                                 q.FallbackText.Contains("diabetes", StringComparison.OrdinalIgnoreCase))?.QuestionId;
+
+        _fhQuestionId = questions
+            .FirstOrDefault(q => q.FallbackText != null &&
+                                 q.FallbackText.Contains("hyperkolesterol", StringComparison.OrdinalIgnoreCase))?.QuestionId;
 
         _questionLookupLoaded = true;
     }

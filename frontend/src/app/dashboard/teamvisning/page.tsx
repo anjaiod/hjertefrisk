@@ -198,9 +198,21 @@ export default function TeamvisningPage() {
                             r={props.outerRadius}
                             gradientUnits="userSpaceOnUse"
                           >
-                            <stop offset="5%" stopColor="#007a64" stopOpacity={0.95} />
-                            <stop offset="35%" stopColor="#b88100" stopOpacity={0.90} />
-                            <stop offset="90%" stopColor="#FF0000" stopOpacity={0.95} />
+                            <stop
+                              offset="5%"
+                              stopColor="#007a64"
+                              stopOpacity={0.95}
+                            />
+                            <stop
+                              offset="35%"
+                              stopColor="#b88100"
+                              stopOpacity={0.9}
+                            />
+                            <stop
+                              offset="90%"
+                              stopColor="#FF0000"
+                              stopOpacity={0.95}
+                            />
                           </radialGradient>
                         </defs>
                       )}

@@ -1,0 +1,17 @@
+project_name      = "hjertefrisk"
+environment       = "dev"
+project_id        = "<gcp-project-id>"
+region            = "europe-west1"
+zone              = "europe-west1-b"
+vm_name           = "hjertefrisk-dev-vm"
+machine_type      = "e2-small"
+admin_username    = "deployer"
+ssh_public_key    = "ssh-ed25519 AAAA..."
+ssh_source_cidr   = "0.0.0.0/0"
+web_source_cidr   = "0.0.0.0/0"
+repository_url    = "https://github.com/Naerverk/hjertefrisk.git"
+repository_branch = "main"
+
+instance_tags = [
+  "dev"
+]

@@ -12,4 +12,5 @@ public class Personnel
     public ICollection<ToDo> ToDos { get; set; } = new List<ToDo>();
     public ICollection<MeasurementResult> RegisteredMeasurementResults { get; set; } = new List<MeasurementResult>();
     public ICollection<PersonnelMeasureResult> PersonnelMeasureResults { get; set; } = new List<PersonnelMeasureResult>();
+    public ICollection<Journalnotat> Journalnots { get; set; } = new List<Journalnotat>();
 }

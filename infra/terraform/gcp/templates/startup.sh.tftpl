@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+apt-get update
+apt-get install -y ca-certificates curl git docker.io docker-compose-plugin
+systemctl enable docker
+systemctl start docker
+usermod -aG docker ${admin_username}
+
+mkdir -p /opt/app
+chown ${admin_username}:${admin_username} /opt/app
+
+if [ ! -d /opt/app/repo ]; then
+  sudo -u ${admin_username} git clone --branch ${repository_branch} ${repository_url} /opt/app/repo
+fi
+
+cat >/opt/app/BOOTSTRAP_TODO.txt <<'EOF'
+This VM has only been bootstrapped with base packages and a checked-out repository.
+Replace the startup and deploy flow with a project-specific runtime path for hjertefrisk.
+Recommended next step: use Docker Compose to build and run backend and frontend on the VM.
+EOF

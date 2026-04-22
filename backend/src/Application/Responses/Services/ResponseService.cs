@@ -11,11 +11,16 @@ public class ResponseService : IResponseService
 {
     private readonly AppDbContext _db;
     private readonly IToDoRuleService _toDoRuleService;
+    private readonly ILogger<ResponseService> _logger;
 
-    public ResponseService(AppDbContext db, IToDoRuleService toDoRuleService)
+    public ResponseService(
+        AppDbContext db,
+        IToDoRuleService toDoRuleService,
+        ILogger<ResponseService> logger)
     {
         _db = db;
         _toDoRuleService = toDoRuleService;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<ResponseDto>> GetAllAsync()
@@ -52,6 +57,11 @@ public class ResponseService : IResponseService
         await _db.SaveChangesAsync();
 
         // Process ToDoRules for this response
+        _logger.LogInformation(
+            "Processing ToDo rules for single response. PatientId={PatientId}, QuestionId={QuestionId}, AnsweredQueryId={AnsweredQueryId}",
+            entity.PatientId,
+            entity.QuestionId,
+            entity.AnsweredQueryId);
         await _toDoRuleService.ProcessResponseAsync(entity);
 
         return new ResponseDto
@@ -66,7 +76,7 @@ public class ResponseService : IResponseService
         };
     }
 
-    public async Task<IEnumerable<ResponseDto>> UpsertManyAsync(IEnumerable<CreateResponseDto> dtos)
+    public async Task<IEnumerable<ResponseDto>> UpsertManyAsync(IEnumerable<CreateResponseDto> dtos, int? personnelId = null)
     {
         var incoming = dtos.ToList();
         if (incoming.Count == 0)
@@ -83,7 +93,7 @@ public class ResponseService : IResponseService
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        var answeredQuery = new AnsweredQuery { PatientId = patientId };
+        var answeredQuery = new AnsweredQuery { PatientId = patientId, PersonnelId = personnelId };
 
         var entities = normalized.Select(dto => new Response
         {
@@ -98,6 +108,12 @@ public class ResponseService : IResponseService
         _db.Responses.AddRange(entities);
         await _db.SaveChangesAsync();
         await transaction.CommitAsync();
+
+        _logger.LogInformation(
+            "Saved response batch. PatientId={PatientId}, AnsweredQueryId={AnsweredQueryId}, ResponseCount={ResponseCount}",
+            patientId,
+            answeredQuery.Id,
+            entities.Count);
 
         // Create notifications for personnel who have access to this patient
         try
@@ -145,7 +161,7 @@ public class ResponseService : IResponseService
         var categoryScoreMap = new Dictionary<int, int>();
         var categoriesInBatch = questionsWithCategories
             .Where(q => q.CategoryId.HasValue)
-            .Select(q => q.CategoryId.Value)
+            .Select(q => q.CategoryId.GetValueOrDefault())
             .Distinct()
             .ToList();
 
@@ -158,12 +174,21 @@ public class ResponseService : IResponseService
 
             var score = await CalculateCategoryScoreAsync(categoryId, responsesForCategory);
             categoryScoreMap[categoryId] = score;
-            Console.WriteLine($"[ResponseService] Pre-calculated category {categoryId} score: {score}");
+            _logger.LogInformation(
+                "Pre-calculated category score. PatientId={PatientId}, CategoryId={CategoryId}, Score={Score}",
+                patientId,
+                categoryId,
+                score);
         }
 
         // Process QuestionAnswerRules for each response
         foreach (var entity in entities)
         {
+            _logger.LogDebug(
+                "Processing question ToDo rules. PatientId={PatientId}, QuestionId={QuestionId}, AnsweredQueryId={AnsweredQueryId}",
+                entity.PatientId,
+                entity.QuestionId,
+                entity.AnsweredQueryId);
             await _toDoRuleService.ProcessResponseAsync(entity);
         }
 
@@ -175,11 +200,17 @@ public class ResponseService : IResponseService
                 continue;
 
             var categoryScore = categoryScoreMap[categoryId];
-            Console.WriteLine($"[ResponseService] Processing CategoryScoreRules for category {categoryId} with score {categoryScore}");
+            _logger.LogInformation(
+                "Processing category ToDo rules. PatientId={PatientId}, CategoryId={CategoryId}, Score={Score}",
+                patientId,
+                categoryId,
+                categoryScore);
 
             await _toDoRuleService.ProcessCategoryRulesAsync(patientId, categoryId, categoryScore);
             processedCategories.Add(categoryId);
         }
+
+        await CreateFastingTodoIfApplicableAsync(patientId, entities);
 
         return entities.Select(r => new ResponseDto
         {
@@ -193,12 +224,55 @@ public class ResponseService : IResponseService
         });
     }
 
+    /// <summary>
+    /// Oppretter en todo hvis triglyserider er 4,0–9,9 OG prøven var ikke-fastende (spørsmål 177 = "nei").
+    /// Denne betingelsen er sammensatt (to spørsmål) og kan ikke uttrykkes med én QuestionAnswerRule.
+    /// </summary>
+    private async Task CreateFastingTodoIfApplicableAsync(int patientId, List<Response> entities)
+    {
+        const int TrigQuestionId = 96;
+        const int FastingQuestionId = 177;
+        const string TodoText = "Bestill ny fastende triglyseridprøve.";
+
+        var trigResponse = entities.FirstOrDefault(e => e.QuestionId == TrigQuestionId);
+        if (trigResponse?.NumberValue == null) return;
+        if (trigResponse.NumberValue < 4m || trigResponse.NumberValue >= 10m) return;
+
+        var fastingResponse = entities.FirstOrDefault(e => e.QuestionId == FastingQuestionId);
+        if (fastingResponse == null) return;
+
+        bool isFasting =
+            (!string.IsNullOrWhiteSpace(fastingResponse.TextValue) &&
+             fastingResponse.TextValue.Trim().Equals("ja", StringComparison.OrdinalIgnoreCase)) ||
+            (fastingResponse.NumberValue.HasValue && fastingResponse.NumberValue.Value >= 1);
+
+        if (isFasting) return;
+
+        bool exists = await _db.ToDos.AnyAsync(t =>
+            t.PatientId == patientId &&
+            !t.Finished &&
+            t.ToDoText == TodoText);
+
+        if (exists) return;
+
+        _db.ToDos.Add(new ToDo
+        {
+            PatientId = patientId,
+            ToDoText = TodoText,
+            Finished = false,
+            Public = true,
+            ToDoRuleId = null
+        });
+        await _db.SaveChangesAsync();
+    }
+
     public async Task<IEnumerable<AnsweredQueryHistoryDto>> GetHistoryForPatientAsync(int patientId)
     {
         var queries = await _db.AnsweredQueries
             .AsNoTracking()
             .Where(aq => aq.PatientId == patientId)
             .OrderByDescending(aq => aq.CreatedAt)
+            .Include(aq => aq.Personnel)
             .Include(aq => aq.Responses)
                 .ThenInclude(r => r.Question)
                     .ThenInclude(q => q.QueryQuestions)
@@ -210,6 +284,7 @@ public class ResponseService : IResponseService
         {
             Id = aq.Id,
             CreatedAt = DateTime.SpecifyKind(aq.CreatedAt, DateTimeKind.Utc),
+            FilledInByName = aq.Personnel?.Name,
             Responses = aq.Responses
                 .OrderBy(r => r.Question.QueryQuestions.FirstOrDefault()?.DisplayOrder ?? r.QuestionId)
                 .Select(r => new ResponseHistoryItemDto
@@ -238,7 +313,7 @@ public class ResponseService : IResponseService
 
         if (questions.Count == 0)
         {
-            Console.WriteLine($"[CalculateCategoryScoreAsync] Category {categoryId}: No questions found");
+            _logger.LogInformation("No questions found when calculating category score. CategoryId={CategoryId}", categoryId);
             return 0;
         }
 
@@ -251,13 +326,16 @@ public class ResponseService : IResponseService
             .ToDictionary(g => g.Key, g => g.Last()); // Last in case multiple responses for same question
 
         var totalScore = 0;
-        Console.WriteLine($"[CalculateCategoryScoreAsync] Category {categoryId} (current batch only):");
+        _logger.LogDebug("Calculating category score for current response batch. CategoryId={CategoryId}", categoryId);
 
         foreach (var question in questions)
         {
             if (!responseMap.TryGetValue(question.QuestionId, out var response))
             {
-                Console.WriteLine($"  - Question {question.QuestionId}: No response in current batch");
+                _logger.LogDebug(
+                    "No response in current batch for category score. CategoryId={CategoryId}, QuestionId={QuestionId}",
+                    categoryId,
+                    question.QuestionId);
                 continue;
             }
 
@@ -269,11 +347,19 @@ public class ResponseService : IResponseService
                 }
 
                 totalScore += severity.Score;
-                Console.WriteLine($"  - Question {question.QuestionId}: Matched severity rule, +{severity.Score} (total: {totalScore})");
+                _logger.LogDebug(
+                    "Matched severity rule while calculating category score. CategoryId={CategoryId}, QuestionId={QuestionId}, SeverityScore={SeverityScore}, TotalScore={TotalScore}",
+                    categoryId,
+                    question.QuestionId,
+                    severity.Score,
+                    totalScore);
             }
         }
 
-        Console.WriteLine($"  - Final score: {totalScore}");
+        _logger.LogInformation(
+            "Calculated category score. CategoryId={CategoryId}, Score={Score}",
+            categoryId,
+            totalScore);
         return totalScore;
     }
 

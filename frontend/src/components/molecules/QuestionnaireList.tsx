@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 interface AnsweredQueryHistory {
   id: number;
   createdAt: string;
+  filledInByName: string | null;
 }
 
 export function QuestionnaireList({ patientId }: { patientId: number }) {
@@ -63,9 +64,14 @@ export function QuestionnaireList({ patientId }: { patientId: number }) {
             key={form.id}
             className="flex justify-between items-center border rounded-lg p-3 hover:bg-slate-50 transition"
           >
-            <span className="text-slate-700">
-              Besvart {formatFullDate(form.createdAt)}
-            </span>
+            <div className="flex flex-col">
+              <span className="text-slate-700">
+                Besvart {formatFullDate(form.createdAt)}
+              </span>
+              <span className="text-xs text-slate-400">
+                Fylt inn av {form.filledInByName ?? "deg selv"}
+              </span>
+            </div>
 
             <Button
               onClick={() =>

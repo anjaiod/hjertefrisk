@@ -38,9 +38,14 @@ namespace api.Migrations
                     b.Property<int>("PatientId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("PersonnelId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("PatientId");
+
+                    b.HasIndex("PersonnelId");
 
                     b.ToTable("AnsweredQueries");
                 });
@@ -63,6 +68,60 @@ namespace api.Migrations
                         .IsUnique();
 
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("backend.src.Domain.Models.Journalnotat", b =>
+                {
+                    b.Property<int>("JournalnotatId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("JournalnotatId"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<bool>("IsPrivate")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PersonnelId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("SignedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("SignedByPersonnelId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("JournalnotatId");
+
+                    b.HasIndex("PatientId");
+
+                    b.HasIndex("PersonnelId");
+
+                    b.HasIndex("SignedByPersonnelId");
+
+                    b.ToTable("Journalnots");
                 });
 
             modelBuilder.Entity("backend.src.Domain.Models.Language", b =>
@@ -1003,6 +1062,37 @@ namespace api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("backend.src.Domain.Models.Personnel", "Personnel")
+                        .WithMany()
+                        .HasForeignKey("PersonnelId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Patient");
+
+                    b.Navigation("Personnel");
+                });
+
+            modelBuilder.Entity("backend.src.Domain.Models.Journalnotat", b =>
+                {
+                    b.HasOne("backend.src.Domain.Models.Patient", "Patient")
+                        .WithMany("Journalnots")
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("backend.src.Domain.Models.Personnel", "CreatedBy")
+                        .WithMany("Journalnots")
+                        .HasForeignKey("PersonnelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("backend.src.Domain.Models.Personnel", null)
+                        .WithMany()
+                        .HasForeignKey("SignedByPersonnelId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CreatedBy");
+
                     b.Navigation("Patient");
                 });
 
@@ -1602,6 +1692,8 @@ namespace api.Migrations
                 {
                     b.Navigation("AnsweredQueries");
 
+                    b.Navigation("Journalnots");
+
                     b.Navigation("MeasurementResults");
 
                     b.Navigation("PatientAccesses");
@@ -1622,6 +1714,8 @@ namespace api.Migrations
 
             modelBuilder.Entity("backend.src.Domain.Models.Personnel", b =>
                 {
+                    b.Navigation("Journalnots");
+
                     b.Navigation("PatientAccesses");
 
                     b.Navigation("PersonnelMeasureResults");

@@ -1,6 +1,9 @@
 name: Cloud Run Deploy
 
 on:
+  push:
+    tags:
+      - 'stage-*'
   workflow_dispatch:
     inputs:
       target_environment:
@@ -23,7 +26,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: cloud-run-${{ inputs.target_environment }}
+  group: cloud-run-${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
   cancel-in-progress: false
 
 env:
@@ -34,8 +37,10 @@ jobs:
   build-and-deploy:
     name: Build and Deploy Cloud Run Services
     runs-on: ubuntu-latest
-    environment: ${{ inputs.target_environment }}
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
     env:
+      TARGET_ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
+      DEPLOY_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.git_ref || github.ref_name }}
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       GCP_REGION: ${{ vars.GCP_REGION }}
       GCP_ARTIFACT_REGION: ${{ vars.GCP_ARTIFACT_REGION }}
@@ -55,7 +60,7 @@ jobs:
       FRONTEND_MEMORY: ${{ vars.GCP_FRONTEND_MEMORY != '' && vars.GCP_FRONTEND_MEMORY || '512Mi' }}
       BACKEND_CPU: ${{ vars.GCP_BACKEND_CPU != '' && vars.GCP_BACKEND_CPU || '1' }}
       FRONTEND_CPU: ${{ vars.GCP_FRONTEND_CPU != '' && vars.GCP_FRONTEND_CPU || '1' }}
-      DEPLOY_REF: ${{ inputs.git_ref }}
+      RUN_DB_MIGRATIONS: ${{ vars.RUN_DB_MIGRATIONS != '' && vars.RUN_DB_MIGRATIONS || 'false' }}
     steps:
       - name: Checkout selected ref
         uses: actions/checkout@v4
@@ -133,8 +138,8 @@ jobs:
           set -euo pipefail
 
           short_sha="$(git rev-parse --short HEAD)"
-          backend_image="${GCP_ARTIFACT_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/${GCP_BACKEND_IMAGE}:${{ inputs.target_environment }}-${short_sha}"
-          frontend_image="${GCP_ARTIFACT_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/${GCP_FRONTEND_IMAGE}:${{ inputs.target_environment }}-${short_sha}"
+          backend_image="${GCP_ARTIFACT_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/${GCP_BACKEND_IMAGE}:${TARGET_ENVIRONMENT}-${short_sha}"
+          frontend_image="${GCP_ARTIFACT_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/${GCP_FRONTEND_IMAGE}:${TARGET_ENVIRONMENT}-${short_sha}"
 
           {
             echo "backend_image=${backend_image}"
@@ -164,7 +169,8 @@ jobs:
             NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.Supabase__AnonKey }}
 
-      - name: Render backend env file
+      - name: Prepare backend env values
+        id: backend_env
         shell: bash
         run: |
           set -euo pipefail
@@ -174,14 +180,60 @@ jobs:
             connection_string="${{ secrets.SUPABASE_DB_URL }}"
           fi
 
-          cat > backend-cloudrun.env.yaml <<EOF
-          ConnectionStrings__Default: "${connection_string}"
-          Supabase__Url: "${NEXT_PUBLIC_SUPABASE_URL}"
-          Supabase__AnonKey: "${{ secrets.Supabase__AnonKey }}"
-          FRONTEND_ORIGINS: "${FRONTEND_ORIGINS}"
-          EOF
+          {
+            echo "connection_string=${connection_string}"
+            echo "supabase_url=${NEXT_PUBLIC_SUPABASE_URL}"
+            echo "frontend_origins=${FRONTEND_ORIGINS}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Diagnose backend connection string format
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          connection_string="${{ steps.backend_env.outputs.connection_string }}"
+
+          echo "Backend connection string diagnostics:"
+          echo "length=${#connection_string}"
+
+          if [[ "$connection_string" == postgresql://* ]]; then
+            echo "starts_with_postgresql=true"
+          else
+            echo "starts_with_postgresql=false"
+          fi
+
+          if [[ "$connection_string" == postgres://* ]]; then
+            echo "starts_with_postgres=true"
+          else
+            echo "starts_with_postgres=false"
+          fi
+
+          if [[ "$connection_string" == *$'\n'* || "$connection_string" == *$'\r'* ]]; then
+            echo "contains_newline=true"
+          else
+            echo "contains_newline=false"
+          fi
+
+          if [[ "$connection_string" == *=* ]]; then
+            echo "contains_equals=true"
+          else
+            echo "contains_equals=false"
+          fi
+
+          if [[ "$connection_string" == *';'* ]]; then
+            echo "contains_semicolon=true"
+          else
+            echo "contains_semicolon=false"
+          fi
+
+          if [[ ${#connection_string} -gt 0 ]]; then
+            LC_CTYPE=C printf 'first_char_code=%d\n' "'${connection_string:0:1}"
+            LC_CTYPE=C printf 'last_char_code=%d\n' "'${connection_string: -1}"
+          fi
 
       - name: Deploy backend to Cloud Run
+        id: deploy_backend
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -192,12 +244,39 @@ jobs:
             --project "${GCP_PROJECT_ID}" \
             --platform managed \
             --allow-unauthenticated \
+            --min-instances 0 \
             --port 8080 \
             --memory "${BACKEND_MEMORY}" \
             --cpu "${BACKEND_CPU}" \
-            --env-vars-file backend-cloudrun.env.yaml
+            --set-env-vars "ConnectionStrings__Default=${{ steps.backend_env.outputs.connection_string }}" \
+            --set-env-vars "Supabase__Url=${{ steps.backend_env.outputs.supabase_url }}" \
+            --set-env-vars "Supabase__AnonKey=${{ secrets.Supabase__AnonKey }}" \
+            --set-env-vars "FRONTEND_ORIGINS=${{ steps.backend_env.outputs.frontend_origins }}" \
+            --set-env-vars "RUN_DB_MIGRATIONS=${RUN_DB_MIGRATIONS}"
+
+      - name: Fetch backend startup logs on failure
+        if: ${{ steps.deploy_backend.outcome == 'failure' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Backend deploy failed. Fetching recent Cloud Run logs for ${GCP_BACKEND_SERVICE}..."
+          gcloud logging read \
+            "resource.type=cloud_run_revision AND resource.labels.service_name=${GCP_BACKEND_SERVICE}" \
+            --project "${GCP_PROJECT_ID}" \
+            --limit 100 \
+            --order=desc \
+            --format="value(timestamp,textPayload)"
+
+      - name: Fail after backend deploy error
+        if: ${{ steps.deploy_backend.outcome == 'failure' }}
+        shell: bash
+        run: |
+          echo "Backend deployment failed. See fetched Cloud Run logs above." >&2
+          exit 1
 
       - name: Deploy frontend to Cloud Run
+        if: ${{ steps.deploy_backend.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -208,6 +287,7 @@ jobs:
             --project "${GCP_PROJECT_ID}" \
             --platform managed \
             --allow-unauthenticated \
+            --min-instances 0 \
             --port 8080 \
             --memory "${FRONTEND_MEMORY}" \
             --cpu "${FRONTEND_CPU}"
@@ -237,13 +317,15 @@ jobs:
       - name: Deployment summary
         shell: bash
         run: |
+          public_url="${NEXT_PUBLIC_API_URL}"
           {
-            echo "environment=${{ inputs.target_environment }}"
+            echo "environment=${TARGET_ENVIRONMENT}"
             echo "git_ref=${DEPLOY_REF}"
             echo "backend_service=${GCP_BACKEND_SERVICE}"
             echo "frontend_service=${GCP_FRONTEND_SERVICE}"
-            echo "backend_url=${{ steps.service_urls.outputs.backend_url }}"
-            echo "frontend_url=${{ steps.service_urls.outputs.frontend_url }}"
+            echo "backend_cloud_run_url=${{ steps.service_urls.outputs.backend_url }}"
+            echo "frontend_cloud_run_url=${{ steps.service_urls.outputs.frontend_url }}"
+            echo "public_url=${public_url}"
             echo "backend_image=${{ steps.image_meta.outputs.backend_image }}"
             echo "frontend_image=${{ steps.image_meta.outputs.frontend_image }}"
           } >> "$GITHUB_STEP_SUMMARY"

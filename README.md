@@ -12,6 +12,9 @@ A full-stack web application for Hjertefrisk algorithm. The algorithm is a tool 
 ## Andre ReadMEs
 - [Backend README](backend/README.md)
 
+## Deploy Docs
+- [Deployment Docs](docs/README.md)
+
 ## 📑 Innholdsfortegnelse
 - [Prosjektoppsett](#prosjektoppsett)
 - [Koding i Frontend](#koding-i-frontend-database--api-kjøres-i-docker)
