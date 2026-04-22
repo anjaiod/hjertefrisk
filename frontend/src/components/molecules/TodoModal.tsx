@@ -80,8 +80,8 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
       />
 
       {/* Modal */}
-      <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div className="relative bg-white rounded-xl shadow-lg w-full max-w-md">
+      <div className="fixed inset-0 flex items-center justify-center z-50 p-4" onClick={onClose}>
+        <div onClick={(e) => e.stopPropagation()} className="relative bg-white rounded-xl shadow-lg w-full max-w-md">
           {/* Close Button */}
           <button
             onClick={onClose}
@@ -94,7 +94,7 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
           <TodoList
             todos={todos}
             patientId={Number(patientId)}
-            maxHeight="max-h-screen"
+            maxHeight="max-h-[60vh]"
           />
         </div>
       </div>
