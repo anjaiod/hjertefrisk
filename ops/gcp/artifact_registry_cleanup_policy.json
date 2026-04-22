@@ -1,0 +1,21 @@
+{
+  "keep-recent-versions": {
+    "id": "keep-recent-versions",
+    "action": {
+      "type": "Keep"
+    },
+    "mostRecentVersions": {
+      "keepCount": 10
+    }
+  },
+  "delete-older-images": {
+    "id": "delete-older-images",
+    "action": {
+      "type": "Delete"
+    },
+    "condition": {
+      "tagState": "ANY",
+      "olderThan": "30d"
+    }
+  }
+}

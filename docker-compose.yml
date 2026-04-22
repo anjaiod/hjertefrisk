@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: ${SUPABASE_DB_URL}
+      RUN_DB_MIGRATIONS: ${RUN_DB_MIGRATIONS:-false}
+    ports:
+      - "5000:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      # Browser-to-container: frontend in the browser must call localhost
+      NEXT_PUBLIC_API_URL: http://localhost:5000
+      # Container-to-container: SSR in the frontend container must call backend via service DNS
+      API_URL_INTERNAL: http://backend:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
