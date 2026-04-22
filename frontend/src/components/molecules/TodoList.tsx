@@ -162,10 +162,10 @@ export function TodoList({
         <button
           onClick={() => setShowCreateForm(true)}
           disabled={!patientId}
-          className="px-3 py-1 text-sm font-medium text-white bg-brand-sage hover:bg-brand-sage/90 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+          className="px-3 py-1 text-sm font-medium text-white bg-brand-sage hover:bg-brand-sage/90 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap "
           title={!patientId ? "Velg pasient for å opprette oppgave" : ""}
         >
-          + Ny
+          Ny +
         </button>
       </div>
 
