@@ -7,6 +7,7 @@ import { ActivityList } from "../../components/molecules/ActivityList";
 import { QuestionnaireList } from "../../components/molecules/QuestionnaireList";
 import { DashboardCard } from "@/components/molecules/DashboardCard";
 import { PatientHeader } from "../../components/organisms/PatientHeader";
+import { AIChatButton } from "@/components/atoms/AIChatButton";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
@@ -128,6 +129,8 @@ export default function PatientDashboardPage() {
           </div>
         </main>
       </div>
+
+      <AIChatButton />
     </div>
   );
 }
