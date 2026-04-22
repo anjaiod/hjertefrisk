@@ -74,6 +74,7 @@ export default function Page() {
               <QuestionnaireHistory
                 patientId={patientId}
                 initialOpenId={openId ? Number(openId) : null}
+                patientLabel="deg selv"
               />
             ) : (
               <p className="text-slate-500 text-sm">Ingen pasient funnet.</p>

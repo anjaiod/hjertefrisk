@@ -17,7 +17,7 @@ export const CATEGORY_RISK_THRESHOLDS: Record<
   tannhelse: { high: 1, medium: null },
   kroppsdata: { high: 2, medium: 1 },
   blodtrykk: { high: 2, medium: 1 },
-  glukose: { high: 2, medium: 1 },
+  glukoseregulering: { high: 2, medium: 1 },
   blodlipider: { high: 2, medium: 1 },
 };
 

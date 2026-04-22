@@ -27,7 +27,7 @@ namespace backend.src.Application.Measures.Services;
 ///   "kroppsdata_middels" – score 1
 ///   "kroppsdata_hoy"     – score 2
 /// </summary>
-public record KroppsDataEvaluationResult(int Score, IReadOnlyList<string> Titles);
+public record KroppsDataEvaluationResult(int Score, IReadOnlyList<string> Titles, DateTime? BasedOnDate, string? BasedOnPersonnelName);
 
 public class KroppsDataEvaluationService
 {
@@ -60,6 +60,7 @@ public class KroppsDataEvaluationService
                         (r.MeasurementId == WeightMeasurementId ||
                          r.MeasurementId == HeightMeasurementId ||
                          r.MeasurementId == WaistMeasurementId))
+            .Include(r => r.RegisteredByPersonnel)
             .OrderByDescending(r => r.RegisteredAt)
             .ToListAsync();
 
@@ -141,6 +142,10 @@ public class KroppsDataEvaluationService
             _ => new List<string> { title }
         };
 
-        return new KroppsDataEvaluationResult(finalScore, titles);
+        var mostRecentRow = measurementRows.FirstOrDefault();
+        var basedOnDate = mostRecentRow?.RegisteredAt;
+        var basedOnPersonnelName = mostRecentRow?.RegisteredByPersonnel?.Name;
+
+        return new KroppsDataEvaluationResult(finalScore, titles, basedOnDate, basedOnPersonnelName);
     }
 }

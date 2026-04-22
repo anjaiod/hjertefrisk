@@ -29,7 +29,22 @@ type PatientMeasureResult = {
   scoreThreshold: number;
   isExclusive: boolean;
   priority: number;
+  basedOnDate: string | null;
+  basedOnPersonnelName: string | null;
 };
+
+function formatBasedOn(date: string | null, personnelName: string | null): string | null {
+  if (!date) return null;
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
+  const formatted = d.toLocaleDateString("nb-NO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const name = personnelName ?? "deg selv";
+  return `Basert på verdier fylt inn av ${name} den ${formatted}`;
+}
 
 type QueryDto = {
   id: number;
@@ -43,16 +58,6 @@ export default function PasientTiltakside() {
 
   const [categories, setCategories] = useState<CategoryDto[]>([]);
 
-  const selectedCategoryId = searchParams.get("kategori")
-    ? Number(searchParams.get("kategori"))
-    : (categories[0]?.categoryId ?? null);
-
-  function setSelectedCategoryId(id: number | null) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (id === null) params.delete("kategori");
-    else params.set("kategori", String(id));
-    router.replace(`?${params.toString()}`);
-  }
   const [measuresByCategory, setMeasuresByCategory] = useState<
     Record<number, PatientMeasureResult[]>
   >({});
@@ -60,6 +65,41 @@ export default function PasientTiltakside() {
     {},
   );
   const [loading, setLoading] = useState(true);
+
+  const sortedCategories = [...categories].sort((a, b) => {
+    const isSleepA = a.name.toLowerCase().trim() === "søvn";
+    const isSleepB = b.name.toLowerCase().trim() === "søvn";
+    const scoreA = categoryScores[a.categoryId];
+    const scoreB = categoryScores[b.categoryId];
+    const measuresA = measuresByCategory[a.categoryId] ?? [];
+    const measuresB = measuresByCategory[b.categoryId] ?? [];
+    const answeredA = isSleepA ? measuresA.length > 0 : scoreA !== undefined;
+    const answeredB = isSleepB ? measuresB.length > 0 : scoreB !== undefined;
+    const variantA = !answeredA
+      ? null
+      : isSleepA
+        ? sleepVariantFromTitles(measuresA.map((m) => m.title ?? ""))
+        : scoreToVariant(a.name, scoreA ?? 0);
+    const variantB = !answeredB
+      ? null
+      : isSleepB
+        ? sleepVariantFromTitles(measuresB.map((m) => m.title ?? ""))
+        : scoreToVariant(b.name, scoreB ?? 0);
+    const orderA = variantA != null ? riskVariantRank(variantA) : 4;
+    const orderB = variantB != null ? riskVariantRank(variantB) : 4;
+    return orderA - orderB;
+  });
+
+  const selectedCategoryId = searchParams.get("kategori")
+    ? Number(searchParams.get("kategori"))
+    : (sortedCategories[0]?.categoryId ?? null);
+
+  function setSelectedCategoryId(id: number | null) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (id === null) params.delete("kategori");
+    else params.set("kategori", String(id));
+    router.replace(`?${params.toString()}`);
+  }
 
   useEffect(() => {
     if (!isAuthReady || !user) return;
@@ -109,30 +149,6 @@ export default function PasientTiltakside() {
 
     loadData();
   }, [isAuthReady, user]);
-
-  const sortedCategories = [...categories].sort((a, b) => {
-    const isSleepA = a.name.toLowerCase().trim() === "søvn";
-    const isSleepB = b.name.toLowerCase().trim() === "søvn";
-    const scoreA = categoryScores[a.categoryId];
-    const scoreB = categoryScores[b.categoryId];
-    const measuresA = measuresByCategory[a.categoryId] ?? [];
-    const measuresB = measuresByCategory[b.categoryId] ?? [];
-    const answeredA = isSleepA ? measuresA.length > 0 : scoreA !== undefined;
-    const answeredB = isSleepB ? measuresB.length > 0 : scoreB !== undefined;
-    const variantA = !answeredA
-      ? null
-      : isSleepA
-        ? sleepVariantFromTitles(measuresA.map((m) => m.title ?? ""))
-        : scoreToVariant(a.name, scoreA ?? 0);
-    const variantB = !answeredB
-      ? null
-      : isSleepB
-        ? sleepVariantFromTitles(measuresB.map((m) => m.title ?? ""))
-        : scoreToVariant(b.name, scoreB ?? 0);
-    const orderA = variantA != null ? riskVariantRank(variantA) : 4;
-    const orderB = variantB != null ? riskVariantRank(variantB) : 4;
-    return orderA - orderB;
-  });
 
   const selectedCategory = categories.find(
     (c) => c.categoryId === selectedCategoryId,
@@ -184,7 +200,7 @@ export default function PasientTiltakside() {
                           key={cat.categoryId}
                           onClick={() => setSelectedCategoryId(cat.categoryId)}
                           className={[
-                            "flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all",
+                            "flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all cursor-pointer",
                             isSelected
                               ? "bg-brand-sky/10 border border-brand-sky/40"
                               : "border border-transparent hover:bg-slate-50",
@@ -265,6 +281,11 @@ export default function PasientTiltakside() {
                           >
                             Les mer her
                           </a>
+                        )}
+                        {formatBasedOn(measure.basedOnDate, measure.basedOnPersonnelName) && (
+                          <p className="text-xs text-slate-400 italic border-t border-slate-100 pt-2 mt-1">
+                            {formatBasedOn(measure.basedOnDate, measure.basedOnPersonnelName)}
+                          </p>
                         )}
                       </div>
                     ))

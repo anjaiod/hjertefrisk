@@ -1,7 +1,7 @@
 /**
  * Operator type for rule conditions
  */
-export type Operator = '=' | '!=' | '<' | '>' | '<=' | '>=';
+export type Operator = "=" | "!=" | "<" | ">" | "<=" | ">=";
 
 /**
  * Base interface for all ToDoRule types

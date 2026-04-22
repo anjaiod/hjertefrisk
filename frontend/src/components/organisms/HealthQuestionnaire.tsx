@@ -22,7 +22,6 @@ import type {
   SeverityDto,
 } from "@/types";
 
-
 interface HealthQuestionnaireProps {
   patientId: number | null;
   compact?: boolean;
@@ -88,6 +87,20 @@ export default function HealthQuestionnaire({
       const parentAnswer = answers[dependency.parentQuestionId];
       if (!parentAnswer) return false;
 
+      if (dependency.triggerNumberValue != null) {
+        const numericAnswer = Number(parentAnswer.replace(",", "."));
+        if (!Number.isFinite(numericAnswer)) return false;
+        const threshold = dependency.triggerNumberValue;
+        switch (dependency.operator) {
+          case ">":  return numericAnswer > threshold;
+          case ">=": return numericAnswer >= threshold;
+          case "<":  return numericAnswer < threshold;
+          case "<=": return numericAnswer <= threshold;
+          case "!=": return numericAnswer !== threshold;
+          default:   return numericAnswer === threshold;
+        }
+      }
+
       if (dependency.triggerOptionValue) {
         return parentAnswer === dependency.triggerOptionValue;
       }
@@ -131,7 +144,6 @@ export default function HealthQuestionnaire({
     if (text.includes("fyll inn")) return "Skriv tall";
     return undefined;
   };
-
 
   const renderQuestion = (
     question: QueryQuestionWithDetailsDto,

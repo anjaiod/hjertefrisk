@@ -37,5 +37,6 @@ public class QuestionDependencyDto
     public int? TriggerOptionId { get; set; }
     public string? TriggerOptionValue { get; set; }
     public string? TriggerTextValue { get; set; }
+    public decimal? TriggerNumberValue { get; set; }
     public string Operator { get; set; } = "";
 }
