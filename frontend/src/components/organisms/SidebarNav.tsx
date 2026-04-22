@@ -4,6 +4,8 @@ import { useState, type ReactNode, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { VarslingModal } from "../molecules/VarslingModal";
 import { fetchNotifications } from "@/lib/notifications";
+import { apiClient } from "@/lib/apiClient";
+import type { PatientDto } from "@/types";
 
 type NavItem = {
   label: string;
@@ -75,6 +77,7 @@ export function SidebarNav({
 
   const [showVarsling, setShowVarsling] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
+  const [patient, setPatient] = useState<PatientDto | null>(null);
 
   const patientId = searchParams?.get("patientId");
   const hasSelectedPatient = Boolean(patientId && patientId.trim() !== "");
@@ -207,6 +210,23 @@ export function SidebarNav({
     };
   }, [patientId]);
 
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!patientId) {
+        if (mounted) setPatient(null);
+        return;
+      }
+      try {
+        const data = await apiClient.get<PatientDto>(`/api/patients/${encodeURIComponent(patientId)}`);
+        if (mounted) setPatient(data);
+      } catch (e) {
+        console.error("Failed to fetch patient for sidebar", e);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [patientId]);
+
   return (
     <>
       <aside className="sticky top-0 hidden h-screen w-72 flex-col border-r border-brand-sky/30 bg-linear-to-b from-white to-brand-mist/10 p-6 md:flex">
@@ -230,6 +250,13 @@ export function SidebarNav({
         {hasSelectedPatient && (
           <>
             <div className="my-6 h-px bg-linear-to-r from-transparent via-brand-sky to-transparent" />
+
+            {patient && (
+              <div className="mb-4 rounded-xl border border-brand-sky/30 bg-white px-4 py-3 shadow-sm">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Valgt pasient</p>
+                <p className="mt-0.5 font-bold text-brand-navy truncate">{patient.name}</p>
+              </div>
+            )}
 
             <nav className="flex flex-col space-y-2">
               {primaryItems.map((item) => (
