@@ -10,6 +10,8 @@ type NavItem = {
   href: string;
   active?: boolean;
   icon: ReactNode;
+  onClick?: () => void;
+  showDot?: boolean;
 };
 
 function Item({
@@ -21,6 +23,8 @@ function Item({
   onClick?: () => void;
   showDot?: boolean;
 }) {
+  onClick = onClick ?? item.onClick;
+  showDot = showDot ?? item.showDot;
   const base =
     "flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold transition-all";
 
@@ -40,7 +44,7 @@ function Item({
 
   if (onClick) {
     return (
-      <button onClick={onClick} className={`${base} ${state}`}>
+      <button onClick={onClick} className={`w-full cursor-pointer ${base} ${state}`}>
         {content}
       </button>
     );
@@ -83,25 +87,47 @@ export function SidebarNav({
   const isActive = (href: string) =>
     currentPath === href || currentPath.startsWith(`${href}/`);
 
-  const dashboardItem: NavItem = {
-    label: "Dashboard",
-    href: withPatientId("/dashboard"),
-    active: currentPath === "/dashboard",
-    icon: (
-      <svg
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-        />
-      </svg>
-    ),
-  };
+  const primaryItems: NavItem[] = [
+    {
+      label: "Dashboard",
+      href: withPatientId("/dashboard"),
+      active: currentPath === "/dashboard",
+      icon: (
+        <svg
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+          />
+        </svg>
+      ),
+    },
+    {
+      label: "Varslinger",
+      href: "#",
+      onClick: () => setShowVarsling(true),
+      showDot: hasUnread,
+      icon: (
+        <svg
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+          />
+        </svg>
+      ),
+    },
+  ];
 
   const secondaryItems: NavItem[] = [
     {
@@ -206,30 +232,9 @@ export function SidebarNav({
             <div className="my-6 h-px bg-linear-to-r from-transparent via-brand-sky to-transparent" />
 
             <nav className="flex flex-col space-y-2">
-              <Item item={dashboardItem} />
-
-              <Item
-                item={{
-                  label: "Varslinger",
-                  href: "#",
-                  icon: (
-                    <svg
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                      />
-                    </svg>
-                  ),
-                }}
-                onClick={() => setShowVarsling(true)}
-                showDot={hasUnread}
-              />
+              {primaryItems.map((item) => (
+                <Item key={item.label} item={item} />
+              ))}
 
               {secondaryItems.map((item) => (
                 <Item key={item.href} item={item} />
