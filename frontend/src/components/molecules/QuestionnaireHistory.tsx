@@ -27,14 +27,12 @@ export default function QuestionnaireHistory({
   patientLabel?: string;
 }) {
   const [history, setHistory] = useState<AnsweredQueryHistory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!patientId);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!patientId) return;
-
-    setLoading(true);
 
     apiClient
       .get<AnsweredQueryHistory[]>(

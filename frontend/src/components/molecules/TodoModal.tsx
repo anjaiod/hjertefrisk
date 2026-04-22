@@ -26,19 +26,18 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
   useEffect(() => {
     const fetchTodos = async () => {
       try {
-        const allTodos =
-          await apiClient.get<
-            Array<{
-              toDoId: number;
-              toDoText: string;
-              finished: boolean;
-              public: boolean;
-              patientId: number;
-              createdAt: string;
-              personnelId?: number | null;
-              toDoRuleId?: number;
-            }>
-          >("/api/todos");
+        const allTodos = await apiClient.get<
+          Array<{
+            toDoId: number;
+            toDoText: string;
+            finished: boolean;
+            public: boolean;
+            patientId: number;
+            createdAt: string;
+            personnelId?: number | null;
+            toDoRuleId?: number;
+          }>
+        >("/api/todos");
 
         const filtered = allTodos
           .filter((t) => t.patientId === Number(patientId))
@@ -80,8 +79,8 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
       />
 
       {/* Modal */}
-      <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div className="relative bg-white rounded-xl shadow-lg w-full max-w-md">
+      <div className="fixed inset-0 flex items-center justify-center z-50 p-4" onClick={onClose}>
+        <div onClick={(e) => e.stopPropagation()} className="relative bg-white rounded-xl shadow-lg w-full max-w-md">
           {/* Close Button */}
           <button
             onClick={onClose}
@@ -94,7 +93,7 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
           <TodoList
             todos={todos}
             patientId={Number(patientId)}
-            maxHeight="max-h-screen"
+            maxHeight="max-h-[60vh]"
           />
         </div>
       </div>

@@ -24,6 +24,7 @@ public class PatientsController : ControllerBase
     private readonly IResponseService _responseService;
     private readonly IMeasurementResultService _measurementResultService;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogger<PatientsController> _logger;
 
     private static readonly Dictionary<string, (int High, int? Medium)> CategoryThresholds = new()
     {
@@ -43,13 +44,15 @@ public class PatientsController : ControllerBase
         IAccessAuthorizationService authService,
         IResponseService responseService,
         IMeasurementResultService measurementResultService,
-        IServiceScopeFactory scopeFactory)
+        IServiceScopeFactory scopeFactory,
+        ILogger<PatientsController> logger)
     {
         _service = service;
         _authService = authService;
         _responseService = responseService;
         _measurementResultService = measurementResultService;
         _scopeFactory = scopeFactory;
+        _logger = logger;
     }
 
     private static string ComputeRiskLevel(IReadOnlyDictionary<int, int> categoryScores, IEnumerable<(int CategoryId, string Name)> categories)
@@ -116,7 +119,7 @@ public class PatientsController : ControllerBase
         catch (Exception ex)
         {
             // Log exception server-side, return generic error to client
-            System.Diagnostics.Debug.WriteLine($"Error in GetAll: {ex}");
+            _logger.LogError(ex, "Error in GetAll");
             return StatusCode(500, new { error = "An error occurred while processing your request" });
         }
     }
@@ -152,7 +155,7 @@ public class PatientsController : ControllerBase
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error in GetById: {ex}");
+            _logger.LogError(ex, "Error in GetById for patient {PatientId}", id);
             return StatusCode(500, new { error = "An error occurred while processing your request" });
         }
     }
@@ -193,7 +196,7 @@ public class PatientsController : ControllerBase
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error in RecordVisit: {ex}");
+            _logger.LogError(ex, "Error in RecordVisit for patient {PatientId}", id);
             return StatusCode(500, new { error = "An error occurred while processing your request" });
         }
     }
@@ -238,7 +241,7 @@ public class PatientsController : ControllerBase
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error in GetLatestMeasurements: {ex}");
+            _logger.LogError(ex, "Error in GetLatestMeasurements for patient {PatientId}", id);
             return StatusCode(500, new { error = "An error occurred while processing your request" });
         }
     }
@@ -276,7 +279,7 @@ public class PatientsController : ControllerBase
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error in GetAllMeasurements: {ex}");
+            _logger.LogError(ex, "Error in GetAllMeasurements for patient {PatientId}", id);
             return StatusCode(500, new { error = "An error occurred while processing your request" });
         }
     }
@@ -330,7 +333,7 @@ public class PatientsController : ControllerBase
                     var query = await queryService.GetByNameAsync("Helseskjema");
                     if (query == null)
                     {
-                        Console.WriteLine("Error updating risk level: query 'Helseskjema' not found");
+                        _logger.LogWarning("Could not update risk level for patient {PatientId}: query 'Helseskjema' not found", id);
                         return;
                     }
 
@@ -345,11 +348,11 @@ public class PatientsController : ControllerBase
                     var categoryLookup = categories.Select(c => (c.CategoryId, c.Name));
                     var riskLevel = ComputeRiskLevel(evalResult.CategoryScores, categoryLookup);
                     await patientService.UpdateRiskLevelAsync(id, riskLevel);
-                    Console.WriteLine($"RiskLevel updated for patient {id}: {riskLevel}");
+                    _logger.LogInformation("Risk level updated for patient {PatientId}: {RiskLevel}", id, riskLevel);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error updating risk level: {ex}");
+                    _logger.LogError(ex, "Error updating risk level for patient {PatientId}", id);
                 }
             });
 
@@ -357,7 +360,11 @@ public class PatientsController : ControllerBase
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error in CreateResponses: {ex}");
+            _logger.LogError(
+                ex,
+                "Error in CreateResponses for patient {PatientId}. ResponseCount={ResponseCount}",
+                id,
+                dtos?.Count ?? 0);
             return StatusCode(500, new { error = "An error occurred while processing your request" });
         }
     }
@@ -404,7 +411,11 @@ public class PatientsController : ControllerBase
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error in CreateMeasurements: {ex}");
+            _logger.LogError(
+                ex,
+                "Error in CreateMeasurements for patient {PatientId}. MeasurementCount={MeasurementCount}",
+                id,
+                dtos?.Count ?? 0);
             return StatusCode(500, new { error = "An error occurred while processing your request" });
         }
     }
@@ -442,7 +453,7 @@ public class PatientsController : ControllerBase
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error in GetResponseHistory: {ex}");
+            _logger.LogError(ex, "Error in GetResponseHistory for patient {PatientId}", id);
             return StatusCode(500, new { error = "An error occurred while processing your request" });
         }
     }

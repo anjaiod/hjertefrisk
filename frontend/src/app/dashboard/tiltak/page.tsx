@@ -7,6 +7,11 @@ import { useUser } from "@/context/UserContext";
 import { Tag, type TagVariant } from "@/components/atoms/Tag";
 import type { CategoryDto, QueryDto } from "@/types";
 import BackButton from "@/components/atoms/BackButton";
+import {
+  tagVariantFromCategoryScore,
+  sleepTagVariant,
+  tagTextFromVariant,
+} from "@/lib/riskUtils";
 
 type PersonnelMeasureResult = {
   personnelMeasureId: number;
@@ -16,8 +21,6 @@ type PersonnelMeasureResult = {
   text: string;
   resourceUrl: string | null;
   priority: number;
-  basedOnDate: string | null;
-  basedOnPersonnelName: string | null;
 };
 
 type MeasureEvaluationResponse = {
@@ -31,66 +34,6 @@ type EvaluatePayload = {
   languageCode: string;
   personnelId?: number;
 };
-
-type RiskThreshold = {
-  high: number;
-  medium: number | null;
-};
-
-const CATEGORY_RISK_THRESHOLDS: Record<string, RiskThreshold> = {
-  "fysisk aktivitet": { high: 9, medium: 5 },
-  kosthold: { high: 9, medium: 5 },
-  rusmidler: { high: 3, medium: 1 },
-  alkohol: { high: 15, medium: 8 },
-  røyking: { high: 2, medium: 1 },
-  tannhelse: { high: 1, medium: null },
-  kroppsdata: { high: 2, medium: 1 },
-  blodtrykk: { high: 2, medium: 1 },
-  blodlipider: { high: 2, medium: 1 },
-  glukoseregulering: { high: 2, medium: 1 },
-};
-
-function tagVariantFromCategoryScore(
-  categoryName: string,
-  score: number,
-): TagVariant | null {
-  const key = categoryName.toLowerCase().trim();
-  const thresholds = CATEGORY_RISK_THRESHOLDS[key];
-  if (!thresholds) return null;
-  if (score >= thresholds.high) return "high";
-  if (thresholds.medium !== null && score >= thresholds.medium) return "medium";
-  return "low";
-}
-
-function sleepTagVariant(
-  measures: Pick<PersonnelMeasureResult, "title">[],
-): TagVariant | null {
-  if (measures.length === 0) return null;
-  const titles = measures.map((m) => m.title ?? "");
-  if (titles.some((t) => t === "Betydelige s\u00F8vnvansker")) return "high";
-  if (titles.some((t) => t === "Noen s\u00F8vnproblemer")) return "medium";
-  if (titles.some((t) => t === "God s\u00F8vn")) return "low";
-  return null;
-}
-
-function formatBasedOn(date: string | null, personnelName: string | null): string | null {
-  if (!date) return null;
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return null;
-  const formatted = d.toLocaleDateString("nb-NO", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-  const name = personnelName ?? "pasienten selv";
-  return `Basert på verdier fylt inn av ${name} den ${formatted}`;
-}
-
-function tagTextFromVariant(variant: TagVariant): string {
-  if (variant === "high") return "Høy";
-  if (variant === "medium") return "Middels";
-  return "Lav";
-}
 
 export default function TiltakPage() {
   const searchParams = useSearchParams();
@@ -220,7 +163,12 @@ export default function TiltakPage() {
     };
   }, [hasPatientId, patientId]);
 
-  const riskOrder: Record<TagVariant, number> = { high: 0, medium: 1, low: 2, none: 3 };
+  const riskOrder: Record<TagVariant, number> = {
+    high: 0,
+    medium: 1,
+    low: 2,
+    none: 3,
+  };
 
   const categoryVariant = useCallback(
     (cat: CategoryDto): TagVariant | null => {
@@ -395,11 +343,6 @@ export default function TiltakPage() {
                     >
                       Les mer her
                     </a>
-                  )}
-                  {formatBasedOn(measure.basedOnDate, measure.basedOnPersonnelName) && (
-                    <p className="text-xs text-slate-400 italic border-t border-slate-100 pt-2 mt-1">
-                      {formatBasedOn(measure.basedOnDate, measure.basedOnPersonnelName)}
-                    </p>
                   )}
                 </div>
               ))}

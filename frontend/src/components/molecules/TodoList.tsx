@@ -4,7 +4,15 @@ import { useEffect, useState } from "react";
 import { Checkbox } from "../atoms/Checkbox";
 import { apiClient } from "@/lib/apiClient";
 
-type Todo = { id: number; text: string; completed: boolean; public: boolean; createdAt?: string; personnelId?: number; toDoRuleId?: number };
+type Todo = {
+  id: number;
+  text: string;
+  completed: boolean;
+  public: boolean;
+  createdAt?: string;
+  personnelId?: number;
+  toDoRuleId?: number;
+};
 
 export function TodoList({
   title,
@@ -35,7 +43,10 @@ export function TodoList({
     let cancelled = false;
     const loadPersonnel = async () => {
       try {
-        const all = await apiClient.get<Array<{ id: number; name: string }>>("/api/personnel");
+        const all =
+          await apiClient.get<Array<{ id: number; name: string }>>(
+            "/api/personnel",
+          );
         if (cancelled) return;
         const map: Record<number, string> = {};
         all.forEach((p) => (map[p.id] = p.name));
@@ -56,9 +67,7 @@ export function TodoList({
 
     // Update local state immediately for responsiveness
     setTodos(
-      todos.map((t) =>
-        t.id === id ? { ...t, completed: !t.completed } : t,
-      ),
+      todos.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)),
     );
 
     // Update database
@@ -153,10 +162,10 @@ export function TodoList({
         <button
           onClick={() => setShowCreateForm(true)}
           disabled={!patientId}
-          className="px-3 py-1 text-sm font-medium text-white bg-brand-sage hover:bg-brand-sage/90 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+          className="px-3 py-1 text-sm font-medium text-white bg-brand-sage hover:bg-brand-sage/90 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap "
           title={!patientId ? "Velg pasient for å opprette oppgave" : ""}
         >
-          + Ny
+          Ny +
         </button>
       </div>
 
@@ -176,7 +185,7 @@ export function TodoList({
             autoFocus
             disabled={isCreating}
           />
-          
+
           <div className="mb-3 flex items-center gap-2">
             <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
               <input
@@ -192,7 +201,7 @@ export function TodoList({
               {newTodoPublic ? "(alle kan se)" : "(bare du)"}
             </span>
           </div>
-          
+
           <div className="flex gap-2">
             <button
               onClick={createTodo}
@@ -233,7 +242,9 @@ export function TodoList({
           <div
             key={todo.id}
             className={`flex items-center gap-3 rounded-lg p-2 hover:bg-brand-mist/20 group ${
-              updatingId === todo.id || deletingId === todo.id ? "opacity-60" : ""
+              updatingId === todo.id || deletingId === todo.id
+                ? "opacity-60"
+                : ""
             }`}
           >
             <Checkbox
@@ -259,7 +270,9 @@ export function TodoList({
                   if (todo.toDoRuleId) {
                     parts.push("Opprettet automatisk");
                   } else if (todo.personnelId) {
-                    const name = personnelMap[todo.personnelId] || `Personell #${todo.personnelId}`;
+                    const name =
+                      personnelMap[todo.personnelId] ||
+                      `Personell #${todo.personnelId}`;
                     parts.push(`Opprettet av ${name}`);
                   } else {
                     parts.push("Opprettet");

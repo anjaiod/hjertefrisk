@@ -33,20 +33,33 @@ using backend.src.Application.QuickMeasures.Interfaces;
 using backend.src.Application.QuickMeasures.Services;
 using backend.src.Application.Authorization.Interfaces;
 using backend.src.Application.Authorization.Services;
+using backend.src.Application.Journalnots.Interfaces;
+using backend.src.Application.Journalnots.Services;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 const string CorsPolicyName = "FrontendDev";
+var frontendOrigins = GetAllowedOrigins(builder.Configuration["FRONTEND_ORIGINS"]);
 
 // Add services to the container
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(CorsPolicyName, policy =>
     {
+        if (frontendOrigins.Length > 0)
+        {
+            policy
+                .WithOrigins(frontendOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+            return;
+        }
+
         policy
             .WithOrigins(
                 "http://localhost:3000",
@@ -124,6 +137,7 @@ builder.Services.AddScoped<IQuestionDependencyService, QuestionDependencyService
 builder.Services.AddScoped<IMeasurementResultService, MeasurementResultService>();
 builder.Services.AddScoped<IAccessAuthorizationService, AccessAuthorizationService>();
 builder.Services.AddScoped<IQuickMeasureService, QuickMeasureService>();
+builder.Services.AddScoped<IJournalnotatService, JournalnotatService>();
 builder.Services.AddScoped<backend.src.Application.Notifications.Interfaces.INotificationService, backend.src.Application.Notifications.Services.NotificationService>();
 
 // Optional but recommended for API documentation
@@ -132,9 +146,13 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Apply pending migrations automatically on startup
-using (var scope = app.Services.CreateScope())
+var shouldRunMigrations = ShouldRunMigrations(app.Configuration, app.Environment);
+
+// Avoid blocking production startup on database migrations. In Cloud Run the
+// service should start listening even if schema management is handled elsewhere.
+if (shouldRunMigrations)
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
@@ -181,6 +199,8 @@ static string NormalizePostgresConnectionString(string input)
     {
         throw new InvalidOperationException("Connection string cannot be empty.");
     }
+
+    input = UnwrapQuotedValue(input.Trim());
 
     NpgsqlConnectionStringBuilder builder;
 
@@ -233,7 +253,15 @@ static string NormalizePostgresConnectionString(string input)
     }
     else
     {
-        builder = new NpgsqlConnectionStringBuilder(input);
+        try
+        {
+            builder = new NpgsqlConnectionStringBuilder(input);
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"[Startup] Connection string diagnostics: {DescribeConnectionString(input)}");
+            throw new ArgumentException("Connection string format is invalid.", ex);
+        }
     }
 
     // Limit pool size to avoid exceeding Supabase's max client connections.
@@ -242,4 +270,75 @@ static string NormalizePostgresConnectionString(string input)
     builder.ConnectionIdleLifetime = 60;
 
     return builder.ConnectionString;
+}
+
+static string UnwrapQuotedValue(string input)
+{
+    if (input.Length >= 2)
+    {
+        var first = input[0];
+        var last = input[^1];
+        if ((first == '"' && last == '"') || (first == '\'' && last == '\''))
+        {
+            return input[1..^1].Trim();
+        }
+    }
+
+    return input;
+}
+
+static string DescribeConnectionString(string input)
+{
+    var sb = new StringBuilder();
+    sb.Append($"length={input.Length}; ");
+    sb.Append($"startsWithPostgres={input.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase)}; ");
+    sb.Append($"startsWithPostgresql={input.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase)}; ");
+    sb.Append($"startsWithQuote={(input.StartsWith('"') || input.StartsWith('\''))}; ");
+    sb.Append($"endsWithQuote={(input.EndsWith('"') || input.EndsWith('\''))}; ");
+    sb.Append($"containsNewline={input.Contains('\n') || input.Contains('\r')}; ");
+    sb.Append($"containsSemicolon={input.Contains(';')}; ");
+    sb.Append($"containsEquals={input.Contains('=')}; ");
+    sb.Append($"containsAt={input.Contains('@')}; ");
+    sb.Append($"containsQuestionMark={input.Contains('?')}; ");
+
+    if (input.Length > 0)
+    {
+        sb.Append($"firstCharCode={(int)input[0]}; ");
+        sb.Append($"lastCharCode={(int)input[^1]}; ");
+    }
+
+    var previewLength = Math.Min(24, input.Length);
+    var preview = input[..previewLength]
+        .Replace("\\", "\\\\", StringComparison.Ordinal)
+        .Replace("\n", "\\n", StringComparison.Ordinal)
+        .Replace("\r", "\\r", StringComparison.Ordinal);
+    sb.Append($"preview={preview}");
+
+    return sb.ToString();
+}
+
+static string[] GetAllowedOrigins(string? configuredOrigins)
+{
+    if (string.IsNullOrWhiteSpace(configuredOrigins))
+    {
+        return [];
+    }
+
+    return configuredOrigins
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Where(origin => !string.IsNullOrWhiteSpace(origin))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+}
+
+static bool ShouldRunMigrations(IConfiguration configuration, IWebHostEnvironment environment)
+{
+    var configured = configuration["RUN_DB_MIGRATIONS"];
+    if (!string.IsNullOrWhiteSpace(configured) &&
+        bool.TryParse(configured, out var parsed))
+    {
+        return parsed;
+    }
+
+    return environment.IsDevelopment();
 }

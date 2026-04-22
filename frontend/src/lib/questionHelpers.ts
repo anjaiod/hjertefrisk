@@ -42,7 +42,6 @@ export function getQuestionValidationRange(
   // Glukoseregulering
   if (text.includes("hba1c")) return { min: 20, max: 150 };
 
-
   // Blodlipider — sjekk LDL/HDL før generell "kolesterol"
   if (text.includes("ldl")) return { min: 0.5, max: 15 };
   if (text.includes("hdl")) return { min: 0.1, max: 10 };
