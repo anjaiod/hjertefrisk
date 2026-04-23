@@ -29,7 +29,7 @@ export default function Page() {
         <div className="flex gap-4 px-8 pt-6">
           <button
             onClick={() => setTab("ny")}
-            className={`pb-4 px-2 text-sm font-medium transition border-b-2 ${
+            className={`pb-4 px-2 text-sm font-medium transition border-b-2 cursor-pointer ${
               tab === "ny"
                 ? "border-brand-navy text-brand-navy"
                 : "border-transparent text-slate-600 hover:text-slate-900"
@@ -40,7 +40,7 @@ export default function Page() {
 
           <button
             onClick={() => setTab("historikk")}
-            className={`pb-4 px-2 text-sm font-medium transition border-b-2 ${
+            className={`pb-4 px-2 text-sm font-medium transition border-b-2 cursor-pointer ${
               tab === "historikk"
                 ? "border-brand-navy text-brand-navy"
                 : "border-transparent text-slate-600 hover:text-slate-900"

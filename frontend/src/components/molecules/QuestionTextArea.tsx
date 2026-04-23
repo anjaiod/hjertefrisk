@@ -40,7 +40,7 @@ export default function QuestionTextArea({
         <button
           type="button"
           onClick={onAnswer}
-          className="mt-3 px-5 py-3 md:px-6 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl hover:opacity-90 touch-manipulation"
+          className="mt-3 px-5 py-3 md:px-6 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl hover:opacity-90 touch-manipulation cursor-pointer"
         >
           Lagre svar
         </button>

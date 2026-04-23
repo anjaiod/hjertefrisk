@@ -27,7 +27,6 @@ export default function PatientHealthQuestionnaire() {
   const router = useRouter();
   const { user: localUser, isAuthReady } = useUser();
 
-  const [showIntro, setShowIntro] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
   const [questions, setQuestions] = useState<QueryQuestionWithDetailsDto[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -338,7 +337,10 @@ export default function PatientHealthQuestionnaire() {
   const categoryMap = new Map<number, string>();
   wizardSteps.forEach((q) => {
     if (q.categoryId != null && q.categoryName) {
-      categoryMap.set(q.categoryId, q.categoryName);
+      const displayName = q.categoryName.toLowerCase().trim() === "blodlipider"
+        ? "Sykdomshistorikk"
+        : q.categoryName;
+      categoryMap.set(q.categoryId, displayName);
     }
   });
 
@@ -370,22 +372,6 @@ export default function PatientHealthQuestionnaire() {
   ): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
-
-    const getPlaceholder = (): string | undefined => {
-      const text = question.fallbackText.toLowerCase();
-      if (text.includes("hvor høy")) return "170";
-      if (text.includes("hvor mye veier")) return "70";
-      if (text.includes("livvidde")) return "80";
-      if (text.includes("hvor mye røyker"))
-        return "F.eks. 10 sigaretter per dag";
-      if (text.includes("vekten din endret"))
-        return "F.eks. økt 5 kg siste 6 måneder";
-      if (text.includes("begrensninger") && text.includes("skriv"))
-        return "Beskriv dine fysiske begrensninger...";
-      if (text.includes("barrierer") && text.includes("skriv"))
-        return "Beskriv barrierer...";
-      return undefined;
-    };
 
     if (question.questionType === "boolean") {
       return (
@@ -429,7 +415,6 @@ export default function PatientHealthQuestionnaire() {
           value={value}
           onChange={(val) => updateAnswer(question.questionId, val)}
           onAnswer={handleNext}
-          placeholder={getPlaceholder()}
           unit={getQuestionUnit(question)}
           required={question.isRequired}
           min={min}
@@ -446,7 +431,6 @@ export default function PatientHealthQuestionnaire() {
         value={value}
         onChange={(val) => updateAnswer(question.questionId, val)}
         onAnswer={handleNext}
-        placeholder={getPlaceholder()}
         rows={getQuestionRows(question)}
         required={question.isRequired}
       />
@@ -471,7 +455,6 @@ export default function PatientHealthQuestionnaire() {
                 name={`question-${bpQ.questionId}`}
                 value={answers[bpQ.questionId] ?? ""}
                 onChange={(val) => updateAnswer(bpQ.questionId, val)}
-                placeholder={isSystolic ? "120" : "80"}
                 unit="mmHg"
                 required={false}
               />
@@ -518,64 +501,6 @@ export default function PatientHealthQuestionnaire() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-gray-500">Fant ingen spørsmål i skjemaet.</p>
-      </div>
-    );
-  }
-
-  if (showIntro) {
-    return (
-      <div className="flex min-h-screen">
-        <main className="flex-1 bg-slate-50 p-[clamp(1rem,3vw,2rem)]">
-          <div className="w-full max-w-4xl mx-auto">
-            <h1 className="font-bold text-gray-900 mb-6 text-center text-[clamp(1.75rem,4vw,3rem)]">
-              Hjertefrisk helseskjema
-            </h1>
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                Om skjemaet
-              </h2>
-              <p className="text-gray-600 mb-4">
-                Dette skjemaet brukes til å kartlegge din helse og livsstil som
-                en del av Hjertefrisk-programmet. Svarene dine hjelper
-                helsepersonellet å følge opp din helseutvikling.
-              </p>
-              <ul className="space-y-2 text-gray-600 mb-4">
-                <li className="flex items-start gap-2">
-                  <span className="text-brand-navy font-bold mt-0.5">•</span>
-                  Skjemaet tar ca. 5–10 minutter å fylle ut
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-brand-navy font-bold mt-0.5">•</span>
-                  Svarene lagres og er synlige for ditt behandlingsteam
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-brand-navy font-bold mt-0.5">•</span>
-                  Du kan navigere frem og tilbake mellom spørsmålene, og du kan
-                  trykke &quot;Neste&quot; på spørsmål du er usikker på, eller
-                  ikke ønsker å svare på.
-                </li>
-              </ul>
-              <p className="text-sm text-gray-500">
-                Svarene dine behandles konfidensielt i henhold til gjeldende
-                personvernregler.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowIntro(false)}
-                className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl font-medium hover:bg-brand-navy/90 transition touch-manipulation"
-              >
-                Start skjema
-              </button>
-              <button
-                onClick={() => router.back()}
-                className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition touch-manipulation"
-              >
-                Avbryt
-              </button>
-            </div>
-          </div>
-        </main>
       </div>
     );
   }
