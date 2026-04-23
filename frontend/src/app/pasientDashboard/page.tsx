@@ -94,12 +94,7 @@ export default function PatientDashboardPage() {
               weight={weight}
             />
 
-            <div className="grid grid-cols-[320px_1fr] gap-6">
-              <CalendarCard activityDate={activityDate} />
-              <ActivityList activities={activities} />
-            </div>
-
-            <div className="grid grid-cols-3 gap-6 items-stretch">
+            <div className="grid grid-cols-[1fr_1fr_220px] gap-6 items-center">
               {patientId ? (
                 <QuestionnaireList patientId={patientId} />
               ) : (
@@ -108,23 +103,26 @@ export default function PatientDashboardPage() {
                 </div>
               )}
 
-              <div className="flex flex-col gap-6 h-full">
+              <div className="flex flex-col gap-6">
                 <DashboardCard
-                  className="flex-1"
-                  text="Trykk her for å gå til din risikoside"
+                  text="Gå til din risikoside"
                   onClick={() =>
                     router.push("/pasientDashboard/pasientRisikoside")
                   }
                 />
 
                 <DashboardCard
-                  className="flex-1"
-                  text="Trykk her for å gå til tiltak"
+                  text="Gå til tiltak"
                   onClick={() =>
                     router.push("/pasientDashboard/pasientTiltakside")
                   }
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-[320px_1fr] gap-6">
+              <CalendarCard activityDate={activityDate} />
+              <ActivityList activities={activities} />
             </div>
           </div>
         </main>
