@@ -85,6 +85,25 @@ public class ToDoService : IToDoService
         };
     }
 
+    public async Task<ToDoDto?> GetByIdAsync(int id)
+    {
+        var t = await _db.ToDos.AsNoTracking().FirstOrDefaultAsync(x => x.ToDoId == id);
+        if (t == null) return null;
+        return new ToDoDto
+        {
+            ToDoId = t.ToDoId,
+            CreatedAt = t.CreatedAt,
+            Finished = t.Finished,
+            FinishedAt = t.FinishedAt,
+            FinishedBy = t.FinishedBy,
+            ToDoText = t.ToDoText,
+            PatientId = t.PatientId,
+            PersonnelId = t.PersonnelId,
+            ToDoRuleId = t.ToDoRuleId,
+            Public = t.Public
+        };
+    }
+
     public async Task<ToDoDto?> UpdateAsync(int id, CreateToDoDto dto, int? personnelId = null)
     {
         var entity = await _db.ToDos.FirstOrDefaultAsync(t => t.ToDoId == id);
@@ -139,10 +158,19 @@ public class ToDoService : IToDoService
         if (entity == null)
             return false;
 
-        // Authorization: Only the creator (PersonnelId) can delete the todo
-        // This prevents unauthorized deletion of shared/public todos
-        if (personnelId.HasValue && entity.PersonnelId != personnelId.Value)
+        // Require an identified personnel for deletions coming from personnel
+        if (!personnelId.HasValue)
             return false;
+
+        // Allow deletion when:
+        // - The todo was created by the requesting personnel
+        // - OR the todo was created automatically (PersonnelId == null)
+        // - OR the todo is public
+        if (entity.PersonnelId.HasValue)
+        {
+            if (entity.PersonnelId != personnelId.Value && !entity.Public)
+                return false;
+        }
 
         _db.ToDos.Remove(entity);
         await _db.SaveChangesAsync();
