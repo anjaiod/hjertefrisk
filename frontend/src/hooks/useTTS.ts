@@ -1,35 +1,76 @@
-"use client";
+import { QueryQuestionWithDetailsDto } from "@/types";
+import { useState, useRef } from "react";
 
-import { useState } from "react";
+export const useTTS = () => {
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
 
-export const useTTS = (onEnd?: () => void) => {
-  const [isSpeaking, setIsSpeaking] = useState(false);
-
-  const speak = (text: string) => {
-    if (!("speechSynthesis" in window)) return;
-
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "no-NO";
-    utterance.rate = 1;
-
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      onEnd?.();
-    };
-
-    setIsSpeaking(true);
-    window.speechSynthesis.speak(utterance);
-  };
+  const runId = useRef(0);
 
   const stop = () => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-    setIsSpeaking(false);
-    onEnd?.();
+    window.speechSynthesis.cancel();
+    runId.current++;
+    setActiveId(null);
+    setHighlightedIndex(null);
   };
 
-  return { speak, stop, isSpeaking };
+  const speakPart = (text: string) =>
+    new Promise<void>((resolve) => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "no-NO";
+      u.rate = 0.95;
+
+      u.onend = () => setTimeout(resolve, 400);
+
+      window.speechSynthesis.speak(u);
+    });
+
+  const speakQuestion = async (question: QueryQuestionWithDetailsDto) => {
+    if (activeId === question.questionId) {
+      stop();
+      return;
+    }
+
+    const id = ++runId.current;
+    setActiveId(question.questionId);
+
+    let text = question.fallbackText;
+
+    if (question.questionType === "number") {
+      text += ". Skriv inn et tall.";
+    }
+
+    await speakPart(text);
+    if (id !== runId.current) return;
+
+    if (question.questionType === "boolean") {
+      const opts = ["Ja", "Nei"];
+
+      for (let i = 0; i < opts.length; i++) {
+        if (id !== runId.current) return;
+        setHighlightedIndex(i);
+        await speakPart(opts[i]);
+      }
+    }
+
+    if (question.options?.length) {
+      for (let i = 0; i < question.options.length; i++) {
+        if (id !== runId.current) return;
+        setHighlightedIndex(i);
+        await speakPart(question.options[i].fallbackText);
+      }
+    }
+
+    if (id !== runId.current) return;
+
+    setActiveId(null);
+    setHighlightedIndex(null);
+  };
+
+  return {
+    speakQuestion,
+    stop,
+    activeId,
+    highlightedIndex,
+  };
 };

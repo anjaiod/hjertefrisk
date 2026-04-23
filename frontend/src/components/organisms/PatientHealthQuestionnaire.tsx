@@ -45,29 +45,7 @@ export default function PatientHealthQuestionnaire() {
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
 
-  const { speak, stop } = useTTS();
-  const [activeQuestionId, setActiveQuestionId] = useState<number | null>(null);
-  const buildSpeechText = (question: QueryQuestionWithDetailsDto) => {
-    let text = question.fallbackText;
-
-    if (question.options?.length) {
-      const optionsText = question.options
-        .map((o, i) => `${i + 1}. ${o.fallbackText}`)
-        .join(". ");
-
-      text += `. Alternativer: ${optionsText}`;
-    }
-
-    return text;
-  };
-  const handleSpeak = (questionId: number, text: string) => {
-    if (activeQuestionId === questionId) {
-      stop();
-    } else {
-      setActiveQuestionId(questionId);
-      speak(text);
-    }
-  };
+  const { speakQuestion, stop, activeId, highlightedIndex } = useTTS();
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -174,17 +152,14 @@ export default function PatientHealthQuestionnaire() {
 
   const handleNext = () => {
     stop();
-    setActiveQuestionId(null);
     setCurrentStep((prev) => prev + 1);
   };
   const handleSkip = () => {
     stop();
-    setActiveQuestionId(null);
     setCurrentStep((prev) => prev + 1);
   };
   const handlePrevious = () => {
     stop();
-    setActiveQuestionId(null);
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
   const handleSubmit = async () => {
@@ -406,7 +381,6 @@ export default function PatientHealthQuestionnaire() {
   ): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
-    const speechText = buildSpeechText(question);
 
     const getPlaceholder = (): string | undefined => {
       const text = question.fallbackText.toLowerCase();
@@ -428,8 +402,8 @@ export default function PatientHealthQuestionnaire() {
       return (
         <QuestionWithTTS
           key={question.questionId}
-          isActive={activeQuestionId === question.questionId}
-          onToggle={() => handleSpeak(question.questionId, speechText)}
+          isActive={activeId === question.questionId}
+          onToggle={() => speakQuestion(question)}
         >
           <ConditionalQuestion
             question={question.fallbackText}
@@ -438,6 +412,9 @@ export default function PatientHealthQuestionnaire() {
             onChange={(val) => updateAnswer(question.questionId, val)}
             onAnswer={handleNext}
             required={question.isRequired}
+            highlightedIndex={
+              activeId === question.questionId ? highlightedIndex : null
+            }
           />
         </QuestionWithTTS>
       );
@@ -447,8 +424,8 @@ export default function PatientHealthQuestionnaire() {
       return (
         <QuestionWithTTS
           key={question.questionId}
-          isActive={activeQuestionId === question.questionId}
-          onToggle={() => handleSpeak(question.questionId, speechText)}
+          isActive={activeId === question.questionId}
+          onToggle={() => speakQuestion(question)}
         >
           <QuestionRadio
             question={question.fallbackText}
@@ -461,6 +438,9 @@ export default function PatientHealthQuestionnaire() {
             onChange={(val) => updateAnswer(question.questionId, val)}
             onAnswer={handleNext}
             required={question.isRequired}
+            highlightedIndex={
+              activeId === question.questionId ? highlightedIndex : null
+            }
           />
         </QuestionWithTTS>
       );
@@ -471,8 +451,8 @@ export default function PatientHealthQuestionnaire() {
       return (
         <QuestionWithTTS
           key={question.questionId}
-          isActive={activeQuestionId === question.questionId}
-          onToggle={() => handleSpeak(question.questionId, speechText)}
+          isActive={activeId === question.questionId}
+          onToggle={() => speakQuestion(question)}
         >
           <QuestionNumber
             question={question.fallbackText}
@@ -493,8 +473,8 @@ export default function PatientHealthQuestionnaire() {
     return (
       <QuestionWithTTS
         key={question.questionId}
-        isActive={activeQuestionId === question.questionId}
-        onToggle={() => handleSpeak(question.questionId, speechText)}
+        isActive={activeId === question.questionId}
+        onToggle={() => speakQuestion(question)}
       >
         <QuestionTextArea
           key={question.questionId}
