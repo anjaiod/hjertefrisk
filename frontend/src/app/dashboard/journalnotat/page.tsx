@@ -392,6 +392,10 @@ export default function JournalnotatPage() {
                 }}
                 onDelete={() => setNoteToDelete(selectedNote)}
                 onClose={() => setSelectedNote(null)}
+                onSign={(approved) => {
+                  handleSaved(approved);
+                  setSelectedNote(approved);
+                }}
               />
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3">

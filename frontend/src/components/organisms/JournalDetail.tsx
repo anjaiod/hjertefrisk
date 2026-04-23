@@ -1,5 +1,8 @@
 import type { JournalNoteDto } from "@/types";
 import { useUser } from "@/context/UserContext";
+import { useState } from "react";
+import { apiClient } from "@/lib/apiClient";
+import { Signature } from "lucide-react";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("nb-NO", {
@@ -24,6 +27,7 @@ type JournalDetailProps = {
   onEdit: () => void;
   onDelete: () => void;
   onClose: () => void;
+  onSign?: (note: JournalNoteDto) => void;
 };
 
 export function JournalDetail({
@@ -31,10 +35,12 @@ export function JournalDetail({
   onEdit,
   onDelete,
   onClose,
+  onSign,
 }: JournalDetailProps) {
   const { user } = useUser();
   const isSigned = !!note.signedAt;
   const isOwner = user?.id === String(note.personnelId);
+  const [signing, setSigning] = useState(false);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -101,6 +107,29 @@ export function JournalDetail({
                       d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
                     />
                   </svg>
+                </button>
+              )}
+              {!isSigned && (
+                <button
+                  type="button"
+                  title="Signer"
+                  onClick={async () => {
+                    if (signing) return;
+                    setSigning(true);
+                    try {
+                      const approved = await apiClient.post<JournalNoteDto>(
+                        `/api/Journalnsoats/${note.journalnotatId}/sign`,
+                      );
+                      onSign?.(approved);
+                    } catch {
+                      alert("Kunne ikke signere notatet.");
+                    } finally {
+                      setSigning(false);
+                    }
+                  }}
+                  className="p-1.5 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  <Signature className="w-5 h-5" />
                 </button>
               )}
               {!isSigned && (
