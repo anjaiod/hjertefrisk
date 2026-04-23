@@ -170,7 +170,7 @@ export function TodoList({
             <button
               onClick={() => setShowCreateForm(true)}
               disabled={!patientId}
-              className="px-3 py-1 text-sm font-medium text-white bg-brand-sage hover:bg-brand-sage/90 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap "
+              className="px-3 py-1 text-sm font-medium text-white bg-brand-sage hover:bg-brand-sage/90 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap cursor-pointer"
               title={!patientId ? "Velg pasient for å opprette oppgave" : ""}
             >
               Ny +
@@ -178,7 +178,7 @@ export function TodoList({
             <button
               onClick={() => setOpenModal(true)}
               disabled={!patientId}
-              className="px-3 py-1 text-sm font-medium text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+              className="px-3 py-1 text-sm font-medium text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
               title={!patientId ? "Velg pasient for å åpne oppgaver" : "Åpne todo-modal"}
             >
               Åpne
@@ -317,7 +317,7 @@ export function TodoList({
             <button
               onClick={() => deleteTodo(todo.id)}
               disabled={updatingId === todo.id || deletingId === todo.id}
-              className="opacity-0 group-hover:opacity-100 px-2 py-1 text-red-500 hover:text-red-700 transition-all disabled:opacity-50"
+              className="opacity-0 group-hover:opacity-100 px-2 py-1 text-red-500 hover:text-red-700 transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
               title="Slett oppgave"
             >
               ✕
