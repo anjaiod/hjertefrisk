@@ -363,6 +363,7 @@ export default function HealthQuestionnaire({
       <main className="flex-1 bg-slate-50">
         <form
           onSubmit={handleSubmit}
+          noValidate
           className="max-w-4xl mx-auto p-6 space-y-8"
         >
           <div className="flex items-center justify-between mb-8">

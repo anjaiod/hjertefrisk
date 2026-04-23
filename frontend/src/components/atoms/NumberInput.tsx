@@ -34,6 +34,7 @@ export default function NumberInput({
           placeholder={placeholder}
           min={min}
           max={max}
+          step="any"
           onChange={(e) => onChange(e.target.value)}
           className={
             compact
