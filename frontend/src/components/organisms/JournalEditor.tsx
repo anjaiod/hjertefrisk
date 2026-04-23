@@ -22,7 +22,7 @@ import {
 
 const NOTE_TYPES: { value: JournalNoteType; label: string }[] = [
   { value: "Konsultasjon", label: "Konsultasjon" },
-  { value: "JournalNotat", label: "Journal notat" },
+  { value: "JournalNotat", label: "Journalnotat" },
   { value: "Henvisning", label: "Henvisning" },
   { value: "Epikrise", label: "Epikrise" },
 ];

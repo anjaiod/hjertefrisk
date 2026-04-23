@@ -251,7 +251,7 @@ export default function JournalnotatPage() {
                   {[
                     {
                       type: "JournalNotat" as JournalNoteType,
-                      label: "Journal notat",
+                      label: "Journalnotat",
                       desc: "Generell journalføring",
                       dot: "bg-brand-navy-light",
                     },
