@@ -147,6 +147,12 @@ export function useAuthPage() {
     setRegisterErrorMessage(null);
     setRegisterSuccessMessage(null);
     setIsRegisterLoading(true);
+    // Frontend validation: disallow digits in name
+    if (/\d/.test(registerName)) {
+      setRegisterErrorMessage("Navn kan ikke inneholde tall.");
+      setIsRegisterLoading(false);
+      return;
+    }
 
     try {
       await registerUser({
