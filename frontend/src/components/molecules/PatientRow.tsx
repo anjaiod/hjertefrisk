@@ -89,7 +89,7 @@ export default function PatientRow({
               className={btnClass}
               onClick={() => setOpenModal("todo")}
             >
-              Todo
+              Gjøremål
             </Button>
             <Button
               variant="primary"
