@@ -221,7 +221,8 @@ export default function TeamvisningPage() {
                     <PolarGrid stroke="rgba(255,255,255,0.2)" />
                     <PolarAngleAxis
                       dataKey="category"
-                      tick={({ payload, x, y, textAnchor }) => {
+                      tick={(props) => {
+                        const { payload, x, y, textAnchor } = props as unknown as { payload: { value: string }; x: number; y: number; textAnchor: "start" | "middle" | "end" | "inherit" };
                         const words = payload.value.split(" ");
                         const lineHeight = 13;
                         const offset = ((words.length - 1) * lineHeight) / 2;
