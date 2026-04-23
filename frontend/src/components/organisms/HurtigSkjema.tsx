@@ -85,6 +85,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [formKey, setFormKey] = useState(0);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -452,9 +453,44 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
           noValidate
           className="max-w-4xl mx-auto p-6 space-y-8"
         >
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Hurtigskjema - Hjertefrisk
-          </h1>
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">
+              Hurtigskjema - Hjertefrisk
+            </h1>
+            <button
+              type="button"
+              onClick={() => setShowAll((prev) => !prev)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-colors ${
+                showAll
+                  ? "bg-brand-navy text-white border-brand-navy hover:opacity-90"
+                  : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+              }`}
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                {showAll ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 15l7-7 7 7"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                )}
+              </svg>
+              {showAll ? "Skjul alle seksjoner" : "Vis alle seksjoner"}
+            </button>
+          </div>
 
           {patientId == null && (
             <p className="text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-4 py-3">
@@ -478,6 +514,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
                 key={`${formKey}-${group.categoryKey}`}
                 title={group.categoryName}
                 defaultOpen={index === 0}
+                forceOpen={showAll ? true : undefined}
               >
                 <div className="px-6 py-4">
                   {groupIntoRows(group.questions).map((row, rowIndex) =>
