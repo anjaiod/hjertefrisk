@@ -1,0 +1,39 @@
+# Node
+node_modules/
+.next/
+out/
+dist/
+
+# .NET
+bin/
+obj/
+
+# VS / Rider
+.vs/
+.idea/
+*.user
+*.suo
+
+# Logs
+*.log
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+postgres_data/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+# GitHub bootstrap inputs
+ops/github/environments/*.secrets

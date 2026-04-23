@@ -74,6 +74,18 @@ public class ToDosController : ControllerBase
             return Unauthorized(new { error = "Missing Authorization header" });
 
         var personnelId = await _authService.GetPersonnelIdBySupabaseIdAsync(supabaseUserId);
+        if (!personnelId.HasValue)
+            return BadRequest(new { error = "Could not identify personnel" });
+
+        var todo = await _service.GetByIdAsync(id);
+        if (todo == null)
+            return NotFound();
+
+        // Ensure personnel has access to the patient before allowing deletion
+        var canAccess = await _authService.CanAccessPatientAsync(personnelId.Value, todo.PatientId);
+        if (!canAccess)
+            return NotFound();
+
         var deleted = await _service.DeleteAsync(id, personnelId);
         if (!deleted)
             return NotFound();

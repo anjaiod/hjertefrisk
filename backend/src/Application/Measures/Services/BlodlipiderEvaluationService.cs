@@ -23,7 +23,7 @@ public class BlodlipiderEvaluationService
         public const string CategoryLow = "Blodlipider score 0";
         public const string LdlOptimal = "LDL < 1,8";
         public const string LdlModerate = "LDL 1,8-2,9";
-        public const string LdlElevated = "LDL 3,0-3,9";
+        public const string LdlElevated = "LDL 3,0-4,9";
         public const string LdlVeryHigh = "LDL > 4,9";
         public const string HdlLow = "HDL lav";
         public const string FastendeProve = "Fastende prøve";

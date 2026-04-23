@@ -1,0 +1,176 @@
+name: Simple CI/CD
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  DOTNET_CONFIGURATION: Release
+  BACKEND_DIR: backend
+  FRONTEND_DIR: frontend
+  COMPOSE_FILES: docker-compose.yml:docker-compose.dev.yml
+  RUN_DB_MIGRATIONS: "false"
+
+jobs:
+  verify-stack:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Provision runtime env files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${{ secrets.SUPABASE_DB_URL }}" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not configured." >&2
+            exit 1
+          fi
+
+          if [ -z "${{ vars.NEXT_PUBLIC_SUPABASE_URL }}" ] || \
+             [ -z "${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" ] || \
+             [ -z "${{ secrets.Supabase__AnonKey }}" ]; then
+            echo "::error::Frontend Supabase vars/secrets are not fully configured." >&2
+            exit 1
+          fi
+
+          cat <<EOF > .env
+          SUPABASE_DB_URL=${{ secrets.SUPABASE_DB_URL }}
+          EOF
+
+          cat <<EOF > ${{ env.FRONTEND_DIR }}/.env
+          NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.Supabase__AnonKey }}
+          EOF
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Backend | restore
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: dotnet restore --nologo
+
+      - name: Backend | build
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: dotnet build --configuration ${{ env.DOTNET_CONFIGURATION }} --no-restore --nologo
+
+      - name: Backend | run smoke test
+        shell: bash
+        working-directory: ${{ env.BACKEND_DIR }}
+        env:
+          ASPNETCORE_URLS: http://0.0.0.0:8080
+          ASPNETCORE_ENVIRONMENT: Production
+          RUN_DB_MIGRATIONS: "false"
+          ConnectionStrings__Default: ${{ secrets.ConnectionStrings__Default || secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          dotnet run --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build --no-launch-profile -- --urls http://0.0.0.0:8080 &
+          APP_PID=$!
+          ready=0
+          for i in $(seq 1 30); do
+            if curl -sS http://localhost:8080/health/db >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$APP_PID" >/dev/null 2>&1; then
+              echo "Backend exited early" >&2
+              kill "$APP_PID" || true
+              exit 1
+            fi
+            sleep 2
+          done
+          kill "$APP_PID"
+          wait "$APP_PID" || true
+          if [ $ready -ne 1 ]; then
+            echo "Backend never became ready" >&2
+            exit 1
+          fi
+
+      - name: Frontend | install deps
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm ci
+
+      - name: Frontend | build
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm run build
+
+      - name: Frontend | run smoke test
+        shell: bash
+        working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+        run: |
+          set -euo pipefail
+          npm run start -- --hostname 0.0.0.0 --port 3100 &
+          APP_PID=$!
+          ready=0
+          for i in $(seq 1 30); do
+            if curl -sS http://localhost:3100/ >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$APP_PID" >/dev/null 2>&1; then
+              echo "Frontend exited early" >&2
+              kill "$APP_PID" || true
+              exit 1
+            fi
+            sleep 2
+          done
+          kill "$APP_PID"
+          wait "$APP_PID" || true
+          if [ $ready -ne 1 ]; then
+            echo "Frontend never became ready" >&2
+            exit 1
+          fi
+
+      - name: Configure Compose files
+        run: echo "COMPOSE_FILE=${COMPOSE_FILES}" >> $GITHUB_ENV
+
+      - name: Docker Compose | up
+        run: docker compose up --build -d
+
+      - name: Docker Compose | check services
+        run: |
+          backend_ready=0
+          for i in $(seq 1 40); do
+            if curl -sS http://localhost:5000/swagger/index.html >/dev/null 2>&1; then
+              backend_ready=1
+              break
+            fi
+            sleep 3
+          done
+          if [ $backend_ready -ne 1 ]; then
+            echo "Backend (Compose) never became ready" >&2
+            docker compose logs backend || true
+            exit 1
+          fi
+          frontend_ready=0
+          for i in $(seq 1 40); do
+            if curl -sS http://localhost:3000/ >/dev/null 2>&1; then
+              frontend_ready=1
+              break
+            fi
+            sleep 3
+          done
+          if [ $frontend_ready -ne 1 ]; then
+            echo "Frontend (Compose) never became ready" >&2
+            docker compose logs frontend || true
+            exit 1
+          fi
+
+      - name: Docker Compose | down
+        if: always()
+        run: docker compose down -v

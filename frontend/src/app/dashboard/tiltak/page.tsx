@@ -6,6 +6,7 @@ import { apiClient } from "@/lib/apiClient";
 import { useUser } from "@/context/UserContext";
 import { Tag, type TagVariant } from "@/components/atoms/Tag";
 import type { CategoryDto, QueryDto } from "@/types";
+import BackButton from "@/components/atoms/BackButton";
 import {
   tagVariantFromCategoryScore,
   sleepTagVariant,
@@ -226,6 +227,7 @@ export default function TiltakPage() {
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-6">
       <header>
+        <BackButton className="mb-2" />
         <h1 className="text-3xl font-bold text-brand-navy mb-1">
           Tiltak for valgt pasient
         </h1>
@@ -255,7 +257,7 @@ export default function TiltakPage() {
                     key={cat.categoryId}
                     onClick={() => setSelectedCategoryId(cat.categoryId)}
                     className={[
-                      "flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all",
+                      "flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all cursor-pointer",
                       isSelected
                         ? "bg-brand-sky/10 border border-brand-sky/40"
                         : "border border-transparent hover:bg-slate-50",

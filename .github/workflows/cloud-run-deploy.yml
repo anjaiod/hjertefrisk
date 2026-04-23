@@ -1,0 +1,331 @@
+name: Cloud Run Deploy
+
+on:
+  push:
+    tags:
+      - 'stage-*'
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: "Deployment environment"
+        required: true
+        type: choice
+        default: dev
+        options:
+          - dev
+          - staging
+          - prod
+      git_ref:
+        description: "Git ref to deploy"
+        required: true
+        type: string
+        default: main
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: cloud-run-${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
+  cancel-in-progress: false
+
+env:
+  FRONTEND_DIR: frontend
+  BACKEND_DIR: backend
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Cloud Run Services
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
+    env:
+      TARGET_ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
+      DEPLOY_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.git_ref || github.ref_name }}
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      GCP_ARTIFACT_REGION: ${{ vars.GCP_ARTIFACT_REGION }}
+      GCP_ARTIFACT_REPOSITORY: ${{ vars.GCP_ARTIFACT_REPOSITORY }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT_EMAIL: ${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}
+      GCP_BACKEND_SERVICE: ${{ vars.GCP_BACKEND_SERVICE }}
+      GCP_FRONTEND_SERVICE: ${{ vars.GCP_FRONTEND_SERVICE }}
+      GCP_BACKEND_IMAGE: ${{ vars.GCP_BACKEND_IMAGE }}
+      GCP_FRONTEND_IMAGE: ${{ vars.GCP_FRONTEND_IMAGE }}
+      FRONTEND_ORIGINS: ${{ vars.FRONTEND_ORIGINS }}
+      NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+      API_URL_INTERNAL: ${{ vars.API_URL_INTERNAL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      BACKEND_MEMORY: ${{ vars.GCP_BACKEND_MEMORY != '' && vars.GCP_BACKEND_MEMORY || '1Gi' }}
+      FRONTEND_MEMORY: ${{ vars.GCP_FRONTEND_MEMORY != '' && vars.GCP_FRONTEND_MEMORY || '512Mi' }}
+      BACKEND_CPU: ${{ vars.GCP_BACKEND_CPU != '' && vars.GCP_BACKEND_CPU || '1' }}
+      FRONTEND_CPU: ${{ vars.GCP_FRONTEND_CPU != '' && vars.GCP_FRONTEND_CPU || '1' }}
+      RUN_DB_MIGRATIONS: ${{ vars.RUN_DB_MIGRATIONS != '' && vars.RUN_DB_MIGRATIONS || 'false' }}
+    steps:
+      - name: Checkout selected ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_REF }}
+
+      - name: Validate required settings
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          required=(
+            GCP_PROJECT_ID
+            GCP_REGION
+            GCP_ARTIFACT_REGION
+            GCP_ARTIFACT_REPOSITORY
+            GCP_WORKLOAD_IDENTITY_PROVIDER
+            GCP_SERVICE_ACCOUNT_EMAIL
+            GCP_BACKEND_SERVICE
+            GCP_FRONTEND_SERVICE
+            GCP_BACKEND_IMAGE
+            GCP_FRONTEND_IMAGE
+            FRONTEND_ORIGINS
+            NEXT_PUBLIC_API_URL
+            API_URL_INTERNAL
+            NEXT_PUBLIC_SUPABASE_URL
+            NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+          )
+
+          missing=0
+          for var_name in "${required[@]}"; do
+            if [[ -z "${!var_name:-}" ]]; then
+              echo "Missing required value: ${var_name}" >&2
+              missing=1
+            fi
+          done
+
+          if [[ -z "${{ secrets.ConnectionStrings__Default }}" && -z "${{ secrets.SUPABASE_DB_URL }}" ]]; then
+            echo "Missing required secret: ConnectionStrings__Default or SUPABASE_DB_URL" >&2
+            missing=1
+          fi
+
+          if [[ -z "${{ secrets.Supabase__AnonKey }}" ]]; then
+            echo "Missing required secret: Supabase__AnonKey" >&2
+            missing=1
+          fi
+
+          if [[ "$missing" -ne 0 ]]; then
+            exit 1
+          fi
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure Docker for Artifact Registry
+        shell: bash
+        run: |
+          gcloud auth configure-docker "${GCP_ARTIFACT_REGION}-docker.pkg.dev" --quiet
+
+      - name: Build image tags
+        id: image_meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          short_sha="$(git rev-parse --short HEAD)"
+          backend_image="${GCP_ARTIFACT_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/${GCP_BACKEND_IMAGE}:${TARGET_ENVIRONMENT}-${short_sha}"
+          frontend_image="${GCP_ARTIFACT_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/${GCP_FRONTEND_IMAGE}:${TARGET_ENVIRONMENT}-${short_sha}"
+
+          {
+            echo "backend_image=${backend_image}"
+            echo "frontend_image=${frontend_image}"
+            echo "short_sha=${short_sha}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile.cloudrun
+          push: true
+          tags: ${{ steps.image_meta.outputs.backend_image }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile.cloudrun
+          push: true
+          tags: ${{ steps.image_meta.outputs.frontend_image }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ env.NEXT_PUBLIC_API_URL }}
+            API_URL_INTERNAL=${{ env.API_URL_INTERNAL }}
+            NEXT_PUBLIC_SUPABASE_URL=${{ env.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.Supabase__AnonKey }}
+
+      - name: Prepare backend env values
+        id: backend_env
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          connection_string="${{ secrets.ConnectionStrings__Default }}"
+          if [[ -z "${connection_string}" ]]; then
+            connection_string="${{ secrets.SUPABASE_DB_URL }}"
+          fi
+
+          {
+            echo "connection_string=${connection_string}"
+            echo "supabase_url=${NEXT_PUBLIC_SUPABASE_URL}"
+            echo "frontend_origins=${FRONTEND_ORIGINS}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Diagnose backend connection string format
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          connection_string="${{ steps.backend_env.outputs.connection_string }}"
+
+          echo "Backend connection string diagnostics:"
+          echo "length=${#connection_string}"
+
+          if [[ "$connection_string" == postgresql://* ]]; then
+            echo "starts_with_postgresql=true"
+          else
+            echo "starts_with_postgresql=false"
+          fi
+
+          if [[ "$connection_string" == postgres://* ]]; then
+            echo "starts_with_postgres=true"
+          else
+            echo "starts_with_postgres=false"
+          fi
+
+          if [[ "$connection_string" == *$'\n'* || "$connection_string" == *$'\r'* ]]; then
+            echo "contains_newline=true"
+          else
+            echo "contains_newline=false"
+          fi
+
+          if [[ "$connection_string" == *=* ]]; then
+            echo "contains_equals=true"
+          else
+            echo "contains_equals=false"
+          fi
+
+          if [[ "$connection_string" == *';'* ]]; then
+            echo "contains_semicolon=true"
+          else
+            echo "contains_semicolon=false"
+          fi
+
+          if [[ ${#connection_string} -gt 0 ]]; then
+            LC_CTYPE=C printf 'first_char_code=%d\n' "'${connection_string:0:1}"
+            LC_CTYPE=C printf 'last_char_code=%d\n' "'${connection_string: -1}"
+          fi
+
+      - name: Deploy backend to Cloud Run
+        id: deploy_backend
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          gcloud run deploy "${GCP_BACKEND_SERVICE}" \
+            --image "${{ steps.image_meta.outputs.backend_image }}" \
+            --region "${GCP_REGION}" \
+            --project "${GCP_PROJECT_ID}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --min-instances 0 \
+            --port 8080 \
+            --memory "${BACKEND_MEMORY}" \
+            --cpu "${BACKEND_CPU}" \
+            --set-env-vars "ConnectionStrings__Default=${{ steps.backend_env.outputs.connection_string }}" \
+            --set-env-vars "Supabase__Url=${{ steps.backend_env.outputs.supabase_url }}" \
+            --set-env-vars "Supabase__AnonKey=${{ secrets.Supabase__AnonKey }}" \
+            --set-env-vars "FRONTEND_ORIGINS=${{ steps.backend_env.outputs.frontend_origins }}" \
+            --set-env-vars "RUN_DB_MIGRATIONS=${RUN_DB_MIGRATIONS}"
+
+      - name: Fetch backend startup logs on failure
+        if: ${{ steps.deploy_backend.outcome == 'failure' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Backend deploy failed. Fetching recent Cloud Run logs for ${GCP_BACKEND_SERVICE}..."
+          gcloud logging read \
+            "resource.type=cloud_run_revision AND resource.labels.service_name=${GCP_BACKEND_SERVICE}" \
+            --project "${GCP_PROJECT_ID}" \
+            --limit 100 \
+            --order=desc \
+            --format="value(timestamp,textPayload)"
+
+      - name: Fail after backend deploy error
+        if: ${{ steps.deploy_backend.outcome == 'failure' }}
+        shell: bash
+        run: |
+          echo "Backend deployment failed. See fetched Cloud Run logs above." >&2
+          exit 1
+
+      - name: Deploy frontend to Cloud Run
+        if: ${{ steps.deploy_backend.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          gcloud run deploy "${GCP_FRONTEND_SERVICE}" \
+            --image "${{ steps.image_meta.outputs.frontend_image }}" \
+            --region "${GCP_REGION}" \
+            --project "${GCP_PROJECT_ID}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --min-instances 0 \
+            --port 8080 \
+            --memory "${FRONTEND_MEMORY}" \
+            --cpu "${FRONTEND_CPU}"
+
+      - name: Fetch service URLs
+        id: service_urls
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          backend_url="$(gcloud run services describe "${GCP_BACKEND_SERVICE}" --region "${GCP_REGION}" --project "${GCP_PROJECT_ID}" --format='value(status.url)')"
+          frontend_url="$(gcloud run services describe "${GCP_FRONTEND_SERVICE}" --region "${GCP_REGION}" --project "${GCP_PROJECT_ID}" --format='value(status.url)')"
+
+          {
+            echo "backend_url=${backend_url}"
+            echo "frontend_url=${frontend_url}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test deployed services
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          curl -fsS "${{ steps.service_urls.outputs.backend_url }}/health/db" >/dev/null
+          curl -fsS "${{ steps.service_urls.outputs.frontend_url }}/" >/dev/null
+
+      - name: Deployment summary
+        shell: bash
+        run: |
+          public_url="${NEXT_PUBLIC_API_URL}"
+          {
+            echo "environment=${TARGET_ENVIRONMENT}"
+            echo "git_ref=${DEPLOY_REF}"
+            echo "backend_service=${GCP_BACKEND_SERVICE}"
+            echo "frontend_service=${GCP_FRONTEND_SERVICE}"
+            echo "backend_cloud_run_url=${{ steps.service_urls.outputs.backend_url }}"
+            echo "frontend_cloud_run_url=${{ steps.service_urls.outputs.frontend_url }}"
+            echo "public_url=${public_url}"
+            echo "backend_image=${{ steps.image_meta.outputs.backend_image }}"
+            echo "frontend_image=${{ steps.image_meta.outputs.frontend_image }}"
+          } >> "$GITHUB_STEP_SUMMARY"

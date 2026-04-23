@@ -27,7 +27,7 @@ export function Checkbox({
         disabled={disabled}
         aria-label={ariaLabel}
         className={`h-5 w-5 accent-brand-navy ${
-          disabled ? "opacity-50 cursor-not-allowed" : ""
+          disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
         } ${className}`}
         {...props}
       />

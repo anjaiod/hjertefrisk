@@ -187,6 +187,18 @@ export default function Page() {
                           Beregnes automatisk
                         </p>
                       )}
+                      {result && !isEditing && (
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Oppdatert av{" "}
+                          {result.registeredByName
+                            ? result.registeredByName
+                            : "pasienten selv"}{" "}
+                          {new Date(result.registeredAt).toLocaleDateString(
+                            "nb-NO",
+                            { day: "2-digit", month: "2-digit", year: "numeric" },
+                          )}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-3">

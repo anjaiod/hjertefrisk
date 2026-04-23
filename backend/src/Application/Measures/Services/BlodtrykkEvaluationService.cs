@@ -22,7 +22,7 @@ namespace backend.src.Application.Measures.Services;
 ///   Score 1:          "blodtrykk_middels"
 ///   Score 2:          "blodtrykk_hoy"
 ///   Score >= 1, flere målinger:     "blodtrykk_malingsteknikk"   (pasienttiltak)
-///   Score >= 1, kun én måling:      "blodtrykk_hjemmemaling"     (behandlertiltak)
+///   Score >= 1, kun én måling:      "Tips for korrekt blodtrykksmåling"     (behandlertiltak)
 /// </summary>
 public record BlodtrykkEvaluationResult(
     int CategoryId,
