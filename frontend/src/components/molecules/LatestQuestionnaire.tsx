@@ -22,17 +22,33 @@ export function LatestQuestionnaire({
   onClose?: () => void;
 }) {
   const [entries, setEntries] = useState<LatestResponseItem[] | null>(null);
+  const [queries, setQueries] = useState<{ id: number; name: string }[]>([]);
+  const [selectedQueryId, setSelectedQueryId] = useState<number>(1);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // load available queries
+    apiClient
+      .get<{ id: number; name: string }[]>(`/api/Query`)
+      .then((data) => {
+        setQueries(data ?? []);
+        if (data && data.length && !data.find((q) => q.id === selectedQueryId)) {
+          setSelectedQueryId(data[0].id);
+        }
+      })
+      .catch(() => setQueries([]));
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
     apiClient
       .get<LatestResponseItem[]>(
-        `/api/patients/${patientId}/queries/1/latest-responses`,
+        `/api/patients/${patientId}/queries/${selectedQueryId}/latest-responses`,
       )
       .then((data) => setEntries(data ?? []))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [patientId]);
+  }, [patientId, selectedQueryId]);
   const date = entries && entries.length
     ? new Date(Math.max(...entries.map(e => e.answeredAt ? new Date(e.answeredAt).getTime() : 0))).toLocaleDateString("nb-NO", {
         day: "numeric",
@@ -47,9 +63,22 @@ export function LatestQuestionnaire({
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex items-start justify-between px-4 py-3 border-b border-gray-100">
         <div>
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-            Siste Hjertefrisk-skjema
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Siste Hjertefrisk-skjema
+            </span>
+            <select
+              className="text-xs text-gray-600 border rounded px-2 py-0.5"
+              value={selectedQueryId}
+              onChange={(e) => setSelectedQueryId(Number(e.target.value))}
+            >
+              {queries.map((q) => (
+                <option key={q.id} value={q.id}>
+                  {q.name}
+                </option>
+              ))}
+            </select>
+          </div>
           {date && <p className="text-xs text-gray-400 mt-0.5">{date}</p>}
         </div>
         {onClose && (
