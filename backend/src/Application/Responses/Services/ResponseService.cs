@@ -297,6 +297,82 @@ public class ResponseService : IResponseService
         });
     }
 
+    public async Task<IEnumerable<LatestResponseItemDto>> GetLatestResponsesForQueryAsync(int patientId, int queryId, int maxQueriesToScan = 20)
+    {
+        if (maxQueriesToScan <= 0) maxQueriesToScan = 1;
+        if (maxQueriesToScan > 20) maxQueriesToScan = 20;
+
+        // Load the questions for the query in display order
+        var queryQuestions = await _db.QueryQuestions
+            .AsNoTracking()
+            .Where(qq => qq.QueryId == queryId)
+            .Include(qq => qq.Question)
+            .OrderBy(qq => qq.DisplayOrder)
+            .Select(qq => new
+            {
+                qq.QuestionId,
+                qq.DisplayOrder,
+                QuestionText = qq.Question.FallbackText
+            })
+            .ToListAsync();
+
+        if (!queryQuestions.Any())
+            return Array.Empty<LatestResponseItemDto>();
+
+        // Initialize result map with questions (unanswered by default)
+        var resultMap = queryQuestions.ToDictionary(
+            q => q.QuestionId,
+            q => new LatestResponseItemDto
+            {
+                QuestionId = q.QuestionId,
+                DisplayOrder = q.DisplayOrder,
+                QuestionText = q.QuestionText,
+                AnswerText = null,
+                NumberValue = null,
+                AnsweredAt = null,
+                AnsweredQueryId = null,
+                FilledInByName = null
+            });
+
+        var remaining = resultMap.Count;
+
+        // Scan answered queries newest -> oldest up to the provided cap
+        var answeredQueries = await _db.AnsweredQueries
+            .AsNoTracking()
+            .Where(aq => aq.PatientId == patientId)
+            .OrderByDescending(aq => aq.CreatedAt)
+            .Include(aq => aq.Responses)
+                .ThenInclude(r => r.SelectedOption)
+            .Include(aq => aq.Personnel)
+            .Take(maxQueriesToScan)
+            .ToListAsync();
+
+        foreach (var aq in answeredQueries)
+        {
+            if (remaining == 0) break;
+
+            var answeredAt = DateTime.SpecifyKind(aq.CreatedAt, DateTimeKind.Utc);
+
+            foreach (var r in aq.Responses)
+            {
+                if (resultMap.TryGetValue(r.QuestionId, out var existing))
+                {
+                    if (existing.AnsweredQueryId != null) continue; // already filled
+
+                    existing.AnswerText = r.SelectedOption?.FallbackText ?? r.TextValue;
+                    existing.NumberValue = r.NumberValue;
+                    existing.AnsweredAt = answeredAt;
+                    existing.AnsweredQueryId = aq.Id;
+                    existing.FilledInByName = aq.Personnel?.Name;
+                    remaining--;
+                }
+            }
+        }
+
+        // Return ordered by DisplayOrder
+        return resultMap.Values.OrderBy(v => v.DisplayOrder).ToList();
+    }
+
     /// <summary>
     /// Calculates the cumulative score for a category based on responses from the current batch and Severity rules.
     /// Matches responses against Severity rules for questions in the category and sums matching scores.

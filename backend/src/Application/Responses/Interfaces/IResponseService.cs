@@ -8,4 +8,5 @@ public interface IResponseService
     Task<ResponseDto> CreateAsync(CreateResponseDto dto);
     Task<IEnumerable<ResponseDto>> UpsertManyAsync(IEnumerable<CreateResponseDto> dtos, int? personnelId = null);
     Task<IEnumerable<AnsweredQueryHistoryDto>> GetHistoryForPatientAsync(int patientId);
+    Task<IEnumerable<LatestResponseItemDto>> GetLatestResponsesForQueryAsync(int patientId, int queryId, int maxQueriesToScan = 20);
 }
