@@ -63,7 +63,7 @@ export function JournalDetail({
             type="button"
             title="Lukk"
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100 transition-colors"
+            className="p-1.5 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100 transition-colors cursor-pointer"
           >
             <svg
               className="w-5 h-5"
@@ -86,7 +86,7 @@ export function JournalDetail({
                   type="button"
                   title="Rediger"
                   onClick={onEdit}
-                  className="p-1.5 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100 transition-colors"
+                  className="p-1.5 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100 transition-colors cursor-pointer"
                 >
                   <svg
                     className="w-5 h-5"
@@ -108,7 +108,7 @@ export function JournalDetail({
                   type="button"
                   title="Slett"
                   onClick={onDelete}
-                  className="p-1.5 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors"
+                  className="p-1.5 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors cursor-pointer"
                 >
                   <svg
                     className="w-5 h-5"
@@ -163,7 +163,7 @@ export function JournalDetail({
               win.document.close();
               win.addEventListener("load", () => win.print());
             }}
-            className="p-1.5 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100 transition-colors"
+            className="p-1.5 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100 transition-colors cursor-pointer"
           >
             <svg
               className="w-5 h-5"

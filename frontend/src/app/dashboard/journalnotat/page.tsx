@@ -215,7 +215,7 @@ export default function JournalnotatPage() {
               <button
                 type="button"
                 onClick={() => setDropdownOpen((o) => !o)}
-                className="w-full flex items-center justify-center gap-2 py-1.5 px-3 text-sm font-medium text-white bg-brand-navy hover:bg-brand-navy-light rounded-lg transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-1.5 px-3 text-sm font-medium text-white bg-brand-navy hover:bg-brand-navy-light rounded-lg transition-colors cursor-pointer"
               >
                 <svg
                   className="w-4 h-4"
@@ -278,7 +278,7 @@ export default function JournalnotatPage() {
                       key={item.type}
                       type="button"
                       onClick={() => handleNewNote(item.type)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 text-left"
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 text-left cursor-pointer"
                     >
                       <span
                         className={`w-3 h-3 rounded-full shrink-0 ${item.dot}`}
@@ -306,7 +306,7 @@ export default function JournalnotatPage() {
                   setFilter(f);
                   setPage(0);
                 }}
-                className={`py-0.5 px-1 text-sm text-center transition-colors ${
+                className={`py-0.5 px-1 text-sm text-center transition-colors cursor-pointer ${
                   filter === f
                     ? "text-brand-navy border-b-2 border-brand-navy font-medium"
                     : "text-gray-500 hover:text-gray-800"
