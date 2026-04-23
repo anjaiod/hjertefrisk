@@ -24,6 +24,7 @@ import ConditionalQuestion from "../molecules/ConditionalQuestion";
 import QuestionnaireSummary from "../molecules/QuestionnaireSummary";
 import { useTTS } from "@/hooks/useTTS";
 import QuestionWithTTS from "../molecules/QuestionWithTTS";
+import { TTSButton } from "../atoms/TTSButton";
 
 export default function PatientHealthQuestionnaire() {
   const router = useRouter();
@@ -45,7 +46,20 @@ export default function PatientHealthQuestionnaire() {
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
 
-  const { speakQuestion, stop, activeId, highlightedIndex } = useTTS();
+  const { speakQuestion, speakSequence, stop, activeId, highlightedIndex } =
+    useTTS();
+
+  const handleSpeakIntro = () => {
+    speakSequence([
+      "Om skjemaet. Dette skjemaet brukes til å kartlegge din helse og livsstil som en del av Hjertefrisk-programmet. Svarene dine hjelper helsepersonellet å følge opp din helseutvikling.",
+      "Skjemaet tar cirka fem til ti minutter å fylle ut.",
+      "Svarene lagres og er synlige for ditt behandlingsteam.",
+      "Du kan navigere frem og tilbake mellom spørsmålene, og du kan trykke Neste på spørsmål du er usikker på, eller ikke ønsker å svare på.",
+      "Svarene dine behandles konfidensielt i henhold til gjeldende personvernregler.",
+      "Start skjema",
+      "Avbryt",
+    ]);
+  };
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -572,7 +586,13 @@ export default function PatientHealthQuestionnaire() {
             <h1 className="font-bold text-gray-900 mb-6 text-center text-[clamp(1.75rem,4vw,3rem)]">
               Hjertefrisk helseskjema
             </h1>
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-6">
+            <div className="relative bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-6">
+              <div className="absolute top-4 right-4">
+                <TTSButton
+                  isActive={highlightedIndex !== null}
+                  onClick={handleSpeakIntro}
+                />
+              </div>
               <h2 className="text-lg font-semibold text-gray-800 mb-4">
                 Om skjemaet
               </h2>
@@ -604,14 +624,17 @@ export default function PatientHealthQuestionnaire() {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => setShowIntro(false)}
-                className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl font-medium hover:bg-brand-navy/90 transition touch-manipulation"
+                onClick={() => {
+                  stop();
+                  setShowIntro(false);
+                }}
+                className={`px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl font-medium hover:bg-brand-navy/90 transition touch-manipulation ${highlightedIndex === 5 ? " ring-2 ring-teal-400" : ""}`}
               >
                 Start skjema
               </button>
               <button
                 onClick={() => router.back()}
-                className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition touch-manipulation"
+                className={`px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition touch-manipulation ${highlightedIndex === 6 ? " ring-2 ring-teal-400" : ""}`}
               >
                 Avbryt
               </button>

@@ -67,8 +67,26 @@ export const useTTS = () => {
     setHighlightedIndex(null);
   };
 
+  const speakSequence = async (parts: string[]) => {
+    stop();
+
+    const id = ++runId.current;
+
+    for (let i = 0; i < parts.length; i++) {
+      if (id !== runId.current) return;
+
+      setHighlightedIndex(i);
+      await speakPart(parts[i]);
+    }
+
+    if (id !== runId.current) return;
+
+    setHighlightedIndex(null);
+  };
+
   return {
     speakQuestion,
+    speakSequence,
     stop,
     activeId,
     highlightedIndex,
