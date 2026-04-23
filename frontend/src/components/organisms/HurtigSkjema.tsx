@@ -449,6 +449,7 @@ export default function HurtigSkjema({ patientId }: HurtigSkjemaProps) {
         <form
           key={formKey}
           onSubmit={handleSubmit}
+          noValidate
           className="max-w-4xl mx-auto p-6 space-y-8"
         >
           <h1 className="text-3xl font-bold text-gray-900 mb-8">

@@ -13,7 +13,7 @@ import {
 } from "@/components/molecules/RiskList";
 import { SectionWrapper } from "@/components/organisms/SectionWrapper";
 import { apiClient } from "../../../lib/apiClient";
-import type { CategoryDto } from "../../../types";
+import type { CategoryDto, LatestMeasurementResultDto } from "../../../types";
 import { useUser } from "@/context/UserContext";
 
 type PatientMeasureResult = {
@@ -32,6 +32,9 @@ export default function PasientRisikoSide() {
   const [measuresByCategory, setMeasuresByCategory] = useState<
     Record<number, PatientMeasureResult[]>
   >({});
+  const [latestMeasurements, setLatestMeasurements] = useState<
+    LatestMeasurementResultDto[]
+  >([]);
 
   useEffect(() => {
     if (!isAuthReady || !user) return;
@@ -54,14 +57,21 @@ export default function PasientRisikoSide() {
               )
             ).id;
 
-        const result = await apiClient.post<{
-          patientMeasures: PatientMeasureResult[];
-          categoryScores: Record<number, number>;
-        }>("/api/measures/evaluate", {
-          patientId,
-          queryId: queryDto.id,
-          languageCode: "no",
-        });
+        const [result, measurements] = await Promise.all([
+          apiClient.post<{
+            patientMeasures: PatientMeasureResult[];
+            categoryScores: Record<number, number>;
+          }>("/api/measures/evaluate", {
+            patientId,
+            queryId: queryDto.id,
+            languageCode: "no",
+          }),
+          apiClient
+            .get<LatestMeasurementResultDto[]>(
+              `/api/patients/${patientId}/latest-measurements`,
+            )
+            .catch(() => [] as LatestMeasurementResultDto[]),
+        ]);
 
         const grouped: Record<number, PatientMeasureResult[]> = {};
         for (const m of result.patientMeasures) {
@@ -72,6 +82,7 @@ export default function PasientRisikoSide() {
         }
         setMeasuresByCategory(grouped);
         setCategoryScores(result.categoryScores ?? {});
+        setLatestMeasurements(measurements);
       } catch (e) {
         console.error(e);
       }
@@ -100,21 +111,67 @@ export default function PasientRisikoSide() {
         : scoreToVariant(cat.name, score);
     }
 
-    return { id: cat.categoryId, variant };
+    return { id: cat.categoryId, variant, measures, score };
+  }
+
+  function variantStatus(variant: RiskVariant | null): string | null {
+    if (variant === "low") return "Ingen problemer, bra!";
+    if (variant === "medium") return "Noen utfordringer";
+    if (variant === "high") return "Tiltak bør fattes";
+    return null;
+  }
+
+  function buildInfo(
+    apiName: string,
+    score: number | undefined,
+    variant: RiskVariant | null,
+  ): string[] {
+    const name = apiName.toLowerCase().trim();
+    const lines: string[] = [];
+    const status = variantStatus(variant);
+
+    if (name === "kroppsdata") {
+      const weight = latestMeasurements.find((m) => m.measurementId === 1)?.result;
+      const height = latestMeasurements.find((m) => m.measurementId === 2)?.result;
+      const waist = latestMeasurements.find((m) => m.measurementId === 3)?.result;
+
+      if (weight != null && height != null && height > 0) {
+        const bmi = weight / Math.pow(height / 100, 2);
+        lines.push(`BMI: ${bmi.toFixed(1).replace(".", ",")}`);
+      }
+      if (waist != null) {
+        lines.push(`Midjemål: ${waist} cm`);
+      }
+      if (status) lines.push(status);
+      return lines;
+    }
+
+    if (name === "søvn") {
+      if (status) lines.push(status);
+      return lines;
+    }
+
+    if (score !== undefined) {
+      lines.push(`Poengsum: ${score}`);
+    }
+    if (status) lines.push(status);
+    return lines;
   }
 
   function renderHealthCard(apiName: string, displayTitle?: string) {
     const info = getCategoryInfo(apiName);
     const variant = info?.variant ?? null;
     const categoryId = info?.id;
+    const infoLines = info ? buildInfo(apiName, info.score, variant) : [];
 
     return (
       <HealthCard
         key={apiName}
         title={displayTitle ?? apiName}
         categoryId={categoryId}
-        tag={variant ? riskVariantToLabel(variant) : undefined}
+        tag={variant ? `${riskVariantToLabel(variant)} risiko` : undefined}
         tagVariant={variant ?? undefined}
+        info={infoLines.length > 0 ? infoLines : undefined}
       />
     );
   }
@@ -126,13 +183,10 @@ export default function PasientRisikoSide() {
         <PatientHeader />
         <main className="p-8 py-6 bg-slate-50 min-h-screen">
           <div className="mb-4">
-            <div className="flex items-center gap-3">
-              <BackButton />
-
-              <h1 className="text-2xl font-semibold text-brand-navy">
-                Din somatiske helseoversikt
-              </h1>
-            </div>
+            <BackButton />
+            <h1 className="mt-2 text-2xl font-semibold text-brand-navy">
+              Dine risikoer
+            </h1>
           </div>
 
           <div className="flex flex-col gap-6">
@@ -152,7 +206,7 @@ export default function PasientRisikoSide() {
 
             <SectionWrapper title="Annet">
               {renderHealthCard("Blodtrykk")}
-              {renderHealthCard("Glukose")}
+              {renderHealthCard("Glukoseregulering", "Glukose")}
               {renderHealthCard("Blodlipider")}
             </SectionWrapper>
           </div>
