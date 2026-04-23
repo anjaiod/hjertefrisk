@@ -2,11 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { loginWithPassword, registerUser } from "@/services/authService";
+import { loginWithPassword } from "@/services/authService";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 import { apiClient } from "@/lib/apiClient";
-import type { RegisterRole } from "@/types/Auth";
 
 export function useAuthPage() {
   const router = useRouter();
@@ -19,20 +18,6 @@ export function useAuthPage() {
   );
   const [isLoginLoading, setIsLoginLoading] = useState(false);
 
-  const [activeRegisterRole, setActiveRegisterRole] =
-    useState<RegisterRole>("patient");
-  const [registerName, setRegisterName] = useState("");
-  const [registerEmail, setRegisterEmail] = useState("");
-  const [registerPassword, setRegisterPassword] = useState("");
-  const [registerGender, setRegisterGender] = useState("");
-  const [registerErrorMessage, setRegisterErrorMessage] = useState<
-    string | null
-  >(null);
-  const [registerSuccessMessage, setRegisterSuccessMessage] = useState<
-    string | null
-  >(null);
-  const [isRegisterLoading, setIsRegisterLoading] = useState(false);
-
   const loginState = useMemo(
     () => ({
       email: loginEmail,
@@ -41,29 +26,6 @@ export function useAuthPage() {
       isLoading: isLoginLoading,
     }),
     [loginEmail, loginPassword, loginErrorMessage, isLoginLoading],
-  );
-
-  const registerState = useMemo(
-    () => ({
-      role: activeRegisterRole,
-      name: registerName,
-      email: registerEmail,
-      password: registerPassword,
-      gender: registerGender,
-      errorMessage: registerErrorMessage,
-      successMessage: registerSuccessMessage,
-      isLoading: isRegisterLoading,
-    }),
-    [
-      activeRegisterRole,
-      registerName,
-      registerEmail,
-      registerPassword,
-      registerGender,
-      registerErrorMessage,
-      registerSuccessMessage,
-      isRegisterLoading,
-    ],
   );
 
   const handleLoginSubmit = async () => {
@@ -143,52 +105,10 @@ export function useAuthPage() {
     }
   };
 
-  const handleRegisterSubmit = async () => {
-    setRegisterErrorMessage(null);
-    setRegisterSuccessMessage(null);
-    setIsRegisterLoading(true);
-    // Frontend validation: disallow digits in name
-    if (/\d/.test(registerName)) {
-      setRegisterErrorMessage("Navn kan ikke inneholde tall.");
-      setIsRegisterLoading(false);
-      return;
-    }
-
-    try {
-      await registerUser({
-        role: activeRegisterRole,
-        name: registerName,
-        email: registerEmail,
-        password: registerPassword,
-        gender: registerGender || undefined,
-      });
-      setRegisterSuccessMessage(
-        "Bruker opprettet i både Supabase og lokal database.",
-      );
-      setRegisterName("");
-      setRegisterEmail("");
-      setRegisterPassword("");
-      setRegisterGender("");
-    } catch (error) {
-      setRegisterErrorMessage(
-        error instanceof Error ? error.message : "Kunne ikke opprette bruker.",
-      );
-    } finally {
-      setIsRegisterLoading(false);
-    }
-  };
-
   return {
     loginState,
-    registerState,
     setLoginEmail,
     setLoginPassword,
-    setActiveRegisterRole,
-    setRegisterName,
-    setRegisterEmail,
-    setRegisterPassword,
-    setRegisterGender,
     handleLoginSubmit,
-    handleRegisterSubmit,
   };
 }
