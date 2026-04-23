@@ -108,6 +108,13 @@ export default function PatientTable({
               lastVisited={patient.lastVisited}
               riskLevel={patient.riskLevel}
               hasUnread={unreadPatientIds.has(Number(patient.id))}
+              onAllRead={() =>
+                setUnreadPatientIds((prev) => {
+                  const next = new Set(prev);
+                  next.delete(Number(patient.id));
+                  return next;
+                })
+              }
             />
           ))}
         </tbody>

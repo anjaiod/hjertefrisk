@@ -38,7 +38,7 @@ public class NotificationService : INotificationService
             .ToListAsync();
     }
 
-    public async Task MarkAsReadAsync(int notificationId, int personnelId) // method for marking message as read
+    public async Task MarkAsReadAsync(int notificationId, int personnelId)
     {
         var n = await _db.Notifications.FirstOrDefaultAsync(x => x.Id == notificationId && x.PersonnelId == personnelId);
         if (n == null) return;
@@ -60,5 +60,22 @@ public class NotificationService : INotificationService
         {
             await _db.SaveChangesAsync();
         }
+    }
+
+    public async Task MarkAllAsReadAsync(int personnelId)
+    {
+        var now = DateTime.UtcNow;
+        var unread = await _db.Notifications
+            .Where(n => n.PersonnelId == personnelId && !n.Read)
+            .ToListAsync();
+
+        foreach (var n in unread)
+        {
+            n.Read = true;
+            n.ReadAt = now;
+        }
+
+        if (unread.Count > 0)
+            await _db.SaveChangesAsync();
     }
 }

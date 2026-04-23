@@ -1,8 +1,13 @@
 "use client";
 
 import { Modal } from "../atoms/Modal";
+import { Button } from "../atoms/Button";
 import { useEffect, useState } from "react";
-import { fetchNotifications, NotificationDto } from "@/lib/notifications";
+import {
+  fetchNotifications,
+  markAllNotificationsAsRead,
+  NotificationDto,
+} from "@/lib/notifications";
 import { apiClient } from "@/lib/apiClient";
 import { useRouter } from "next/navigation";
 
@@ -10,15 +15,18 @@ interface VarslingModalProps {
   patientId?: number;
   patientName?: string;
   onClose: () => void;
+  onAllRead?: () => void;
 }
 
 export function VarslingModal({
   patientId,
   patientName,
   onClose,
+  onAllRead,
 }: VarslingModalProps) {
   const title = patientName ? `Varslinger – ${patientName}` : "Varslinger";
   const [loading, setLoading] = useState(true);
+  const [markingAll, setMarkingAll] = useState(false);
   const [items, setItems] = useState<NotificationDto[]>([]);
   const router = useRouter();
 
@@ -53,11 +61,33 @@ export function VarslingModal({
     return true;
   });
 
+  const hasUnread = visible.some((n) => !n.read);
+
+  const handleMarkAllRead = async () => {
+    setMarkingAll(true);
+    try {
+      await markAllNotificationsAsRead();
+      const now = new Date().toISOString();
+      setItems((prev) => prev.map((it) => ({ ...it, read: true, readAt: now })));
+      onAllRead?.();
+    } catch (err) {
+      console.error("Failed to mark all notifications as read", err);
+    } finally {
+      setMarkingAll(false);
+    }
+  };
+
   // When clicking a notification: mark as read for current personnel and navigate to the answered query
   const handleOpenNotification = async (n: NotificationDto) => {
-    setItems((prev) =>
-      prev.map((it) => (it.id === n.id ? { ...it, read: true } : it)),
+    const updated = items.map((it) =>
+      it.id === n.id ? { ...it, read: true } : it,
     );
+    setItems(updated);
+
+    const stillUnread = (
+      patientId ? updated.filter((it) => it.patientId === patientId) : updated
+    ).some((it) => !it.read);
+    if (!stillUnread) onAllRead?.();
 
     apiClient
       .post<void>(`/api/notifications/${n.id}/mark-read`)
@@ -85,32 +115,46 @@ export function VarslingModal({
           Ingen nye varslinger for denne pasienten.
         </p>
       ) : (
-        <ul className="space-y-3">
-          {visible.map((n) => (
-            <li
-              key={n.id}
-              className={`flex justify-between items-start p-3 rounded border hover:bg-slate-50 transition cursor-pointer`}
-              onClick={() => handleOpenNotification(n)}
-            >
-              <div>
-                <p
-                  className={`${!n.read ? "font-semibold text-slate-900" : "text-slate-400 line-through"}`}
-                >
-                  {n.message}
-                </p>
-                <p className="text-sm text-slate-500">
-                  {new Date(n.createdAt).toLocaleString()}
-                </p>
-              </div>
+        <>
+          {hasUnread && (
+            <div className="flex justify-end mb-3">
+              <Button
+                variant="confirm"
+                onClick={handleMarkAllRead}
+                disabled={markingAll}
+                className="text-sm px-4! py-1.5!"
+              >
+                {markingAll ? "Markerer..." : "Les alle"}
+              </Button>
+            </div>
+          )}
+          <ul className="space-y-3">
+            {visible.map((n) => (
+              <li
+                key={n.id}
+                className={`flex justify-between items-start p-3 rounded border hover:bg-slate-50 transition cursor-pointer`}
+                onClick={() => handleOpenNotification(n)}
+              >
+                <div>
+                  <p
+                    className={`${!n.read ? "font-semibold text-slate-900" : "text-slate-400 line-through"}`}
+                  >
+                    {n.message}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    {new Date(n.createdAt).toLocaleString()}
+                  </p>
+                </div>
 
-              <div className="flex flex-col items-end gap-2">
-                {n.read ? (
-                  <span className="text-xs text-slate-400">Lest</span>
-                ) : null}
-              </div>
-            </li>
-          ))}
-        </ul>
+                <div className="flex flex-col items-end gap-2">
+                  {n.read ? (
+                    <span className="text-xs text-slate-400">Lest</span>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </Modal>
   );

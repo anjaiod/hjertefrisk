@@ -25,22 +25,24 @@ export function Modal({ onClose, children, title }: ModalProps) {
         }}
       >
         <div
-          className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg relative"
+          className="bg-white rounded-xl shadow-xl w-full max-w-lg relative flex flex-col max-h-[85vh]"
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg leading-none"
-          >
-            ✕
-          </button>
-          {title && (
-            <h2 className="text-2xl font-semibold text-brand-navy text-center mb-2">
-              {title}
-            </h2>
-          )}
-          {children}
+          <div className="shrink-0 px-6 pt-6 pb-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg leading-none"
+            >
+              ✕
+            </button>
+            {title && (
+              <h2 className="text-2xl font-semibold text-brand-navy text-center mb-2">
+                {title}
+              </h2>
+            )}
+          </div>
+          <div className="overflow-y-auto px-6 pb-6">{children}</div>
         </div>
       </div>
     </FocusTrap>,

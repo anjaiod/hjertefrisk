@@ -6,4 +6,5 @@ public interface INotificationService
 {
     Task<IEnumerable<NotificationDto>> GetForPersonnelAsync(int personnelId);
     Task MarkAsReadAsync(int notificationId, int personnelId);
+    Task MarkAllAsReadAsync(int personnelId);
 }

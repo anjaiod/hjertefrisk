@@ -275,6 +275,7 @@ export function SidebarNav({
         <VarslingModal
           onClose={() => setShowVarsling(false)}
           patientId={Number(patientId)}
+          onAllRead={() => setHasUnread(false)}
         />
       )}
     </>
