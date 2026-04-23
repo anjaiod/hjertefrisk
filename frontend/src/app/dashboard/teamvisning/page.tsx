@@ -176,6 +176,7 @@ export default function TeamvisningPage() {
               <div className="flex-1 min-h-0 [&_.recharts-polar-grid-concentric-polygon:last-of-type]:opacity-0 [&_*:focus]:outline-none [&_*:focus-visible]:outline-none">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart
+                    margin={{ top: 10, right: 30, bottom: 10, left: 30 }}
                     data={risks.map((r) => ({
                       category:
                         r.name.charAt(0).toUpperCase() + r.name.slice(1),
@@ -220,7 +221,26 @@ export default function TeamvisningPage() {
                     <PolarGrid stroke="rgba(255,255,255,0.2)" />
                     <PolarAngleAxis
                       dataKey="category"
-                      tick={{ fill: "white", fontSize: 11 }}
+                      tick={({ payload, x, y, textAnchor }) => {
+                        const words = payload.value.split(" ");
+                        const lineHeight = 13;
+                        const offset = ((words.length - 1) * lineHeight) / 2;
+                        return (
+                          <text
+                            x={x}
+                            y={y - offset}
+                            textAnchor={textAnchor}
+                            fill="white"
+                            fontSize={11}
+                          >
+                            {words.map((word: string, i: number) => (
+                              <tspan key={i} x={x} dy={i === 0 ? 0 : lineHeight}>
+                                {word}
+                              </tspan>
+                            ))}
+                          </text>
+                        );
+                      }}
                     />
                     <PolarRadiusAxis
                       domain={[0, 10]}
