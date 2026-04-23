@@ -10,6 +10,7 @@ export type MeasurementResultDto = {
   patientId: number;
   result: number;
   registeredBy?: number | null;
+  registeredByName?: string | null;
   registeredAt: string;
 };
 

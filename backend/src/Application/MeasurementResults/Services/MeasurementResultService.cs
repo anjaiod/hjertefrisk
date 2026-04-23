@@ -37,12 +37,26 @@ public class MeasurementResultService : IMeasurementResultService
         _db.MeasurementResults.AddRange(entities);
         await _db.SaveChangesAsync();
 
+        var personnelIds = entities
+            .Where(r => r.RegisteredBy.HasValue)
+            .Select(r => r.RegisteredBy!.Value)
+            .Distinct()
+            .ToList();
+
+        var personnelNames = personnelIds.Count > 0
+            ? await _db.Personnel
+                .AsNoTracking()
+                .Where(p => personnelIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id, p => p.Name)
+            : new Dictionary<int, string>();
+
         return entities.Select(r => new MeasurementResultDto
         {
             MeasurementId = r.MeasurementId,
             PatientId = r.PatientId,
             Result = r.Result,
             RegisteredBy = r.RegisteredBy,
+            RegisteredByName = r.RegisteredBy.HasValue && personnelNames.TryGetValue(r.RegisteredBy.Value, out var name) ? name : null,
             RegisteredAt = r.RegisteredAt,
         });
     }
@@ -51,6 +65,7 @@ public class MeasurementResultService : IMeasurementResultService
     {
         var all = await _db.MeasurementResults
             .AsNoTracking()
+            .Include(r => r.RegisteredByPersonnel)
             .Where(r => r.PatientId == patientId)
             .ToListAsync();
 
@@ -63,6 +78,7 @@ public class MeasurementResultService : IMeasurementResultService
                 PatientId = r.PatientId,
                 Result = r.Result,
                 RegisteredBy = r.RegisteredBy,
+                RegisteredByName = r.RegisteredByPersonnel?.Name,
                 RegisteredAt = DateTime.SpecifyKind(r.RegisteredAt, DateTimeKind.Utc),
             });
     }
@@ -71,6 +87,7 @@ public class MeasurementResultService : IMeasurementResultService
     {
         return await _db.MeasurementResults
             .AsNoTracking()
+            .Include(r => r.RegisteredByPersonnel)
             .Where(r => r.PatientId == patientId)
             .OrderByDescending(r => r.RegisteredAt)
             .Select(r => new MeasurementResultDto
@@ -79,6 +96,7 @@ public class MeasurementResultService : IMeasurementResultService
                 PatientId = r.PatientId,
                 Result = r.Result,
                 RegisteredBy = r.RegisteredBy,
+                RegisteredByName = r.RegisteredByPersonnel != null ? r.RegisteredByPersonnel.Name : null,
                 RegisteredAt = DateTime.SpecifyKind(r.RegisteredAt, DateTimeKind.Utc),
             })
             .ToListAsync();

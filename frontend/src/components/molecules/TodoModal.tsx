@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { TodoList } from "./TodoList";
 import { apiClient } from "@/lib/apiClient";
+import { Modal } from "../atoms/Modal";
 
 type Todo = {
   id: number;
@@ -60,44 +60,9 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
     fetchTodos();
   }, [patientId]);
 
-  // Close modal on Escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [onClose]);
-
-  return createPortal(
-    <>
-      {/* Blurred Background */}
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="fixed inset-0 flex items-center justify-center z-50 p-4" onClick={onClose}>
-        <div onClick={(e) => e.stopPropagation()} className="relative bg-white rounded-xl shadow-lg w-full max-w-md">
-          {/* Close Button */}
-          <button
-            onClick={onClose}
-            className="absolute -top-10 right-0 text-white hover:text-slate-300 text-3xl leading-none"
-          >
-            ✕
-          </button>
-
-          {/* TodoList */}
-          <TodoList
-            todos={todos}
-            patientId={Number(patientId)}
-            maxHeight="max-h-[60vh]"
-          />
-        </div>
-      </div>
-    </>,
-    document.body,
+  return (
+    <Modal onClose={onClose} title="Todoer">
+      <TodoList todos={todos} patientId={Number(patientId)} maxHeight="max-h-[60vh]" noContainer showControls={false} />
+    </Modal>
   );
 }
