@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Checkbox } from "../atoms/Checkbox";
 import { TodoModal } from "./TodoModal";
+import { ConfirmModal } from "./ConfirmModal";
 import { apiClient } from "@/lib/apiClient";
 
 type Todo = {
@@ -38,6 +39,7 @@ export function TodoList({
   const [newTodoText, setNewTodoText] = useState("");
   const [newTodoPublic, setNewTodoPublic] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [todoToDelete, setTodoToDelete] = useState<Todo | null>(null);
 
   useEffect(() => {
     setTodos(initialTodos);
@@ -141,18 +143,16 @@ export function TodoList({
   };
 
   const deleteTodo = async (id: number) => {
-    if (!confirm("Er du sikker på at du vil slette denne oppgaven?")) {
-      return;
-    }
 
     setDeletingId(id);
     try {
       await apiClient.delete(`/api/todos/${id}`);
-      setTodos(todos.filter((t) => t.id !== id));
+      setTodos((t) => t.filter((x) => x.id !== id));
     } catch (error) {
       console.error("Error deleting todo:", error);
     } finally {
       setDeletingId(null);
+      setTodoToDelete(null);
     }
   };
 
@@ -315,7 +315,7 @@ export function TodoList({
               </span>
             </div>
             <button
-              onClick={() => deleteTodo(todo.id)}
+              onClick={() => setTodoToDelete(todo)}
               disabled={updatingId === todo.id || deletingId === todo.id}
               className="opacity-0 group-hover:opacity-100 px-2 py-1 text-red-500 hover:text-red-700 transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
               title="Slett oppgave"
@@ -330,6 +330,18 @@ export function TodoList({
       <div className="mt-4 text-center text-sm text-slate-600">
         {completedCount} av {totalCount} oppgaver fullført
       </div>
+      {todoToDelete ? (
+        <ConfirmModal
+          title="Slett oppgave"
+          message={`Vil du slette oppgaven \"${todoToDelete.text}\"?`}
+          confirmLabel="Slett"
+          cancelLabel="Avbryt"
+          onCancel={() => setTodoToDelete(null)}
+          onConfirm={() => {
+            if (todoToDelete) deleteTodo(todoToDelete.id);
+          }}
+        />
+      ) : null}
     </>
   );
 
