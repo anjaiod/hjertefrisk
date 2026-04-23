@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Checkbox } from "../atoms/Checkbox";
+import { TodoModal } from "./TodoModal";
 import { apiClient } from "@/lib/apiClient";
 
 type Todo = {
@@ -19,16 +20,21 @@ export function TodoList({
   todos: initialTodos = [],
   patientId,
   maxHeight = "max-h-64",
+  noContainer = false,
+  showControls = true, // Default value for showControls
 }: {
   title?: string;
   todos?: Todo[];
   patientId?: number;
   maxHeight?: string;
+  noContainer?: boolean;
+  showControls?: boolean; // New prop added
 }) {
   const [todos, setTodos] = useState<Todo[]>(initialTodos);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [openModal, setOpenModal] = useState(false);
   const [newTodoText, setNewTodoText] = useState("");
   const [newTodoPublic, setNewTodoPublic] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -155,18 +161,30 @@ export function TodoList({
   const percentage =
     totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  return (
-    <div className="w-full max-w-md  bg-white rounded-xl border border-brand-mist/30 shadow-sm p-8">
+  const content = (
+    <>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-brand-navy">{title}</h2>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          disabled={!patientId}
-          className="px-3 py-1 text-sm font-medium text-white bg-brand-sage hover:bg-brand-sage/90 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap "
-          title={!patientId ? "Velg pasient for å opprette oppgave" : ""}
-        >
-          Ny +
-        </button>
+        {showControls ? (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowCreateForm(true)}
+              disabled={!patientId}
+              className="px-3 py-1 text-sm font-medium text-white bg-brand-sage hover:bg-brand-sage/90 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap "
+              title={!patientId ? "Velg pasient for å opprette oppgave" : ""}
+            >
+              Ny +
+            </button>
+            <button
+              onClick={() => setOpenModal(true)}
+              disabled={!patientId}
+              className="px-3 py-1 text-sm font-medium text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+              title={!patientId ? "Velg pasient for å åpne oppgaver" : "Åpne todo-modal"}
+            >
+              Åpne
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {/* Create Form */}
@@ -237,7 +255,7 @@ export function TodoList({
       </div>
 
       {/* Todo List */}
-      <div className={`${maxHeight} overflow-y-auto space-y-2 pr-2`}>
+      <div className={`${maxHeight} overflow-y-auto space-y-2 pr-2 bg-white` }>
         {todos.map((todo) => (
           <div
             key={todo.id}
@@ -312,6 +330,30 @@ export function TodoList({
       <div className="mt-4 text-center text-sm text-slate-600">
         {completedCount} av {totalCount} oppgaver fullført
       </div>
+    </>
+  );
+
+  if (noContainer) {
+    return (
+      <div className="w-full">
+        {content}
+        {/** Render modal when requested (dashboard) */}
+        {openModal && patientId ? (
+          <TodoModal
+            patientId={String(patientId)}
+            onClose={() => setOpenModal(false)}
+          />
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-md  bg-white rounded-xl border border-brand-mist/30 shadow-sm p-8">
+      {content}
+      {openModal && patientId ? (
+        <TodoModal patientId={String(patientId)} onClose={() => setOpenModal(false)} />
+      ) : null}
     </div>
   );
 }
