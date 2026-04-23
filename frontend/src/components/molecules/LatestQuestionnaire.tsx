@@ -3,17 +3,15 @@
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/apiClient";
 
-interface ResponseHistoryItem {
+interface LatestResponseItem {
   questionId: number;
+  displayOrder: number;
   questionText: string;
   answerText?: string | null;
   numberValue?: number | null;
-}
-
-interface AnsweredQueryHistory {
-  id: number;
-  createdAt: string;
-  responses: ResponseHistoryItem[];
+  answeredAt?: string | null;
+  answeredQueryId?: number | null;
+  filledInByName?: string | null;
 }
 
 export function LatestQuestionnaire({
@@ -23,21 +21,20 @@ export function LatestQuestionnaire({
   patientId: number;
   onClose?: () => void;
 }) {
-  const [entry, setEntry] = useState<AnsweredQueryHistory | null>(null);
+  const [entries, setEntries] = useState<LatestResponseItem[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     apiClient
-      .get<AnsweredQueryHistory[]>(
-        `/api/patients/${patientId}/response-history`,
+      .get<LatestResponseItem[]>(
+        `/api/patients/${patientId}/queries/1/latest-responses`,
       )
-      .then((data) => setEntry(data[0] ?? null))
+      .then((data) => setEntries(data ?? []))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [patientId]);
-
-  const date = entry
-    ? new Date(entry.createdAt).toLocaleDateString("nb-NO", {
+  const date = entries && entries.length
+    ? new Date(Math.max(...entries.map(e => e.answeredAt ? new Date(e.answeredAt).getTime() : 0))).toLocaleDateString("nb-NO", {
         day: "numeric",
         month: "short",
         year: "numeric",
@@ -80,14 +77,13 @@ export function LatestQuestionnaire({
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {loading ? (
           <p className="text-xs text-gray-400">Laster...</p>
-        ) : !entry ? (
+        ) : !entries || entries.length === 0 ? (
           <p className="text-xs text-gray-400">Ingen besvarelser funnet.</p>
         ) : (
           <div className="space-y-3">
-            {entry.responses.map((r) => {
+            {entries.map((r) => {
               const answer =
-                r.answerText ??
-                (r.numberValue != null ? String(r.numberValue) : "–");
+                r.answerText ?? (r.numberValue != null ? String(r.numberValue) : "–");
               return (
                 <div key={r.questionId} className="flex flex-col gap-0.5">
                   <span className="text-xs text-gray-400 leading-snug">
