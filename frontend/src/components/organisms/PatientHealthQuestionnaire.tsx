@@ -372,6 +372,12 @@ export default function PatientHealthQuestionnaire() {
   ): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
+    const text = question.fallbackText.toLowerCase();
+
+    const isHyperkolesterolemi = text.includes("hyperkolesterolemi");
+    const questionDescription = isHyperkolesterolemi
+      ? "Familiær hyperkolesterolemi er en arvelig sykdom hvor en genfeil som gir høyt kolesterol, overføres fra generasjon til generasjon."
+      : undefined;
 
     if (question.questionType === "boolean") {
       return (
@@ -383,6 +389,8 @@ export default function PatientHealthQuestionnaire() {
           onChange={(val) => updateAnswer(question.questionId, val)}
           onAnswer={handleNext}
           required={question.isRequired}
+          smallLabel={isHyperkolesterolemi}
+          description={questionDescription}
         />
       );
     }
@@ -401,6 +409,8 @@ export default function PatientHealthQuestionnaire() {
           onChange={(val) => updateAnswer(question.questionId, val)}
           onAnswer={handleNext}
           required={question.isRequired}
+          smallLabel={isHyperkolesterolemi}
+          description={questionDescription}
         />
       );
     }
@@ -527,8 +537,9 @@ export default function PatientHealthQuestionnaire() {
               isSubmitting={isSubmitting}
               submitError={submitError}
               onGoToQuestion={(questionId) => {
-                const stepIndex = visibleQuestions.findIndex(
-                  (q) => q.questionId === questionId,
+                const stepIndex = wizardSteps.findIndex(
+                  (q) => q.questionId === questionId ||
+                    (bpQuestionIds.has(questionId) && bpQuestionIds.has(q.questionId)),
                 );
                 if (stepIndex !== -1) setCurrentStep(stepIndex);
                 setShowSummary(false);

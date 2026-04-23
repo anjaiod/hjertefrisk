@@ -206,8 +206,8 @@ export default function PasientRisikoSide() {
 
             <SectionWrapper title="Annet">
               {renderHealthCard("Blodtrykk")}
-              {renderHealthCard("Glukose")}
-              {renderHealthCard("Kolesterol")}
+              {renderHealthCard("Glukoseregulering")}
+              {renderHealthCard("Blodlipider", "Kolesterol")}
             </SectionWrapper>
           </div>
         </main>

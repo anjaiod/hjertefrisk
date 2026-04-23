@@ -55,7 +55,7 @@ export default function QuestionWizard({
               type="button"
               onClick={onSubmit}
               disabled={isSubmitting}
-              className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed min-w-28 touch-manipulation"
+              className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-w-28 touch-manipulation"
             >
               {isSubmitting ? "Sender..." : submitLabel}
             </button>
