@@ -218,7 +218,6 @@ type JournalEditorProps = {
   note: JournalNoteDto | null;
   patientId: number;
   initialType?: JournalNoteType;
-  compact?: boolean;
   hjertefriskOpen?: boolean;
   onToggleHjertefrisk?: () => void;
   onSaved: (note: JournalNoteDto) => void;
@@ -230,7 +229,6 @@ export function JournalEditor({
   note,
   patientId,
   initialType,
-  compact = false,
   hjertefriskOpen = false,
   onToggleHjertefrisk,
   onSaved,
@@ -454,98 +452,55 @@ export function JournalEditor({
     <button
       type="button"
       onClick={onToggleHjertefrisk}
-      className={`px-2.5 py-1 text-sm rounded border transition-colors whitespace-nowrap cursor-pointer ${
+      className={`px-2.5 py-1 text-sm rounded border transition-colors whitespace-nowrap cursor-pointer bg-brand-teal text-white border-brand-teal ${
         hjertefriskOpen
-          ? "bg-brand-teal text-white border-brand-teal"
-          : "text-gray-500 border-gray-200 hover:bg-gray-50"
+          ? "hidden"
+          : ""
       }`}
     >
-      Siste besvarelse
+      Hjertefrisk
     </button>
   ) : null;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex flex-col border-b border-gray-200">
-        {compact ? (
-          <>
-            {/* Compact: two rows */}
-            <div className="flex items-center justify-between gap-2 px-4 py-2">
-              <NoteTypeTag type={type} className="whitespace-nowrap shrink-0" />
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={onCancel}
-                  className="px-2.5 py-1 text-sm text-gray-600 hover:text-gray-900 rounded border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  Avbryt
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await handleSave(false);
-                    onCancel();
-                  }}
-                  disabled={saving || approving}
-                  className="px-2.5 py-1 text-sm text-brand-navy rounded border border-brand-navy hover:bg-brand-sky-button disabled:opacity-50 transition-colors font-medium cursor-pointer"
-                >
-                  Lagre
-                </button>
-                <button
-                  type="button"
-                  onClick={handleApprove}
-                  disabled={saving || approving}
-                  className="px-2.5 py-1 text-sm bg-brand-navy text-white rounded hover:bg-brand-navy-light disabled:opacity-50 transition-colors font-medium cursor-pointer"
-                >
-                  Godkjenn
-                </button>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-1.5 border-t border-gray-100">
-              {hjertefriskButton}
-              {templateDropdown}
-              {fillButton}
-            </div>
-          </>
-        ) : (
-          /* Wide: single row */
-          <div className="flex items-center justify-between px-4 py-2 gap-3">
-            <NoteTypeTag type={type} className="whitespace-nowrap" />
-            {hjertefriskButton}
-            <div className="flex items-center gap-1.5 flex-1">
-              {templateDropdown}
-              {fillButton}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="px-2.5 py-1 text-sm text-gray-600 hover:text-gray-900 rounded border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                Avbryt
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  await handleSave(false);
-                  onCancel();
-                }}
-                disabled={saving || approving}
-                className="px-2.5 py-1 text-sm text-brand-navy rounded border border-brand-navy hover:bg-brand-sky-button disabled:opacity-50 transition-colors font-medium cursor-pointer"
-              >
-                Lagre
-              </button>
-              <button
-                type="button"
-                onClick={handleApprove}
-                disabled={saving || approving}
-                className="px-2.5 py-1 text-sm bg-brand-navy text-white rounded hover:bg-brand-navy-light disabled:opacity-50 transition-colors font-medium cursor-pointer"
-              >
-                Godkjenn
-              </button>
-            </div>
+        <div className="flex items-center justify-between px-4 py-2 gap-3">
+          <NoteTypeTag type={type} className="whitespace-nowrap" />
+          {hjertefriskButton}
+          <div className="flex items-center gap-1.5 flex-1">
+            {templateDropdown}
+            {fillButton}
           </div>
-        )}
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-2.5 py-1 text-sm text-gray-600 hover:text-gray-900 rounded border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              Avbryt
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                await handleSave(false);
+                onCancel();
+              }}
+              disabled={saving || approving}
+              className="px-2.5 py-1 text-sm text-brand-navy rounded border border-brand-navy hover:bg-brand-sky-button disabled:opacity-50 transition-colors font-medium cursor-pointer"
+            >
+              Lagre
+            </button>
+            <button
+              type="button"
+              onClick={handleApprove}
+              disabled={saving || approving}
+              className="px-2.5 py-1 text-sm bg-brand-navy text-white rounded hover:bg-brand-navy-light disabled:opacity-50 transition-colors font-medium cursor-pointer"
+            >
+              Godkjenn
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">

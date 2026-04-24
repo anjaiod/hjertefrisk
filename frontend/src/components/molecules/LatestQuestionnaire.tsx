@@ -65,7 +65,7 @@ export function LatestQuestionnaire({
         <div>
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Siste besvarelse
+              Hjertefrisk
             </span>
             <div className="relative" ref={/* eslint-disable-next-line @typescript-eslint/no-explicit-any */ (null as any)}>
               {/* Custom dropdown to allow styling of list items (cursor pointer) */}
