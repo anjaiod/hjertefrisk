@@ -29,7 +29,7 @@ export function CalendarCard({ activityDate }: { activityDate: Date }) {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
   return (
-    <div className="bg-white rounded-xl border border-brand-mist shadow-sm p-4">
+    <div className="bg-white rounded-xl border border-brand-mist shadow-sm p-3">
       <div className="flex items-center justify-between mb-3">
         <IconButton onClick={prevMonth} ariaLabel="Previous month">
           ←
