@@ -42,7 +42,9 @@ export function Modal({ onClose, children, title }: ModalProps) {
               </h2>
             )}
           </div>
-          <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">{children}</div>
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
+            {children}
+          </div>
         </div>
       </div>
     </FocusTrap>,
