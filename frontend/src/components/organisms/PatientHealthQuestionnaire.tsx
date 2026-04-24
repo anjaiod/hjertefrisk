@@ -24,7 +24,6 @@ import ConditionalQuestion from "../molecules/ConditionalQuestion";
 import QuestionnaireSummary from "../molecules/QuestionnaireSummary";
 import { useTTS } from "@/hooks/useTTS";
 import QuestionWithTTS from "../molecules/QuestionWithTTS";
-import { TTSButton } from "../atoms/TTSButton";
 
 export default function PatientHealthQuestionnaire() {
   const router = useRouter();
@@ -505,7 +504,7 @@ export default function PatientHealthQuestionnaire() {
         ]);
       }}
     >
-      <div key="bp-group">
+      <div>
         <p className="text-2xl font-medium text-gray-800 mb-10">
           Har du instrumenter til å måle blodtrykket ditt? I så fall, fyll inn
           her:
