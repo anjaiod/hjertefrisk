@@ -190,25 +190,27 @@ export default function PasientRisikoSide() {
           </div>
 
           <div className="flex flex-col gap-6">
+            <SectionWrapper title="Kardiometabolsk helse">
+              {renderHealthCard("Blodtrykk")}
+              {renderHealthCard("Glukoseregulering")}
+              {renderHealthCard("Blodlipider")}
+              {renderHealthCard("Kroppsdata", "Kroppsdata")}
+            </SectionWrapper>
+            
             <SectionWrapper title="Levevaner">
               {renderHealthCard("Fysisk aktivitet")}
               {renderHealthCard("Kosthold")}
-              {renderHealthCard("Kroppsdata")}
-              {renderHealthCard("Søvn")}
-            </SectionWrapper>
-
-            <SectionWrapper title="Livsstilsvaner">
               {renderHealthCard("Røyking")}
-              {renderHealthCard("Alkohol")}
-              {renderHealthCard("Rusmidler")}
               {renderHealthCard("Tannhelse")}
             </SectionWrapper>
 
-            <SectionWrapper title="Annet">
-              {renderHealthCard("Blodtrykk")}
-              {renderHealthCard("Glukoseregulering")}
-              {renderHealthCard("Blodlipider", "Kolesterol")}
+            <SectionWrapper title="Psykisk helse og rus">
+              {renderHealthCard("Søvn")}
+              {renderHealthCard("Alkohol")}
+              {renderHealthCard("Rusmidler")}
             </SectionWrapper>
+
+            
           </div>
         </main>
       </div>

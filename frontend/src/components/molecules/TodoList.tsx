@@ -148,7 +148,6 @@ export function TodoList({
   };
 
   const deleteTodo = async (id: number) => {
-
     setDeletingId(id);
     try {
       await apiClient.delete(`/api/todos/${id}`);
@@ -184,7 +183,11 @@ export function TodoList({
               onClick={() => setOpenModal(true)}
               disabled={!patientId}
               className="px-3 py-1 text-sm font-medium text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-              title={!patientId ? "Velg pasient for å åpne oppgaver" : "Åpne todo-modal"}
+              title={
+                !patientId
+                  ? "Velg pasient for å åpne oppgaver"
+                  : "Åpne todo-modal"
+              }
             >
               Åpne
             </button>
@@ -375,7 +378,10 @@ export function TodoList({
     <div className="w-full max-w-md bg-white rounded-xl border border-brand-mist/30 shadow-sm p-8 h-full">
       {content}
       {openModal && patientId ? (
-        <TodoModal patientId={String(patientId)} onClose={() => setOpenModal(false)} />
+        <TodoModal
+          patientId={String(patientId)}
+          onClose={() => setOpenModal(false)}
+        />
       ) : null}
     </div>
   );
