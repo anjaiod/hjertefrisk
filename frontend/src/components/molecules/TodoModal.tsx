@@ -62,7 +62,13 @@ export function TodoModal({ patientId, onClose }: TodoModalProps) {
 
   return (
     <Modal onClose={onClose} title="Todoer">
-      <TodoList todos={todos} patientId={Number(patientId)} maxHeight="max-h-[60vh]" noContainer showControls={false} />
+      <TodoList
+        todos={todos}
+        patientId={Number(patientId)}
+        maxHeight="max-h-[60vh]"
+        noContainer
+        showControls={false}
+      />
     </Modal>
   );
 }

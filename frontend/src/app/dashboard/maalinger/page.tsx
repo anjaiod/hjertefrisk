@@ -195,7 +195,11 @@ export default function Page() {
                             : "pasienten selv"}{" "}
                           {new Date(result.registeredAt).toLocaleDateString(
                             "nb-NO",
-                            { day: "2-digit", month: "2-digit", year: "numeric" },
+                            {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            },
                           )}
                         </p>
                       )}
