@@ -110,6 +110,23 @@ export default function Page() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-brand-navy">Pasienter</h1>
         <div className="flex items-center gap-3">
+          {(statusFilter !== null ||
+            search !== "" ||
+            sortKey !== "lastVisited" ||
+            sortDir !== "desc") && (
+            <button
+              onClick={() => {
+                setStatusFilter(null);
+                setSearch("");
+                setSortKey("lastVisited");
+                setSortDir("desc");
+                setCurrentPage(1);
+              }}
+              className="text-sm text-brand-navy/60 hover:text-brand-navy underline underline-offset-2 transition-colors cursor-pointer"
+            >
+              Tøm filter
+            </button>
+          )}
           {statusFilters.map(({ variant, label }) => (
             <button
               key={variant}

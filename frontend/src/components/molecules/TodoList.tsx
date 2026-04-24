@@ -5,6 +5,7 @@ import { Checkbox } from "../atoms/Checkbox";
 import { TodoModal } from "./TodoModal";
 import { ConfirmModal } from "./ConfirmModal";
 import { apiClient } from "@/lib/apiClient";
+import { useUser } from "@/context/UserContext";
 
 type Todo = {
   id: number;
@@ -20,7 +21,7 @@ export function TodoList({
   title,
   todos: initialTodos = [],
   patientId,
-  maxHeight = "max-h-64",
+  maxHeight = "max-h-40",
   noContainer = false,
   showControls = true, // Default value for showControls
 }: {
@@ -31,6 +32,9 @@ export function TodoList({
   noContainer?: boolean;
   showControls?: boolean; // New prop added
 }) {
+  const { user } = useUser();
+  const currentPersonnelId = user ? Number.parseInt(user.id, 10) : null;
+
   const [todos, setTodos] = useState<Todo[]>(initialTodos);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -130,6 +134,7 @@ export function TodoList({
           completed: created.finished,
           public: created.public,
           createdAt: created.createdAt,
+          personnelId: currentPersonnelId ?? undefined,
         },
       ]);
       setNewTodoText("");
@@ -164,7 +169,7 @@ export function TodoList({
     <>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-brand-navy">{title}</h2>
-        {showControls ? (
+        {showControls && !showCreateForm ? (
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowCreateForm(true)}
@@ -227,14 +232,14 @@ export function TodoList({
             <button
               onClick={createTodo}
               disabled={isCreating || !newTodoText.trim()}
-              className="flex-1 px-3 py-2 text-sm font-medium text-white bg-brand-sage hover:bg-brand-sage/90 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-3 py-2 text-sm font-medium text-white bg-brand-sage hover:bg-brand-sage/90 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {isCreating ? "Legger til..." : "Legg til"}
             </button>
             <button
               onClick={() => setShowCreateForm(false)}
               disabled={isCreating}
-              className="px-3 py-2 text-sm font-medium text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+              className="px-3 py-2 text-sm font-medium text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
             >
               Avbryt
             </button>
@@ -243,22 +248,25 @@ export function TodoList({
       )}
 
       {/* Progress Bar */}
-      <div className="mb-6">
-        <div className="flex items-center">
-          <div className="h-3 flex-1 overflow-hidden rounded-full bg-brand-mist">
-            <div
-              className="h-full rounded-full bg-brand-sage transition-all duration-300"
-              style={{ width: `${percentage}%` }}
-            />
+      {!showCreateForm && (
+        <div className="mb-6">
+          <div className="flex items-center">
+            <div className="h-3 flex-1 overflow-hidden rounded-full bg-brand-mist">
+              <div
+                className="h-full rounded-full bg-brand-sage transition-all duration-300"
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+            <span className="min-w-12 text-right text-sm font-bold text-brand-sage">
+              {percentage}%
+            </span>
           </div>
-          <span className="min-w-12 text-right text-sm font-bold text-brand-sage">
-            {percentage}%
-          </span>
         </div>
-      </div>
+      )}
 
       {/* Todo List */}
-      <div className={`${maxHeight} overflow-y-auto space-y-2 pr-2 bg-white`}>
+      {!showCreateForm && (
+        <div className={`${maxHeight} overflow-y-auto space-y-2 pr-2 bg-white`}>
         {todos.map((todo) => (
           <div
             key={todo.id}
@@ -277,7 +285,7 @@ export function TodoList({
             />
             <div className="flex-1">
               <span
-                className={`block text-base ${
+                className={`block text-sm ${
                   todo.completed
                     ? "line-through text-slate-400"
                     : "text-slate-700"
@@ -327,12 +335,15 @@ export function TodoList({
             </button>
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* Progress Text */}
-      <div className="mt-4 text-center text-sm text-slate-600">
-        {completedCount} av {totalCount} oppgaver fullført
-      </div>
+      {!showCreateForm && (
+        <div className="mt-4 text-center text-sm text-slate-600">
+          {completedCount} av {totalCount} gjøremål fullført
+        </div>
+      )}
       {todoToDelete ? (
         <ConfirmModal
           title="Slett oppgave"
@@ -364,7 +375,7 @@ export function TodoList({
   }
 
   return (
-    <div className="w-full max-w-md  bg-white rounded-xl border border-brand-mist/30 shadow-sm p-8">
+    <div className="w-full max-w-md bg-white rounded-xl border border-brand-mist/30 shadow-sm p-8 h-full">
       {content}
       {openModal && patientId ? (
         <TodoModal

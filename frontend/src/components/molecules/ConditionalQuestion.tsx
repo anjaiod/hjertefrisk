@@ -12,6 +12,8 @@ interface ConditionalQuestionProps {
   hasFollowUpQuestions?: boolean; // Hvis true, auto-advance kun på "nei"
   required?: boolean;
   compact?: boolean;
+  smallLabel?: boolean;
+  description?: string;
   highlightedIndex?: number | null;
 }
 
@@ -25,6 +27,8 @@ export default function ConditionalQuestion({
   hasFollowUpQuestions = false,
   required = false,
   compact = false,
+  smallLabel = false,
+  description,
   highlightedIndex,
 }: ConditionalQuestionProps) {
   const handleChange = (newValue: "ja" | "nei") => {
@@ -41,7 +45,13 @@ export default function ConditionalQuestion({
 
   return (
     <div className="mb-6">
-      <QuestionLabel text={question} required={required} compact={compact} />
+      <QuestionLabel
+        text={question}
+        required={required}
+        compact={compact}
+        small={smallLabel}
+        description={description}
+      />
       <div className="space-y-2 mb-4">
         <div
           className={`
