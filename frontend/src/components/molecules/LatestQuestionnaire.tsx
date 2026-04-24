@@ -65,7 +65,7 @@ export function LatestQuestionnaire({
         <div>
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Siste Hjertefrisk-skjema
+              Siste besvarelse
             </span>
             <div className="relative" ref={/* eslint-disable-next-line @typescript-eslint/no-explicit-any */ (null as any)}>
               {/* Custom dropdown to allow styling of list items (cursor pointer) */}
@@ -76,7 +76,6 @@ export function LatestQuestionnaire({
               />
             </div>
           </div>
-          {date && <p className="text-xs text-gray-400 mt-0.5">{date}</p>}
         </div>
         {onClose && (
           <button
@@ -110,14 +109,25 @@ export function LatestQuestionnaire({
             {entries.map((r) => {
               const answer =
                 r.answerText ?? (r.numberValue != null ? String(r.numberValue) : "–");
+              const answeredAtText = r.answeredAt
+                ? new Date(r.answeredAt).toLocaleDateString("nb-NO", {
+                    day: "numeric",
+                    month: "numeric",
+                    year: "numeric",
+                  })
+                : null;
+
               return (
                 <div key={r.questionId} className="flex flex-col gap-0.5">
                   <span className="text-xs text-gray-400 leading-snug">
                     {r.questionText}
                   </span>
-                  <span className="text-xs font-medium text-gray-800">
-                    {answer}
-                  </span>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-xs font-medium text-gray-800">{answer}</span>
+                    {answeredAtText && (
+                      <span className="text-xs text-brand-navy-light ml-3">{answeredAtText}</span>
+                    )}
+                  </div>
                 </div>
               );
             })}
