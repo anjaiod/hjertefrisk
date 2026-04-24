@@ -32,7 +32,7 @@ export function Modal({ onClose, children, title }: ModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg leading-none"
+              className="absolute top-4 right-4 flex items-center justify-center w-7 h-7 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition text-lg leading-none cursor-pointer"
             >
               ✕
             </button>

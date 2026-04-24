@@ -83,10 +83,9 @@ export function VarslingModal({
     }
   };
 
-  // When clicking a notification: mark as read for current personnel and navigate to the answered query
-  const handleOpenNotification = async (n: NotificationDto) => {
+  const markOneRead = (id: number) => {
     const updated = items.map((it) =>
-      it.id === n.id ? { ...it, read: true } : it,
+      it.id === id ? { ...it, read: true, readAt: new Date().toISOString() } : it,
     );
     setItems(updated);
 
@@ -96,10 +95,13 @@ export function VarslingModal({
     if (!stillUnread) onAllRead?.();
 
     apiClient
-      .post<void>(`/api/notifications/${n.id}/mark-read`)
-      .catch((err) =>
-        console.error("Failed to mark notification as read", err),
-      );
+      .post<void>(`/api/notifications/${id}/mark-read`)
+      .catch((err) => console.error("Failed to mark notification as read", err));
+  };
+
+  // When clicking a notification: mark as read for current personnel and navigate to the answered query
+  const handleOpenNotification = async (n: NotificationDto) => {
+    markOneRead(n.id);
 
     // navigate to the answered query if available and we have a selected patient
     if (n.answeredQueryId && patientId) {
@@ -138,10 +140,10 @@ export function VarslingModal({
             {visible.map((n) => (
               <li
                 key={n.id}
-                className={`flex justify-between items-start p-3 rounded border hover:bg-slate-50 transition cursor-pointer`}
+                className="flex justify-between items-center p-3 rounded border hover:bg-slate-50 transition cursor-pointer"
                 onClick={() => handleOpenNotification(n)}
               >
-                <div>
+                <div className="flex-1 min-w-0 pr-3">
                   <p
                     className={`${!n.read ? "font-semibold text-slate-900" : "text-slate-400 line-through"}`}
                   >
@@ -152,10 +154,32 @@ export function VarslingModal({
                   </p>
                 </div>
 
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center shrink-0 ml-3">
                   {n.read ? (
                     <span className="text-xs text-slate-400">Lest</span>
-                  ) : null}
+                  ) : (
+                    <button
+                      type="button"
+                      title="Merk som lest"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markOneRead(n.id);
+                      }}
+                      className="flex items-center justify-center w-7 h-7 rounded border border-slate-300 text-slate-400 hover:border-green-500 hover:text-green-600 hover:bg-green-50 transition cursor-pointer"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="w-4 h-4"
+                      >
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               </li>
             ))}
