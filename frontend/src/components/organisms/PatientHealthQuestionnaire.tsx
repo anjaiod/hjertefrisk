@@ -407,11 +407,11 @@ export default function PatientHealthQuestionnaire() {
             onChange={(val) => updateAnswer(question.questionId, val)}
             onAnswer={handleNext}
             required={question.isRequired}
+            smallLabel={isHyperkolesterolemi}
+            description={questionDescription}
             highlightedIndex={
               activeId === question.questionId ? highlightedIndex : null
             }
-            smallLabel={isHyperkolesterolemi}
-            description={questionDescription}
           />
         </QuestionWithTTS>
       );
@@ -435,11 +435,11 @@ export default function PatientHealthQuestionnaire() {
             onChange={(val) => updateAnswer(question.questionId, val)}
             onAnswer={handleNext}
             required={question.isRequired}
+            smallLabel={isHyperkolesterolemi}
+            description={questionDescription}
             highlightedIndex={
               activeId === question.questionId ? highlightedIndex : null
             }
-            smallLabel={isHyperkolesterolemi}
-            description={questionDescription}
           />
         </QuestionWithTTS>
       );
