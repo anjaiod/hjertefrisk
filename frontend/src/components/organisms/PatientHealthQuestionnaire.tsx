@@ -511,35 +511,58 @@ export default function PatientHealthQuestionnaire() {
 
   // Blodtrykk-gruppeelementet: header + begge felter side om side
   const buildBpGroupElement = (): ReactElement => (
-    <div key="bp-group">
-      <p className="text-2xl font-medium text-gray-800 mb-10">
-        Har du instrumenter til å måle blodtrykket ditt? I så fall, fyll inn
-        her:
-      </p>
-      <div className="flex gap-6 flex-wrap">
-        {bpVisibleQuestions.map((bpQ) => {
-          const isSystolic = bpQ.fallbackText
-            .toLowerCase()
-            .includes("systolisk");
-          const label = isSystolic
-            ? "Systolisk blodtrykk:"
-            : "Diastolisk blodtrykk:";
-          return (
-            <div key={bpQ.questionId} className="flex-1 min-w-40">
-              <QuestionNumber
-                question={label}
-                name={`question-${bpQ.questionId}`}
-                value={answers[bpQ.questionId] ?? ""}
-                onChange={(val) => updateAnswer(bpQ.questionId, val)}
-                placeholder={isSystolic ? "120" : "80"}
-                unit="mmHg"
-                required={false}
-              />
-            </div>
-          );
-        })}
+    <QuestionWithTTS
+      key="bp-group"
+      isActive={activeId === -999}
+      onToggle={() => {
+        if (highlightedIndex !== null) {
+          stop();
+          return;
+        }
+        speakSequence([
+          "Har du instrumenter til å måle blodtrykket ditt? I så fall, fyll inn her.",
+          "Systolisk blodtrykk. Skriv inn et tall.",
+          "Diastolisk blodtrykk. Skriv inn et tall.",
+        ]);
+      }}
+    >
+      <div key="bp-group">
+        <p className="text-2xl font-medium text-gray-800 mb-10">
+          Har du instrumenter til å måle blodtrykket ditt? I så fall, fyll inn
+          her:
+        </p>
+        <div className="flex gap-6 flex-wrap">
+          {bpVisibleQuestions.map((bpQ, index) => {
+            const isSystolic = bpQ.fallbackText
+              .toLowerCase()
+              .includes("systolisk");
+            const label = isSystolic
+              ? "Systolisk blodtrykk:"
+              : "Diastolisk blodtrykk:";
+            return (
+              <div
+                key={bpQ.questionId}
+                className={`flex-1 min-w-40 ${
+                  highlightedIndex === index + 1
+                    ? "ring-2 ring-teal-400 rounded-lg"
+                    : ""
+                }`}
+              >
+                <QuestionNumber
+                  question={label}
+                  name={`question-${bpQ.questionId}`}
+                  value={answers[bpQ.questionId] ?? ""}
+                  onChange={(val) => updateAnswer(bpQ.questionId, val)}
+                  placeholder={isSystolic ? "120" : "80"}
+                  unit="mmHg"
+                  required={false}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </QuestionWithTTS>
   );
 
   const questionElements = wizardSteps.map((q) => {
