@@ -10,6 +10,7 @@ public class CreatePersonnelDto
 
     [Required]
     [StringLength(200, MinimumLength = 1)]
+    [RegularExpression(@"^[^\d]*$", ErrorMessage = "Name must not contain numbers")]
     public required string Name { get; set; }
 
     [Required]

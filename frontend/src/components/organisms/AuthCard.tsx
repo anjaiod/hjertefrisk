@@ -1,22 +1,14 @@
 "use client";
 
 import { LoginForm } from "@/components/organisms/LoginForm";
-import { RegisterForm } from "@/components/organisms/RegisterForm";
 import { useAuthPage } from "@/hooks/useAuthPage";
 
 export function AuthCard() {
   const {
     loginState,
-    registerState,
     setLoginEmail,
     setLoginPassword,
-    setActiveRegisterRole,
-    setRegisterName,
-    setRegisterEmail,
-    setRegisterPassword,
-    setRegisterGender,
     handleLoginSubmit,
-    handleRegisterSubmit,
   } = useAuthPage();
 
   return (
@@ -34,25 +26,6 @@ export function AuthCard() {
         onEmailChange={setLoginEmail}
         onPasswordChange={setLoginPassword}
         onSubmit={handleLoginSubmit}
-      />
-
-      <div className="my-6 h-px bg-slate-200" />
-
-      <RegisterForm
-        role={registerState.role}
-        name={registerState.name}
-        email={registerState.email}
-        password={registerState.password}
-        gender={registerState.gender}
-        errorMessage={registerState.errorMessage}
-        successMessage={registerState.successMessage}
-        isLoading={registerState.isLoading}
-        onRoleChange={setActiveRegisterRole}
-        onNameChange={setRegisterName}
-        onEmailChange={setRegisterEmail}
-        onPasswordChange={setRegisterPassword}
-        onGenderChange={setRegisterGender}
-        onSubmit={handleRegisterSubmit}
       />
     </div>
   );

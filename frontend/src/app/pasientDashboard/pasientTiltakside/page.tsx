@@ -33,7 +33,10 @@ type PatientMeasureResult = {
   basedOnPersonnelName: string | null;
 };
 
-function formatBasedOn(date: string | null, personnelName: string | null): string | null {
+function formatBasedOn(
+  date: string | null,
+  personnelName: string | null,
+): string | null {
   if (!date) return null;
   const d = new Date(date);
   if (isNaN(d.getTime())) return null;
@@ -245,18 +248,34 @@ export default function PasientTiltakside() {
                           d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75a2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z"
                         />
                       </svg>
-                      <p className="text-slate-600 font-medium">
-                        Ingen tiltak registrert for{" "}
-                        {selectedCategory.name.toLowerCase()}
-                      </p>
-                      <p className="text-slate-400 text-sm max-w-sm">
-                        Besvar kategorien{" "}
-                        <span className="font-semibold text-slate-500">
-                          {selectedCategory.name}
-                        </span>{" "}
-                        i Hjertefrisk-skjemaet for å få tiltak basert på svarene
-                        dine.
-                      </p>
+                      {selectedCategory.name.toLowerCase().trim() ===
+                      "glukoseregulering" ? (
+                        <>
+                          <p className="text-slate-600 font-medium">
+                            Ingen verdier registrert for{" "}
+                            {selectedCategory.name.toLowerCase()}
+                          </p>
+                          <p className="text-slate-400 text-sm max-w-sm">
+                            Denne risiko-kategorien baserer seg på blodprøver,
+                            som ikke er registrert.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-slate-600 font-medium">
+                            Ingen tiltak registrert for{" "}
+                            {selectedCategory.name.toLowerCase()}
+                          </p>
+                          <p className="text-slate-400 text-sm max-w-sm">
+                            Besvar kategorien{" "}
+                            <span className="font-semibold text-slate-500">
+                              {selectedCategory.name}
+                            </span>{" "}
+                            i Hjertefrisk-skjemaet for å få tiltak basert på
+                            svarene dine.
+                          </p>
+                        </>
+                      )}
                     </div>
                   ) : (
                     selectedMeasures.map((measure) => (
@@ -282,9 +301,15 @@ export default function PasientTiltakside() {
                             Les mer her
                           </a>
                         )}
-                        {formatBasedOn(measure.basedOnDate, measure.basedOnPersonnelName) && (
+                        {formatBasedOn(
+                          measure.basedOnDate,
+                          measure.basedOnPersonnelName,
+                        ) && (
                           <p className="text-xs text-slate-400 italic border-t border-slate-100 pt-2 mt-1">
-                            {formatBasedOn(measure.basedOnDate, measure.basedOnPersonnelName)}
+                            {formatBasedOn(
+                              measure.basedOnDate,
+                              measure.basedOnPersonnelName,
+                            )}
                           </p>
                         )}
                       </div>

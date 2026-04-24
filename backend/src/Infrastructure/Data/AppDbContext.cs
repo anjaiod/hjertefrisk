@@ -79,12 +79,18 @@ public class AppDbContext : DbContext
             .IsUnique();
 
         modelBuilder.Entity<Patient>()
+            .HasCheckConstraint("CK_Patients_Name_NoDigits", "\"Name\" !~ '\\d'");
+
+        modelBuilder.Entity<Patient>()
             .HasIndex(x => x.SupabaseUserId)
             .IsUnique();
 
         modelBuilder.Entity<Personnel>()
             .HasIndex(x => x.Email)
             .IsUnique();
+
+        modelBuilder.Entity<Personnel>()
+            .HasCheckConstraint("CK_Personnel_Name_NoDigits", "\"Name\" !~ '\\d'");
 
         modelBuilder.Entity<Personnel>()
             .HasIndex(x => x.SupabaseUserId)
