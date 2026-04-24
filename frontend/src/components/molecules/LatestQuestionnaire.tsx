@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { apiClient } from "@/lib/apiClient";
 
 interface LatestResponseItem {
@@ -67,17 +67,14 @@ export function LatestQuestionnaire({
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Siste Hjertefrisk-skjema
             </span>
-            <select
-              className="text-xs text-gray-600 border rounded px-2 py-0.5"
-              value={selectedQueryId}
-              onChange={(e) => setSelectedQueryId(Number(e.target.value))}
-            >
-              {queries.map((q) => (
-                <option key={q.id} value={q.id}>
-                  {q.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative" ref={/* eslint-disable-next-line @typescript-eslint/no-explicit-any */ (null as any)}>
+              {/* Custom dropdown to allow styling of list items (cursor pointer) */}
+              <CustomQuerySelect
+                queries={queries}
+                selectedId={selectedQueryId}
+                onChange={(id) => setSelectedQueryId(id)}
+              />
+            </div>
           </div>
           {date && <p className="text-xs text-gray-400 mt-0.5">{date}</p>}
         </div>
@@ -127,6 +124,81 @@ export function LatestQuestionnaire({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function CustomQuerySelect({
+  queries,
+  selectedId,
+  onChange,
+}: {
+  queries: { id: number; name: string }[];
+  selectedId: number;
+  onChange: (id: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (!ref.current) return;
+      if (!ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
+  const selected = queries.find((q) => q.id === selectedId);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((s) => !s)}
+        className="text-xs text-gray-600 border rounded px-2 py-0.5 cursor-pointer flex items-center gap-2"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className="truncate">{selected ? selected.name : "Velg..."}</span>
+        <svg
+          className="w-3 h-3 ml-1 text-gray-500"
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="M6 8l4 4 4-4" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <ul
+          role="listbox"
+          className="absolute right-0 mt-1 z-10 w-56 bg-white border border-gray-200 rounded shadow max-h-60 overflow-auto"
+        >
+          {queries.map((q) => (
+            <li key={q.id} role="option">
+              <button
+                type="button"
+                onClick={() => {
+                  onChange(q.id);
+                  setOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 text-xs ${q.id === selectedId ? "bg-gray-100" : "hover:bg-gray-50"} cursor-pointer`}
+              >
+                {q.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

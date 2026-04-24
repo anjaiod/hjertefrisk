@@ -359,7 +359,7 @@ export default function JournalnotatPage() {
                 type="button"
                 onClick={() => setPage((p) => p - 1)}
                 disabled={page === 0}
-                className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors"
+                className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors cursor-pointer"
               >
                 ← Forrige
               </button>
@@ -370,7 +370,7 @@ export default function JournalnotatPage() {
                 type="button"
                 onClick={() => setPage((p) => p + 1)}
                 disabled={page >= totalPages - 1}
-                className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors"
+                className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors cursor-pointer"
               >
                 Neste →
               </button>
