@@ -52,7 +52,7 @@ export function JournalDetail({
             </h2>
             {isSigned && (
               <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-mint-background text-brand-mint-text">
-                Signert
+                Godkjent
               </span>
             )}
           </div>
@@ -112,7 +112,7 @@ export function JournalDetail({
               {!isSigned && (
                 <button
                   type="button"
-                  title="Signer"
+                  title="Godkjenn"
                   onClick={async () => {
                     if (signing) return;
                     setSigning(true);
@@ -122,7 +122,7 @@ export function JournalDetail({
                       );
                       onSign?.(approved);
                     } catch {
-                      alert("Kunne ikke signere notatet.");
+                      alert("Kunne ikke Godkjenne notatet.");
                     } finally {
                       setSigning(false);
                     }
@@ -182,7 +182,7 @@ export function JournalDetail({
   <h1>${note.title}</h1>
   <div class="meta">${note.personnelName} · ${formatDate(note.createdAt)}</div>
   ${note.content}
-  ${note.signedAt ? `<div class="signed">Signert av ${note.personnelName} · ${formatDateTime(note.signedAt)}</div>` : ""}
+  ${note.signedAt ? `<div class="signed">Godkjent av ${note.personnelName} · ${formatDateTime(note.signedAt)}</div>` : ""}
 </body>
 </html>`;
               const win = window.open("", "_blank");
@@ -220,7 +220,7 @@ export function JournalDetail({
 
       {isSigned && (
         <div className="px-6 py-3 border-t border-gray-100 text-xs text-brand-mint-text">
-          Signert av {note.personnelName} · {formatDateTime(note.signedAt!)}
+          Godkjent av {note.personnelName} · {formatDateTime(note.signedAt!)}
         </div>
       )}
     </div>
