@@ -62,11 +62,12 @@ public class NotificationService : INotificationService
         }
     }
 
-    public async Task MarkAllAsReadAsync(int personnelId)
+    public async Task MarkAllAsReadAsync(int personnelId, int? patientId = null)
     {
         var now = DateTime.UtcNow;
         var unread = await _db.Notifications
-            .Where(n => n.PersonnelId == personnelId && !n.Read)
+            .Where(n => n.PersonnelId == personnelId && !n.Read &&
+                        (patientId == null || n.PatientId == patientId))
             .ToListAsync();
 
         foreach (var n in unread)

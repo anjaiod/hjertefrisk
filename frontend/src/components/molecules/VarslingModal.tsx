@@ -66,9 +66,15 @@ export function VarslingModal({
   const handleMarkAllRead = async () => {
     setMarkingAll(true);
     try {
-      await markAllNotificationsAsRead();
+      await markAllNotificationsAsRead(patientId);
       const now = new Date().toISOString();
-      setItems((prev) => prev.map((it) => ({ ...it, read: true, readAt: now })));
+      setItems((prev) =>
+        prev.map((it) =>
+          patientId === undefined || it.patientId === patientId
+            ? { ...it, read: true, readAt: now }
+            : it,
+        ),
+      );
       onAllRead?.();
     } catch (err) {
       console.error("Failed to mark all notifications as read", err);

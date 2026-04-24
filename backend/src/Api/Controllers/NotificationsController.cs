@@ -46,7 +46,7 @@ public class NotificationsController : ControllerBase
     }
 
     [HttpPost("mark-all-read")]
-    public async Task<IActionResult> MarkAllRead()
+    public async Task<IActionResult> MarkAllRead([FromQuery] int? patientId = null)
     {
         var supabaseUserId = HttpContext.GetSupabaseUserIdFromContext();
         if (string.IsNullOrWhiteSpace(supabaseUserId)) return Unauthorized();
@@ -54,7 +54,7 @@ public class NotificationsController : ControllerBase
         var personnelId = await _authService.GetPersonnelIdBySupabaseIdAsync(supabaseUserId);
         if (!personnelId.HasValue) return Unauthorized();
 
-        await _service.MarkAllAsReadAsync(personnelId.Value);
+        await _service.MarkAllAsReadAsync(personnelId.Value, patientId);
         return NoContent();
     }
 }

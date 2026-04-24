@@ -4,8 +4,11 @@ export async function fetchNotifications() {
   return await apiClient.get<NotificationDto[]>("/api/notifications");
 }
 
-export async function markAllNotificationsAsRead() {
-  return await apiClient.post<void>("/api/notifications/mark-all-read");
+export async function markAllNotificationsAsRead(patientId?: number) {
+  const url = patientId
+    ? `/api/notifications/mark-all-read?patientId=${patientId}`
+    : "/api/notifications/mark-all-read";
+  return await apiClient.post<void>(url);
 }
 
 export type NotificationDto = {
