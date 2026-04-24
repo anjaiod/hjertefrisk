@@ -12,6 +12,8 @@ interface ConditionalQuestionProps {
   hasFollowUpQuestions?: boolean; // Hvis true, auto-advance kun på "nei"
   required?: boolean;
   compact?: boolean;
+  smallLabel?: boolean;
+  description?: string;
 }
 
 export default function ConditionalQuestion({
@@ -24,6 +26,8 @@ export default function ConditionalQuestion({
   hasFollowUpQuestions = false,
   required = false,
   compact = false,
+  smallLabel = false,
+  description,
 }: ConditionalQuestionProps) {
   const handleChange = (newValue: "ja" | "nei") => {
     onChange(newValue);
@@ -39,7 +43,7 @@ export default function ConditionalQuestion({
 
   return (
     <div className="mb-6">
-      <QuestionLabel text={question} required={required} compact={compact} />
+      <QuestionLabel text={question} required={required} compact={compact} small={smallLabel} description={description} />
       <div className="space-y-2 mb-4">
         <RadioButton
           id={`${name}-ja`}

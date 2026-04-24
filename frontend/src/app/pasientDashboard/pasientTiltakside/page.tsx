@@ -33,6 +33,10 @@ type PatientMeasureResult = {
   basedOnPersonnelName: string | null;
 };
 
+function displayCategoryName(name: string): string {
+  return name.toLowerCase().trim() === "blodlipider" ? "Kolesterol" : name;
+}
+
 function formatBasedOn(
   date: string | null,
   personnelName: string | null,
@@ -210,7 +214,7 @@ export default function PasientTiltakside() {
                           ].join(" ")}
                         >
                           <span className="text-slate-800 font-medium">
-                            {cat.name}
+                            {displayCategoryName(cat.name)}
                           </span>
                           {variant && (
                             <Tag variant={variant} className="text-sm">
@@ -229,7 +233,7 @@ export default function PasientTiltakside() {
                 <div className="flex-1 flex flex-col gap-4">
                   <div>
                     <h2 className="text-brand-navy font-bold text-2xl mb-1">
-                      {selectedCategory.name}
+                      {displayCategoryName(selectedCategory.name)}
                     </h2>
                   </div>
 
@@ -253,7 +257,7 @@ export default function PasientTiltakside() {
                         <>
                           <p className="text-slate-600 font-medium">
                             Ingen verdier registrert for{" "}
-                            {selectedCategory.name.toLowerCase()}
+                            {displayCategoryName(selectedCategory.name).toLowerCase()}
                           </p>
                           <p className="text-slate-400 text-sm max-w-sm">
                             Denne risiko-kategorien baserer seg på blodprøver,
@@ -264,12 +268,12 @@ export default function PasientTiltakside() {
                         <>
                           <p className="text-slate-600 font-medium">
                             Ingen tiltak registrert for{" "}
-                            {selectedCategory.name.toLowerCase()}
+                            {displayCategoryName(selectedCategory.name).toLowerCase()}
                           </p>
                           <p className="text-slate-400 text-sm max-w-sm">
                             Besvar kategorien{" "}
                             <span className="font-semibold text-slate-500">
-                              {selectedCategory.name}
+                              {displayCategoryName(selectedCategory.name)}
                             </span>{" "}
                             i Hjertefrisk-skjemaet for å få tiltak basert på
                             svarene dine.
