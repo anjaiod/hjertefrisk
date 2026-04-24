@@ -121,7 +121,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-10 max-w-7xl mx-auto">
-      <div className="flex gap-8">
+      <div className="flex gap-8 items-stretch">
         {/* Patient Info Card */}
         <div className="flex-1 bg-white rounded-xl border border-brand-mist/30 shadow-sm p-8">
           <div className="flex gap-12">
@@ -148,7 +148,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Todo List */}
-        <div className="w-96">
+        <div className="w-96 flex flex-col">
           <TodoList
             key={patientId ?? "no-patient"}
             title={`Gjøremål for ${patientName}:`}
