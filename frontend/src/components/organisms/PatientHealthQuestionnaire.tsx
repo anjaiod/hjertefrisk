@@ -50,6 +50,10 @@ export default function PatientHealthQuestionnaire() {
     useTTS();
 
   const handleSpeakIntro = () => {
+    if (highlightedIndex !== null) {
+      stop();
+      return;
+    }
     speakSequence([
       "Om skjemaet. Dette skjemaet brukes til å kartlegge din helse og livsstil som en del av Hjertefrisk-programmet. Svarene dine hjelper helsepersonellet å følge opp din helseutvikling.",
       "Skjemaet tar cirka fem til ti minutter å fylle ut.",
