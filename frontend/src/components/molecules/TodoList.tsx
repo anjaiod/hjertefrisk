@@ -341,7 +341,7 @@ export function TodoList({
       {/* Progress Text */}
       {!showCreateForm && (
         <div className="mt-4 text-center text-sm text-slate-600">
-          {completedCount} av {totalCount} oppgaver fullført
+          {completedCount} av {totalCount} gjøremål fullført
         </div>
       )}
       {todoToDelete ? (

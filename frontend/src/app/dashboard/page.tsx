@@ -151,7 +151,7 @@ export default function DashboardPage() {
         <div className="w-96 flex flex-col">
           <TodoList
             key={patientId ?? "no-patient"}
-            title="Gjøremål:"
+            title={`Gjøremål for ${patientName}:`}
             todos={todos}
             patientId={patientId ? Number(patientId) : undefined}
           />
