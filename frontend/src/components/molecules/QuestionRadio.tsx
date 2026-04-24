@@ -18,6 +18,8 @@ interface QuestionRadioProps {
   followUpTriggerValues?: string[]; // Verdier som trigger follow-up spørsmål
   required?: boolean;
   compact?: boolean;
+  smallLabel?: boolean;
+  description?: string;
 }
 
 export default function QuestionRadio({
@@ -31,6 +33,8 @@ export default function QuestionRadio({
   followUpTriggerValues = [],
   required = false,
   compact = false,
+  smallLabel = false,
+  description,
 }: QuestionRadioProps) {
   const handleChange = (newValue: string) => {
     onChange(newValue);
@@ -44,7 +48,7 @@ export default function QuestionRadio({
 
   return (
     <div className="mb-6">
-      <QuestionLabel text={question} required={required} compact={compact} />
+      <QuestionLabel text={question} required={required} compact={compact} small={smallLabel} description={description} />
       <div className="space-y-2">
         {options.map((option) => (
           <RadioButton

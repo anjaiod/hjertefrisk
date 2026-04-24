@@ -86,10 +86,10 @@ export default function QuestionnaireHistory({
         return (
           <div
             key={entry.id}
-            className="rounded-lg border border-slate-200 bg-white shadow-sm"
+            className="rounded-lg border border-slate-200 bg-white shadow-sm hover:border-slate-300 transition-colors"
           >
             <button
-              className="flex w-full items-center justify-between px-5 py-4 text-left"
+              className="flex w-full items-center justify-between px-5 py-4 text-left cursor-pointer"
               onClick={() => setExpandedId(isOpen ? null : entry.id)}
             >
               <div className="flex flex-col">
