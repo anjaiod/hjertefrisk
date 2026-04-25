@@ -14,6 +14,7 @@ interface ConditionalQuestionProps {
   compact?: boolean;
   smallLabel?: boolean;
   description?: string;
+  highlightedIndex?: number | null;
 }
 
 export default function ConditionalQuestion({
@@ -28,6 +29,7 @@ export default function ConditionalQuestion({
   compact = false,
   smallLabel = false,
   description,
+  highlightedIndex,
 }: ConditionalQuestionProps) {
   const handleChange = (newValue: "ja" | "nei") => {
     onChange(newValue);
@@ -43,26 +45,47 @@ export default function ConditionalQuestion({
 
   return (
     <div className="mb-6">
-      <QuestionLabel text={question} required={required} compact={compact} small={smallLabel} description={description} />
+      <QuestionLabel
+        text={question}
+        required={required}
+        compact={compact}
+        small={smallLabel}
+        description={description}
+      />
       <div className="space-y-2 mb-4">
-        <RadioButton
-          id={`${name}-ja`}
-          name={name}
-          value="ja"
-          label="Ja"
-          checked={value === "ja"}
-          onChange={(val) => handleChange(val as "ja" | "nei")}
-          compact={compact}
-        />
-        <RadioButton
-          id={`${name}-nei`}
-          name={name}
-          value="nei"
-          label="Nei"
-          checked={value === "nei"}
-          onChange={(val) => handleChange(val as "ja" | "nei")}
-          compact={compact}
-        />
+        <div
+          className={`
+      rounded-lg transition
+      ${highlightedIndex === 0 ? "ring-2 ring-teal-400 bg-teal-50" : ""}
+    `}
+        >
+          <RadioButton
+            id={`${name}-ja`}
+            name={name}
+            value="ja"
+            label="Ja"
+            checked={value === "ja"}
+            onChange={(val) => handleChange(val as "ja" | "nei")}
+            compact={compact}
+          />
+        </div>
+
+        <div
+          className={`
+      rounded-lg transition
+      ${highlightedIndex === 1 ? "ring-2 ring-teal-400 bg-teal-50" : ""}
+    `}
+        >
+          <RadioButton
+            id={`${name}-nei`}
+            name={name}
+            value="nei"
+            label="Nei"
+            checked={value === "nei"}
+            onChange={(val) => handleChange(val as "ja" | "nei")}
+            compact={compact}
+          />
+        </div>
       </div>
       {value === "ja" && children && (
         <div className="ml-6 mt-4 border-l-2 border-brand-sky pl-4">

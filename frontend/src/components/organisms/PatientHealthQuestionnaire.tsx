@@ -22,6 +22,8 @@ import QuestionNumber from "../molecules/QuestionNumber";
 import QuestionTextArea from "../molecules/QuestionTextArea";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
 import QuestionnaireSummary from "../molecules/QuestionnaireSummary";
+import { useTTS } from "@/hooks/useTTS";
+import QuestionWithTTS from "../molecules/QuestionWithTTS";
 
 export default function PatientHealthQuestionnaire() {
   const router = useRouter();
@@ -41,6 +43,9 @@ export default function PatientHealthQuestionnaire() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
+
+  const { speakQuestion, speakSequence, stop, activeId, highlightedIndex } =
+    useTTS();
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -145,9 +150,16 @@ export default function PatientHealthQuestionnaire() {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  const handleNext = () => setCurrentStep((prev) => prev + 1);
-  const handleSkip = () => setCurrentStep((prev) => prev + 1);
+  const handleNext = () => {
+    stop();
+    setCurrentStep((prev) => prev + 1);
+  };
+  const handleSkip = () => {
+    stop();
+    setCurrentStep((prev) => prev + 1);
+  };
   const handlePrevious = () => {
+    stop();
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
   const handleSubmit = async () => {
@@ -337,9 +349,10 @@ export default function PatientHealthQuestionnaire() {
   const categoryMap = new Map<number, string>();
   wizardSteps.forEach((q) => {
     if (q.categoryId != null && q.categoryName) {
-      const displayName = q.categoryName.toLowerCase().trim() === "blodlipider"
-        ? "Sykdomshistorikk"
-        : q.categoryName;
+      const displayName =
+        q.categoryName.toLowerCase().trim() === "blodlipider"
+          ? "Sykdomshistorikk"
+          : q.categoryName;
       categoryMap.set(q.categoryId, displayName);
     }
   });
@@ -381,98 +394,152 @@ export default function PatientHealthQuestionnaire() {
 
     if (question.questionType === "boolean") {
       return (
-        <ConditionalQuestion
+        <QuestionWithTTS
           key={question.questionId}
-          question={question.fallbackText}
-          name={name}
-          value={value as "ja" | "nei" | ""}
-          onChange={(val) => updateAnswer(question.questionId, val)}
-          onAnswer={handleNext}
-          required={question.isRequired}
-          smallLabel={isHyperkolesterolemi}
-          description={questionDescription}
-        />
+          isActive={activeId === question.questionId}
+          onToggle={() => speakQuestion(question)}
+        >
+          <ConditionalQuestion
+            question={question.fallbackText}
+            name={name}
+            value={value as "ja" | "nei" | ""}
+            onChange={(val) => updateAnswer(question.questionId, val)}
+            onAnswer={handleNext}
+            required={question.isRequired}
+            smallLabel={isHyperkolesterolemi}
+            description={questionDescription}
+            highlightedIndex={
+              activeId === question.questionId ? highlightedIndex : null
+            }
+          />
+        </QuestionWithTTS>
       );
     }
 
     if (question.questionType === "radio") {
       return (
-        <QuestionRadio
+        <QuestionWithTTS
           key={question.questionId}
-          question={question.fallbackText}
-          name={name}
-          options={question.options.map((o) => ({
-            value: o.optionValue,
-            label: o.fallbackText,
-          }))}
-          value={value}
-          onChange={(val) => updateAnswer(question.questionId, val)}
-          onAnswer={handleNext}
-          required={question.isRequired}
-          smallLabel={isHyperkolesterolemi}
-          description={questionDescription}
-        />
+          isActive={activeId === question.questionId}
+          onToggle={() => speakQuestion(question)}
+        >
+          <QuestionRadio
+            question={question.fallbackText}
+            name={name}
+            options={question.options.map((o) => ({
+              value: o.optionValue,
+              label: o.fallbackText,
+            }))}
+            value={value}
+            onChange={(val) => updateAnswer(question.questionId, val)}
+            onAnswer={handleNext}
+            required={question.isRequired}
+            smallLabel={isHyperkolesterolemi}
+            description={questionDescription}
+            highlightedIndex={
+              activeId === question.questionId ? highlightedIndex : null
+            }
+          />
+        </QuestionWithTTS>
       );
     }
 
     if (question.questionType === "number") {
       const { min, max } = getQuestionValidationRange(question);
       return (
-        <QuestionNumber
+        <QuestionWithTTS
+          key={question.questionId}
+          isActive={activeId === question.questionId}
+          onToggle={() => speakQuestion(question)}
+        >
+          <QuestionNumber
+            question={question.fallbackText}
+            name={name}
+            value={value}
+            onChange={(val) => updateAnswer(question.questionId, val)}
+            onAnswer={handleNext}
+            unit={getQuestionUnit(question)}
+            required={question.isRequired}
+            min={min}
+            max={max}
+          />
+        </QuestionWithTTS>
+      );
+    }
+
+    return (
+      <QuestionWithTTS
+        key={question.questionId}
+        isActive={activeId === question.questionId}
+        onToggle={() => speakQuestion(question)}
+      >
+        <QuestionTextArea
           key={question.questionId}
           question={question.fallbackText}
           name={name}
           value={value}
           onChange={(val) => updateAnswer(question.questionId, val)}
           onAnswer={handleNext}
-          unit={getQuestionUnit(question)}
+          rows={getQuestionRows(question)}
           required={question.isRequired}
-          min={min}
-          max={max}
         />
-      );
-    }
-
-    return (
-      <QuestionTextArea
-        key={question.questionId}
-        question={question.fallbackText}
-        name={name}
-        value={value}
-        onChange={(val) => updateAnswer(question.questionId, val)}
-        onAnswer={handleNext}
-        rows={getQuestionRows(question)}
-        required={question.isRequired}
-      />
+      </QuestionWithTTS>
     );
   };
 
   // Blodtrykk-gruppeelementet: header + begge felter side om side
   const buildBpGroupElement = (): ReactElement => (
-    <div key="bp-group">
-      <p className="text-2xl font-medium text-gray-800 mb-10">
-        Har du instrumenter til å måle blodtrykket ditt? I så fall, fyll inn
-        her:
-      </p>
-      <div className="flex gap-6 flex-wrap">
-        {bpVisibleQuestions.map((bpQ) => {
-          const isSystolic = bpQ.fallbackText.toLowerCase().includes("systolisk");
-          const label = isSystolic ? "Systolisk blodtrykk:" : "Diastolisk blodtrykk:";
-          return (
-            <div key={bpQ.questionId} className="flex-1 min-w-40">
-              <QuestionNumber
-                question={label}
-                name={`question-${bpQ.questionId}`}
-                value={answers[bpQ.questionId] ?? ""}
-                onChange={(val) => updateAnswer(bpQ.questionId, val)}
-                unit="mmHg"
-                required={false}
-              />
-            </div>
-          );
-        })}
+    <QuestionWithTTS
+      key="bp-group"
+      isActive={activeId === -999}
+      onToggle={() => {
+        if (highlightedIndex !== null) {
+          stop();
+          return;
+        }
+        speakSequence([
+          "Har du instrumenter til å måle blodtrykket ditt? I så fall, fyll inn her.",
+          "Systolisk blodtrykk. Skriv inn et tall.",
+          "Diastolisk blodtrykk. Skriv inn et tall.",
+        ]);
+      }}
+    >
+      <div>
+        <p className="text-2xl font-medium text-gray-800 mb-10">
+          Har du instrumenter til å måle blodtrykket ditt? I så fall, fyll inn
+          her:
+        </p>
+        <div className="flex gap-6 flex-wrap">
+          {bpVisibleQuestions.map((bpQ, index) => {
+            const isSystolic = bpQ.fallbackText
+              .toLowerCase()
+              .includes("systolisk");
+            const label = isSystolic
+              ? "Systolisk blodtrykk:"
+              : "Diastolisk blodtrykk:";
+            return (
+              <div
+                key={bpQ.questionId}
+                className={`flex-1 min-w-40 ${
+                  highlightedIndex === index + 1
+                    ? "ring-2 ring-teal-400 rounded-lg"
+                    : ""
+                }`}
+              >
+                <QuestionNumber
+                  question={label}
+                  name={`question-${bpQ.questionId}`}
+                  value={answers[bpQ.questionId] ?? ""}
+                  onChange={(val) => updateAnswer(bpQ.questionId, val)}
+                  unit="mmHg"
+                  required={false}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </QuestionWithTTS>
   );
 
   const questionElements = wizardSteps.map((q) => {
@@ -538,8 +605,10 @@ export default function PatientHealthQuestionnaire() {
               submitError={submitError}
               onGoToQuestion={(questionId) => {
                 const stepIndex = wizardSteps.findIndex(
-                  (q) => q.questionId === questionId ||
-                    (bpQuestionIds.has(questionId) && bpQuestionIds.has(q.questionId)),
+                  (q) =>
+                    q.questionId === questionId ||
+                    (bpQuestionIds.has(questionId) &&
+                      bpQuestionIds.has(q.questionId)),
                 );
                 if (stepIndex !== -1) setCurrentStep(stepIndex);
                 setShowSummary(false);
