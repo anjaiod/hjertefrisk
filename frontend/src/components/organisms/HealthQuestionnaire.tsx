@@ -427,7 +427,7 @@ export default function HealthQuestionnaire({
                 key={`${formKey}-${group.categoryKey}`}
                 title={group.categoryName}
                 defaultOpen={index === 0}
-                forceOpen={showAll ? true : undefined}
+                forceOpen={showAll}
               >
                 <div className="px-6 py-4">
                   {group.questions.map(renderQuestion)}
