@@ -31,7 +31,7 @@ export default function CollapsibleSection({
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         disabled={forceOpen === true}
-        className="w-full px-6 py-4 bg-white hover:bg-gray-50 flex items-center justify-between transition-colors"
+        className="w-full px-6 py-4 bg-white hover:bg-gray-50 flex items-center justify-between transition-colors cursor-pointer disabled:cursor-default"
       >
         <h2 className="text-xl font-bold text-brand-navy">{title}</h2>
         <svg

@@ -169,7 +169,7 @@ export default function Page() {
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1 rounded border border-brand-mist text-brand-navy disabled:opacity-40 hover:bg-brand-mist-lightest transition-colors"
+            className="px-3 py-1 rounded border border-brand-mist text-brand-navy disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer hover:bg-brand-mist-lightest transition-colors"
           >
             ←
           </button>
@@ -178,7 +178,7 @@ export default function Page() {
               key={page}
               onClick={() => setCurrentPage(page)}
               className={[
-                "px-3 py-1 rounded border transition-colors",
+                "px-3 py-1 rounded border transition-colors cursor-pointer",
                 page === currentPage
                   ? "border-brand-sky bg-brand-sky text-white"
                   : "border-brand-mist text-brand-navy hover:bg-brand-mist-lightest",
@@ -190,7 +190,7 @@ export default function Page() {
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="px-3 py-1 rounded border border-brand-mist text-brand-navy disabled:opacity-40 hover:bg-brand-mist-lightest transition-colors"
+            className="px-3 py-1 rounded border border-brand-mist text-brand-navy disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer hover:bg-brand-mist-lightest transition-colors"
           >
             →
           </button>

@@ -26,7 +26,7 @@ export function JournalNoteListItem({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left px-3 py-2 border-b border-gray-50 transition-colors ${
+      className={`w-full text-left px-3 py-2 border-b border-gray-50 transition-colors cursor-pointer ${
         isSelected ? "bg-blue-50" : "hover:bg-gray-50"
       }`}
     >
