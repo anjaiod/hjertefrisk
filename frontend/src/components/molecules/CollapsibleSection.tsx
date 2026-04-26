@@ -16,7 +16,14 @@ export default function CollapsibleSection({
   forceOpen,
 }: CollapsibleSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  const effectiveIsOpen = forceOpen !== undefined ? forceOpen : isOpen;
+  const [prevForceOpen, setPrevForceOpen] = useState(forceOpen);
+
+  if (forceOpen !== prevForceOpen) {
+    setPrevForceOpen(forceOpen);
+    if (forceOpen !== undefined) {
+      setIsOpen(forceOpen);
+    }
+  }
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -29,7 +36,7 @@ export default function CollapsibleSection({
         <h2 className="text-xl font-bold text-brand-navy">{title}</h2>
         <svg
           className={`w-6 h-6 text-brand-navy transition-transform duration-200 ${
-            effectiveIsOpen ? "rotate-180" : ""
+            isOpen ? "rotate-180" : ""
           }`}
           fill="none"
           stroke="currentColor"
@@ -43,7 +50,7 @@ export default function CollapsibleSection({
           />
         </svg>
       </button>
-      {effectiveIsOpen && (
+      {isOpen && (
         <div className="border-t border-gray-200">{children}</div>
       )}
     </div>
