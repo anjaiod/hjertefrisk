@@ -41,34 +41,29 @@ export function LatestQuestionnaire({
         }
       })
       .catch(() => setQueries([]));
-  }, []);
+  }, [selectedQueryId]);
 
   useEffect(() => {
-    setLoading(true);
-    apiClient
-      .get<LatestResponseItem[]>(
-        `/api/patients/${patientId}/queries/${selectedQueryId}/latest-responses`,
-      )
-      .then((data) => setEntries(data ?? []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      if (cancelled) return;
+      setLoading(true);
+      try {
+        const data = await apiClient.get<LatestResponseItem[]>(
+          `/api/patients/${patientId}/queries/${selectedQueryId}/latest-responses`,
+        );
+        if (!cancelled) setEntries(data ?? []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [patientId, selectedQueryId]);
-  const date =
-    entries && entries.length
-      ? new Date(
-          Math.max(
-            ...entries.map((e) =>
-              e.answeredAt ? new Date(e.answeredAt).getTime() : 0,
-            ),
-          ),
-        ).toLocaleDateString("nb-NO", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : null;
+  
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -78,12 +73,7 @@ export function LatestQuestionnaire({
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Hjertefrisk
             </span>
-            <div
-              className="relative"
-              ref={
-                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */ null as any
-              }
-            >
+            <div className="relative">
               {/* Custom dropdown to allow styling of list items (cursor pointer) */}
               <CustomQuerySelect
                 queries={queries}
@@ -220,7 +210,7 @@ function CustomQuerySelect({
           className="absolute right-0 mt-1 z-10 w-56 bg-white border border-gray-200 rounded shadow max-h-60 overflow-auto"
         >
           {queries.map((q) => (
-            <li key={q.id} role="option">
+            <li key={q.id} role="option" aria-selected={q.id === selectedId}>
               <button
                 type="button"
                 onClick={() => {
