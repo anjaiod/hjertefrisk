@@ -214,7 +214,7 @@ function appendRisk(li: Element, riskText: string) {
   );
 }
 
-type JournalEditorProps = {
+export type JournalEditorProps = {
   note: JournalNoteDto | null;
   patientId: number;
   initialType?: JournalNoteType;
