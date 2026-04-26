@@ -18,6 +18,9 @@ interface QuestionRadioProps {
   followUpTriggerValues?: string[]; // Verdier som trigger follow-up spørsmål
   required?: boolean;
   compact?: boolean;
+  smallLabel?: boolean;
+  description?: string;
+  highlightedIndex?: number | null;
 }
 
 export default function QuestionRadio({
@@ -31,6 +34,9 @@ export default function QuestionRadio({
   followUpTriggerValues = [],
   required = false,
   compact = false,
+  smallLabel = false,
+  description,
+  highlightedIndex,
 }: QuestionRadioProps) {
   const handleChange = (newValue: string) => {
     onChange(newValue);
@@ -44,20 +50,33 @@ export default function QuestionRadio({
 
   return (
     <div className="mb-6">
-      <QuestionLabel text={question} required={required} compact={compact} />
+      <QuestionLabel
+        text={question}
+        required={required}
+        compact={compact}
+        small={smallLabel}
+        description={description}
+      />
       <div className="space-y-2">
-        {options.map((option) => (
-          <RadioButton
+        {options.map((option, index) => (
+          <div
             key={option.value}
-            id={`${name}-${option.value}`}
-            name={name}
-            value={option.value}
-            label={option.label}
-            checked={value === option.value}
-            onChange={handleChange}
-            score={option.score}
-            compact={compact}
-          />
+            className={`
+        rounded-lg transition
+        ${highlightedIndex === index ? "ring-2 ring-teal-400 bg-teal-50" : ""}
+      `}
+          >
+            <RadioButton
+              id={`${name}-${option.value}`}
+              name={name}
+              value={option.value}
+              label={option.label}
+              checked={value === option.value}
+              onChange={handleChange}
+              score={option.score}
+              compact={compact}
+            />
+          </div>
         ))}
       </div>
     </div>

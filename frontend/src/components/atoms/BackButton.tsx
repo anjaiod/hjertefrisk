@@ -17,12 +17,12 @@ export default function BackButton({
     <button
       type="button"
       onClick={onClick ?? (() => router.back())}
-      className={`flex items-center gap-1 text-sm text-slate-600 hover:text-brand-navy transition-colors cursor-pointer ${className}`}
+      className={`flex items-center gap-2 text-base font-medium text-slate-700 hover:text-brand-navy bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-full transition-colors cursor-pointer ${className}`}
       aria-label="Tilbake"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        className="h-4 w-4"
+        className="h-5 w-5"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"

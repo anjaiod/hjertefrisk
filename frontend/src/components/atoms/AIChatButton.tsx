@@ -10,7 +10,10 @@ export function AIChatButton() {
     if (!open) return;
 
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -20,14 +23,19 @@ export function AIChatButton() {
   }, [open]);
 
   return (
-    <div ref={containerRef} className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+    <div
+      ref={containerRef}
+      className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3"
+    >
       {open && (
         <div className="w-72 bg-brand-sun-background rounded-2xl shadow-xl border border-brand-sun-light p-4 flex flex-col gap-3">
           <div className="bg-brand-sun-lightest text-slate-900 rounded-xl rounded-br-sm px-4 py-3 text-sm leading-relaxed">
-            Hei! Jeg er en AI-chatbot som kan hjelpe deg å finne det du trenger på siden.
+            Hei! Jeg er en AI-chatbot som kan hjelpe deg å finne det du trenger
+            på siden.
             <br />
             <br />
-            Jeg er ikke helt klar til å hjelpe deg enda, men jeg jobber med saken!
+            Jeg er ikke helt klar til å hjelpe deg enda, men jeg jobber med
+            saken!
           </div>
         </div>
       )}

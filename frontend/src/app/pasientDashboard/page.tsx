@@ -5,10 +5,11 @@ import { PatientSidebarNav } from "../../components/organisms/PatientSidebarNav"
 import { CalendarCard } from "../../components/molecules/CalendarCard";
 import { ActivityList } from "../../components/molecules/ActivityList";
 import { QuestionnaireList } from "../../components/molecules/QuestionnaireList";
-import { DashboardCard } from "@/components/molecules/DashboardCard";
+import { FeatureCard } from "@/components/atoms/FeatureCard";
 import { PatientHeader } from "../../components/organisms/PatientHeader";
 import { AIChatButton } from "@/components/atoms/AIChatButton";
 import { useRouter } from "next/navigation";
+import { Activity, ClipboardList } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { apiClient } from "@/lib/apiClient";
@@ -86,45 +87,51 @@ export default function PatientDashboardPage() {
       <div className="flex flex-col flex-1">
         <PatientHeader />
 
-        <main className="flex-1 bg-slate-50 p-8">
-          <div className="max-w-7xl mx-auto flex flex-col gap-8">
+        <main className="flex-1 bg-slate-50 p-5">
+          <div className="max-w-7xl mx-auto flex flex-col gap-4">
             <PatientDashboardProfile
               name={user?.name}
               height={height}
               weight={weight}
             />
 
-            <div className="grid grid-cols-[320px_1fr] gap-6">
-              <CalendarCard activityDate={activityDate} />
-              <ActivityList activities={activities} />
-            </div>
-
-            <div className="grid grid-cols-3 gap-6 items-stretch">
-              {patientId ? (
-                <QuestionnaireList patientId={patientId} />
-              ) : (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 col-span-2 text-sm text-slate-500">
-                  Laster spørreskjema...
-                </div>
-              )}
-
-              <div className="flex flex-col gap-6 h-full">
-                <DashboardCard
+            <div className="grid grid-cols-[260px_1fr] gap-4">
+              <div className="flex flex-col gap-4 h-full">
+                <FeatureCard
+                  icon={<Activity className="w-7 h-7 text-brand-teal-dark" />}
+                  title="Din risikoside"
+                  description="Se dine risikofaktorer"
+                  iconBgColor="bg-brand-sage/20"
                   className="flex-1"
-                  text="Trykk her for å gå til din risikoside"
                   onClick={() =>
                     router.push("/pasientDashboard/pasientRisikoside")
                   }
                 />
 
-                <DashboardCard
+                <FeatureCard
+                  icon={<ClipboardList className="w-7 h-7 text-brand-navy" />}
+                  title="Tiltak"
+                  description="Se anbefalte tiltak for deg"
+                  iconBgColor="bg-brand-sky/35"
                   className="flex-1"
-                  text="Trykk her for å gå til tiltak"
                   onClick={() =>
                     router.push("/pasientDashboard/pasientTiltakside")
                   }
                 />
               </div>
+
+              {patientId ? (
+                <QuestionnaireList patientId={patientId} />
+              ) : (
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 text-sm text-slate-500">
+                  Laster spørreskjema...
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-[1fr_320px] gap-6">
+              <ActivityList activities={activities} />
+              <CalendarCard activityDate={activityDate} />
             </div>
           </div>
         </main>
