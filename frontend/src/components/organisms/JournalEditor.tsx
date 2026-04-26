@@ -453,9 +453,7 @@ export function JournalEditor({
       type="button"
       onClick={onToggleHjertefrisk}
       className={`px-2.5 py-1 text-sm rounded border transition-colors whitespace-nowrap cursor-pointer bg-brand-teal text-white border-brand-teal ${
-        hjertefriskOpen
-          ? "hidden"
-          : ""
+        hjertefriskOpen ? "hidden" : ""
       }`}
     >
       Hjertefrisk

@@ -32,7 +32,11 @@ export function LatestQuestionnaire({
       .get<{ id: number; name: string }[]>(`/api/Query`)
       .then((data) => {
         setQueries(data ?? []);
-        if (data && data.length && !data.find((q) => q.id === selectedQueryId)) {
+        if (
+          data &&
+          data.length &&
+          !data.find((q) => q.id === selectedQueryId)
+        ) {
           setSelectedQueryId(data[0].id);
         }
       })
@@ -49,15 +53,22 @@ export function LatestQuestionnaire({
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [patientId, selectedQueryId]);
-  const date = entries && entries.length
-    ? new Date(Math.max(...entries.map(e => e.answeredAt ? new Date(e.answeredAt).getTime() : 0))).toLocaleDateString("nb-NO", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : null;
+  const date =
+    entries && entries.length
+      ? new Date(
+          Math.max(
+            ...entries.map((e) =>
+              e.answeredAt ? new Date(e.answeredAt).getTime() : 0,
+            ),
+          ),
+        ).toLocaleDateString("nb-NO", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : null;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -67,7 +78,12 @@ export function LatestQuestionnaire({
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Hjertefrisk
             </span>
-            <div className="relative" ref={/* eslint-disable-next-line @typescript-eslint/no-explicit-any */ (null as any)}>
+            <div
+              className="relative"
+              ref={
+                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */ null as any
+              }
+            >
               {/* Custom dropdown to allow styling of list items (cursor pointer) */}
               <CustomQuerySelect
                 queries={queries}
@@ -108,7 +124,8 @@ export function LatestQuestionnaire({
           <div className="space-y-3">
             {entries.map((r) => {
               const answer =
-                r.answerText ?? (r.numberValue != null ? String(r.numberValue) : "–");
+                r.answerText ??
+                (r.numberValue != null ? String(r.numberValue) : "–");
               const answeredAtText = r.answeredAt
                 ? new Date(r.answeredAt).toLocaleDateString("nb-NO", {
                     day: "numeric",
@@ -123,9 +140,13 @@ export function LatestQuestionnaire({
                     {r.questionText}
                   </span>
                   <div className="flex items-baseline justify-between">
-                    <span className="text-xs font-medium text-gray-800">{answer}</span>
+                    <span className="text-xs font-medium text-gray-800">
+                      {answer}
+                    </span>
                     {answeredAtText && (
-                      <span className="text-xs text-brand-navy-light ml-3">{answeredAtText}</span>
+                      <span className="text-xs text-brand-navy-light ml-3">
+                        {answeredAtText}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -184,7 +205,12 @@ function CustomQuerySelect({
           fill="none"
           stroke="currentColor"
         >
-          <path d="M6 8l4 4 4-4" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M6 8l4 4 4-4"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </button>
 
