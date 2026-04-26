@@ -122,7 +122,7 @@ public class ResponseService : IResponseService
             if (patient != null)
             {
                 var personnelIds = await _db.PatientAccesses
-                    .Where(x => x.PatientId == patientId)
+                    .Where(x => x.PatientId == patientId && x.PersonnelId != personnelId)
                     .Select(x => x.PersonnelId)
                     .ToListAsync();
 

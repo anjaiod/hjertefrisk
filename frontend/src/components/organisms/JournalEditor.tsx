@@ -423,7 +423,7 @@ export function JournalEditor({
                   setAutoSaveStatus("unsaved");
                   setTemplateDropdownOpen(false);
                 }}
-                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 cursor-pointer"
               >
                 {tpl.label}
               </button>
@@ -440,7 +440,7 @@ export function JournalEditor({
       disabled={filling || !isHjertefriskTemplate}
       className={`px-2.5 py-1 text-sm border rounded transition-colors whitespace-nowrap ${
         isHjertefriskTemplate
-          ? "text-brand-navy border-brand-navy hover:bg-brand-sky-button disabled:opacity-50"
+          ? "text-brand-navy border-brand-navy hover:bg-brand-sky-button disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           : "invisible"
       }`}
     >

@@ -195,7 +195,11 @@ export default function Page() {
                             : "pasienten selv"}{" "}
                           {new Date(result.registeredAt).toLocaleDateString(
                             "nb-NO",
-                            { day: "2-digit", month: "2-digit", year: "numeric" },
+                            {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            },
                           )}
                         </p>
                       )}
@@ -226,7 +230,7 @@ export default function Page() {
                           <button
                             type="button"
                             onClick={() => handleCancelEdit(m.measurementId)}
-                            className="text-sm text-gray-500 hover:text-gray-700"
+                            className="text-sm text-gray-500 hover:text-gray-700 cursor-pointer"
                           >
                             Avbryt
                           </button>
@@ -251,7 +255,7 @@ export default function Page() {
                                   result?.result?.toString() ?? "",
                                 )
                               }
-                              className="text-sm text-brand-navy hover:underline"
+                              className="text-sm text-brand-navy hover:underline cursor-pointer"
                             >
                               Rediger
                             </button>

@@ -43,8 +43,8 @@ export function QuestionnaireList({ patientId }: { patientId: number }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 col-span-2">
-      <h3 className="text-lg font-semibold text-slate-900 mb-4">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+      <h3 className="text-lg font-semibold text-slate-900 mb-3">
         Tidligere spørreskjema
       </h3>
 
@@ -58,11 +58,11 @@ export function QuestionnaireList({ patientId }: { patientId: number }) {
         <p className="text-sm text-slate-500">Ingen tidligere besvarelser</p>
       )}
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         {forms.map((form) => (
           <div
             key={form.id}
-            className="flex justify-between items-center border rounded-lg p-3 hover:bg-slate-50 transition"
+            className="flex justify-between items-center border rounded-lg p-2 hover:bg-slate-50 transition"
           >
             <div className="flex flex-col">
               <span className="text-slate-700">
@@ -76,7 +76,7 @@ export function QuestionnaireList({ patientId }: { patientId: number }) {
             <Button
               onClick={() =>
                 router.push(
-                  `/pasientDashboard/pasientHjertefrisk?open=${form.id}`,
+                  `/pasientDashboard/pasientTidligereBevarelser?open=${form.id}`,
                 )
               }
             >

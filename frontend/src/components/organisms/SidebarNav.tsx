@@ -46,7 +46,10 @@ function Item({
 
   if (onClick) {
     return (
-      <button onClick={onClick} className={`w-full cursor-pointer ${base} ${state}`}>
+      <button
+        onClick={onClick}
+        className={`w-full cursor-pointer ${base} ${state}`}
+      >
         {content}
       </button>
     );
@@ -218,13 +221,17 @@ export function SidebarNav({
         return;
       }
       try {
-        const data = await apiClient.get<PatientDto>(`/api/patients/${encodeURIComponent(patientId)}`);
+        const data = await apiClient.get<PatientDto>(
+          `/api/patients/${encodeURIComponent(patientId)}`,
+        );
         if (mounted) setPatient(data);
       } catch (e) {
         console.error("Failed to fetch patient for sidebar", e);
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [patientId]);
 
   return (
@@ -253,8 +260,12 @@ export function SidebarNav({
 
             {patient && (
               <div className="mb-4 rounded-xl border border-brand-sky/30 bg-white px-4 py-3 shadow-sm">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Valgt pasient</p>
-                <p className="mt-0.5 font-bold text-brand-navy truncate">{patient.name}</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                  Valgt pasient
+                </p>
+                <p className="mt-0.5 font-bold text-brand-navy truncate">
+                  {patient.name}
+                </p>
               </div>
             )}
 
@@ -275,6 +286,7 @@ export function SidebarNav({
         <VarslingModal
           onClose={() => setShowVarsling(false)}
           patientId={Number(patientId)}
+          onAllRead={() => setHasUnread(false)}
         />
       )}
     </>

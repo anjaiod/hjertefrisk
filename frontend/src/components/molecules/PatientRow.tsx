@@ -13,6 +13,7 @@ interface PatientRowProps {
   lastVisited: string;
   riskLevel: TagVariant;
   hasUnread?: boolean;
+  onAllRead?: () => void;
 }
 
 const tagLabel: Record<TagVariant, string> = {
@@ -33,6 +34,7 @@ export default function PatientRow({
   lastVisited,
   riskLevel,
   hasUnread,
+  onAllRead,
 }: PatientRowProps) {
   const [openModal, setOpenModal] = useState<ModalType>(null);
   const unread = hasUnread ?? false;
@@ -75,7 +77,7 @@ export default function PatientRow({
               onClick={() => setOpenModal("varsling")}
             >
               <span className="relative inline-flex items-center">
-                <span className="min-w-[64px] text-center">Varsling</span>
+                <span className="min-w-16 text-center">Varsling</span>
                 {unread ? (
                   <span
                     className="absolute -right-1 top-1 inline-block w-2 h-2 rounded-full bg-red-500"
@@ -89,7 +91,7 @@ export default function PatientRow({
               className={btnClass}
               onClick={() => setOpenModal("todo")}
             >
-              Todo
+              Gjøremål
             </Button>
             <Button
               variant="primary"
@@ -109,6 +111,7 @@ export default function PatientRow({
           patientId={Number(id)}
           patientName={name}
           onClose={() => setOpenModal(null)}
+          onAllRead={onAllRead}
         />
       )}
     </>

@@ -9,13 +9,13 @@ type Activity = {
 export function ActivityList({ activities }: { activities: Activity[] }) {
   return (
     <div className="bg-white rounded-xl border border-brand-mist shadow-sm">
-      <div className="px-6 py-4 border-b border-brand-mist">
+      <div className="px-4 py-3 border-b border-brand-mist">
         <h3 className="text-lg font-semibold text-brand-navy">
           Dine aktiviteter
         </h3>
       </div>
 
-      <div className="grid grid-cols-[2fr_1fr_1fr_1fr] bg-brand-mist-lightest font-medium text-sm px-6 py-3 border-b border-brand-mist">
+      <div className="grid grid-cols-[2fr_1fr_1fr_1fr] bg-brand-mist-lightest font-medium text-sm px-4 py-2 border-b border-brand-mist">
         <span>Hva</span>
         <span>Når</span>
         <span>Hvor</span>
@@ -25,7 +25,7 @@ export function ActivityList({ activities }: { activities: Activity[] }) {
       {activities.map((a) => (
         <div
           key={a.id}
-          className="grid grid-cols-[2fr_1fr_1fr_1fr] px-6 py-4 border-b border-brand-mist text-sm"
+          className="grid grid-cols-[2fr_1fr_1fr_1fr] px-4 py-3 border-b border-brand-mist text-sm"
         >
           <span>{a.title}</span>
           <span>{a.date}</span>
