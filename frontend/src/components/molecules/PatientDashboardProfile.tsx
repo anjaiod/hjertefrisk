@@ -20,15 +20,15 @@ export function PatientDashboardProfile({
   ].filter(Boolean);
 
   return (
-    <div className="flex items-center gap-5">
-      <div className="w-20 h-20 rounded-full bg-brand-teal flex items-center justify-center">
-        <span className="text-white text-2xl font-semibold">
+    <div className="flex items-center gap-4">
+      <div className="w-14 h-14 rounded-full bg-brand-teal flex items-center justify-center">
+        <span className="text-white text-xl font-semibold">
           {name?.charAt(0).toUpperCase() ?? "P"}
         </span>
       </div>
 
       <div>
-        <h1 className="text-2xl font-semibold text-brand-navy">{name}</h1>
+        <h1 className="text-xl font-semibold text-brand-navy">{name}</h1>
 
         {info.length > 0 && (
           <p className="text-sm text-brand-sage mt-1">{info.join(", ")}</p>

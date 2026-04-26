@@ -22,12 +22,13 @@ import QuestionNumber from "../molecules/QuestionNumber";
 import QuestionTextArea from "../molecules/QuestionTextArea";
 import ConditionalQuestion from "../molecules/ConditionalQuestion";
 import QuestionnaireSummary from "../molecules/QuestionnaireSummary";
+import { useTTS } from "@/hooks/useTTS";
+import QuestionWithTTS from "../molecules/QuestionWithTTS";
 
 export default function PatientHealthQuestionnaire() {
   const router = useRouter();
   const { user: localUser, isAuthReady } = useUser();
 
-  const [showIntro, setShowIntro] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
   const [questions, setQuestions] = useState<QueryQuestionWithDetailsDto[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -42,6 +43,9 @@ export default function PatientHealthQuestionnaire() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
+
+  const { speakQuestion, speakSequence, stop, activeId, highlightedIndex } =
+    useTTS();
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -146,9 +150,16 @@ export default function PatientHealthQuestionnaire() {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  const handleNext = () => setCurrentStep((prev) => prev + 1);
-  const handleSkip = () => setCurrentStep((prev) => prev + 1);
+  const handleNext = () => {
+    stop();
+    setCurrentStep((prev) => prev + 1);
+  };
+  const handleSkip = () => {
+    stop();
+    setCurrentStep((prev) => prev + 1);
+  };
   const handlePrevious = () => {
+    stop();
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
   const handleSubmit = async () => {
@@ -338,7 +349,11 @@ export default function PatientHealthQuestionnaire() {
   const categoryMap = new Map<number, string>();
   wizardSteps.forEach((q) => {
     if (q.categoryId != null && q.categoryName) {
-      categoryMap.set(q.categoryId, q.categoryName);
+      const displayName =
+        q.categoryName.toLowerCase().trim() === "blodlipider"
+          ? "Sykdomshistorikk"
+          : q.categoryName;
+      categoryMap.set(q.categoryId, displayName);
     }
   });
 
@@ -370,116 +385,161 @@ export default function PatientHealthQuestionnaire() {
   ): ReactElement => {
     const value = answers[question.questionId] ?? "";
     const name = `question-${question.questionId}`;
+    const text = question.fallbackText.toLowerCase();
 
-    const getPlaceholder = (): string | undefined => {
-      const text = question.fallbackText.toLowerCase();
-      if (text.includes("hvor høy")) return "170";
-      if (text.includes("hvor mye veier")) return "70";
-      if (text.includes("livvidde")) return "80";
-      if (text.includes("hvor mye røyker"))
-        return "F.eks. 10 sigaretter per dag";
-      if (text.includes("vekten din endret"))
-        return "F.eks. økt 5 kg siste 6 måneder";
-      if (text.includes("begrensninger") && text.includes("skriv"))
-        return "Beskriv dine fysiske begrensninger...";
-      if (text.includes("barrierer") && text.includes("skriv"))
-        return "Beskriv barrierer...";
-      return undefined;
-    };
+    const isHyperkolesterolemi = text.includes("hyperkolesterolemi");
+    const questionDescription = isHyperkolesterolemi
+      ? "Familiær hyperkolesterolemi er en arvelig sykdom hvor en genfeil som gir høyt kolesterol, overføres fra generasjon til generasjon."
+      : undefined;
 
     if (question.questionType === "boolean") {
       return (
-        <ConditionalQuestion
+        <QuestionWithTTS
           key={question.questionId}
-          question={question.fallbackText}
-          name={name}
-          value={value as "ja" | "nei" | ""}
-          onChange={(val) => updateAnswer(question.questionId, val)}
-          onAnswer={handleNext}
-          required={question.isRequired}
-        />
+          isActive={activeId === question.questionId}
+          onToggle={() => speakQuestion(question)}
+        >
+          <ConditionalQuestion
+            question={question.fallbackText}
+            name={name}
+            value={value as "ja" | "nei" | ""}
+            onChange={(val) => updateAnswer(question.questionId, val)}
+            onAnswer={handleNext}
+            required={question.isRequired}
+            smallLabel={isHyperkolesterolemi}
+            description={questionDescription}
+            highlightedIndex={
+              activeId === question.questionId ? highlightedIndex : null
+            }
+          />
+        </QuestionWithTTS>
       );
     }
 
     if (question.questionType === "radio") {
       return (
-        <QuestionRadio
+        <QuestionWithTTS
           key={question.questionId}
-          question={question.fallbackText}
-          name={name}
-          options={question.options.map((o) => ({
-            value: o.optionValue,
-            label: o.fallbackText,
-          }))}
-          value={value}
-          onChange={(val) => updateAnswer(question.questionId, val)}
-          onAnswer={handleNext}
-          required={question.isRequired}
-        />
+          isActive={activeId === question.questionId}
+          onToggle={() => speakQuestion(question)}
+        >
+          <QuestionRadio
+            question={question.fallbackText}
+            name={name}
+            options={question.options.map((o) => ({
+              value: o.optionValue,
+              label: o.fallbackText,
+            }))}
+            value={value}
+            onChange={(val) => updateAnswer(question.questionId, val)}
+            onAnswer={handleNext}
+            required={question.isRequired}
+            smallLabel={isHyperkolesterolemi}
+            description={questionDescription}
+            highlightedIndex={
+              activeId === question.questionId ? highlightedIndex : null
+            }
+          />
+        </QuestionWithTTS>
       );
     }
 
     if (question.questionType === "number") {
       const { min, max } = getQuestionValidationRange(question);
       return (
-        <QuestionNumber
+        <QuestionWithTTS
+          key={question.questionId}
+          isActive={activeId === question.questionId}
+          onToggle={() => speakQuestion(question)}
+        >
+          <QuestionNumber
+            question={question.fallbackText}
+            name={name}
+            value={value}
+            onChange={(val) => updateAnswer(question.questionId, val)}
+            onAnswer={handleNext}
+            unit={getQuestionUnit(question)}
+            required={question.isRequired}
+            min={min}
+            max={max}
+          />
+        </QuestionWithTTS>
+      );
+    }
+
+    return (
+      <QuestionWithTTS
+        key={question.questionId}
+        isActive={activeId === question.questionId}
+        onToggle={() => speakQuestion(question)}
+      >
+        <QuestionTextArea
           key={question.questionId}
           question={question.fallbackText}
           name={name}
           value={value}
           onChange={(val) => updateAnswer(question.questionId, val)}
           onAnswer={handleNext}
-          placeholder={getPlaceholder()}
-          unit={getQuestionUnit(question)}
+          rows={getQuestionRows(question)}
           required={question.isRequired}
-          min={min}
-          max={max}
         />
-      );
-    }
-
-    return (
-      <QuestionTextArea
-        key={question.questionId}
-        question={question.fallbackText}
-        name={name}
-        value={value}
-        onChange={(val) => updateAnswer(question.questionId, val)}
-        onAnswer={handleNext}
-        placeholder={getPlaceholder()}
-        rows={getQuestionRows(question)}
-        required={question.isRequired}
-      />
+      </QuestionWithTTS>
     );
   };
 
   // Blodtrykk-gruppeelementet: header + begge felter side om side
   const buildBpGroupElement = (): ReactElement => (
-    <div key="bp-group">
-      <p className="text-2xl font-medium text-gray-800 mb-10">
-        Har du instrumenter til å måle blodtrykket ditt? I så fall, fyll inn
-        her:
-      </p>
-      <div className="flex gap-6 flex-wrap">
-        {bpVisibleQuestions.map((bpQ) => {
-          const isSystolic = bpQ.fallbackText.toLowerCase().includes("systolisk");
-          const label = isSystolic ? "Systolisk blodtrykk:" : "Diastolisk blodtrykk:";
-          return (
-            <div key={bpQ.questionId} className="flex-1 min-w-40">
-              <QuestionNumber
-                question={label}
-                name={`question-${bpQ.questionId}`}
-                value={answers[bpQ.questionId] ?? ""}
-                onChange={(val) => updateAnswer(bpQ.questionId, val)}
-                placeholder={isSystolic ? "120" : "80"}
-                unit="mmHg"
-                required={false}
-              />
-            </div>
-          );
-        })}
+    <QuestionWithTTS
+      key="bp-group"
+      isActive={activeId === -999}
+      onToggle={() => {
+        if (highlightedIndex !== null) {
+          stop();
+          return;
+        }
+        speakSequence([
+          "Har du instrumenter til å måle blodtrykket ditt? I så fall, fyll inn her.",
+          "Systolisk blodtrykk. Skriv inn et tall.",
+          "Diastolisk blodtrykk. Skriv inn et tall.",
+        ]);
+      }}
+    >
+      <div>
+        <p className="text-2xl font-medium text-gray-800 mb-10">
+          Har du instrumenter til å måle blodtrykket ditt? I så fall, fyll inn
+          her:
+        </p>
+        <div className="flex gap-6 flex-wrap">
+          {bpVisibleQuestions.map((bpQ, index) => {
+            const isSystolic = bpQ.fallbackText
+              .toLowerCase()
+              .includes("systolisk");
+            const label = isSystolic
+              ? "Systolisk blodtrykk:"
+              : "Diastolisk blodtrykk:";
+            return (
+              <div
+                key={bpQ.questionId}
+                className={`flex-1 min-w-40 ${
+                  highlightedIndex === index + 1
+                    ? "ring-2 ring-teal-400 rounded-lg"
+                    : ""
+                }`}
+              >
+                <QuestionNumber
+                  question={label}
+                  name={`question-${bpQ.questionId}`}
+                  value={answers[bpQ.questionId] ?? ""}
+                  onChange={(val) => updateAnswer(bpQ.questionId, val)}
+                  unit="mmHg"
+                  required={false}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </QuestionWithTTS>
   );
 
   const questionElements = wizardSteps.map((q) => {
@@ -522,64 +582,6 @@ export default function PatientHealthQuestionnaire() {
     );
   }
 
-  if (showIntro) {
-    return (
-      <div className="flex min-h-screen">
-        <main className="flex-1 bg-slate-50 p-[clamp(1rem,3vw,2rem)]">
-          <div className="w-full max-w-4xl mx-auto">
-            <h1 className="font-bold text-gray-900 mb-6 text-center text-[clamp(1.75rem,4vw,3rem)]">
-              Hjertefrisk helseskjema
-            </h1>
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                Om skjemaet
-              </h2>
-              <p className="text-gray-600 mb-4">
-                Dette skjemaet brukes til å kartlegge din helse og livsstil som
-                en del av Hjertefrisk-programmet. Svarene dine hjelper
-                helsepersonellet å følge opp din helseutvikling.
-              </p>
-              <ul className="space-y-2 text-gray-600 mb-4">
-                <li className="flex items-start gap-2">
-                  <span className="text-brand-navy font-bold mt-0.5">•</span>
-                  Skjemaet tar ca. 5–10 minutter å fylle ut
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-brand-navy font-bold mt-0.5">•</span>
-                  Svarene lagres og er synlige for ditt behandlingsteam
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-brand-navy font-bold mt-0.5">•</span>
-                  Du kan navigere frem og tilbake mellom spørsmålene, og du kan
-                  trykke &quot;Neste&quot; på spørsmål du er usikker på, eller
-                  ikke ønsker å svare på.
-                </li>
-              </ul>
-              <p className="text-sm text-gray-500">
-                Svarene dine behandles konfidensielt i henhold til gjeldende
-                personvernregler.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowIntro(false)}
-                className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl font-medium hover:bg-brand-navy/90 transition touch-manipulation"
-              >
-                Start skjema
-              </button>
-              <button
-                onClick={() => router.back()}
-                className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition touch-manipulation"
-              >
-                Avbryt
-              </button>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div className="flex min-h-screen">
       <main className="flex-1 bg-slate-50 p-[clamp(1rem,3vw,2rem)]">
@@ -602,8 +604,11 @@ export default function PatientHealthQuestionnaire() {
               isSubmitting={isSubmitting}
               submitError={submitError}
               onGoToQuestion={(questionId) => {
-                const stepIndex = visibleQuestions.findIndex(
-                  (q) => q.questionId === questionId,
+                const stepIndex = wizardSteps.findIndex(
+                  (q) =>
+                    q.questionId === questionId ||
+                    (bpQuestionIds.has(questionId) &&
+                      bpQuestionIds.has(q.questionId)),
                 );
                 if (stepIndex !== -1) setCurrentStep(stepIndex);
                 setShowSummary(false);

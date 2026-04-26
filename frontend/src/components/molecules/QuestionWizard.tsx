@@ -46,7 +46,7 @@ export default function QuestionWizard({
             type="button"
             onClick={onPrevious}
             disabled={isFirstStep}
-            className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed min-w-28 touch-manipulation"
+            className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-w-28 touch-manipulation"
           >
             Forrige
           </button>
@@ -55,7 +55,7 @@ export default function QuestionWizard({
               type="button"
               onClick={onSubmit}
               disabled={isSubmitting}
-              className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed min-w-28 touch-manipulation"
+              className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-w-28 touch-manipulation"
             >
               {isSubmitting ? "Sender..." : submitLabel}
             </button>
@@ -63,7 +63,7 @@ export default function QuestionWizard({
             <button
               type="button"
               onClick={onSkip}
-              className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg border border-brand-navy text-brand-navy rounded-xl hover:bg-brand-mist min-w-28 touch-manipulation"
+              className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg border border-brand-navy text-brand-navy rounded-xl hover:bg-brand-mist cursor-pointer min-w-28 touch-manipulation"
             >
               Neste
             </button>
