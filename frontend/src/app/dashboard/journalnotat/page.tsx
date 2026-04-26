@@ -435,7 +435,6 @@ export default function JournalnotatPage() {
               note={editingNote}
               patientId={patientId}
               initialType={editingNote === null ? newNoteType : undefined}
-              compact={!!selectedNote || hjertefriskOpen}
               hjertefriskOpen={hjertefriskOpen}
               onToggleHjertefrisk={() => setHjertefriskOpen((o) => !o)}
               onSaved={handleSaved}
