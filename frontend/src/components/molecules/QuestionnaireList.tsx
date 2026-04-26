@@ -76,7 +76,7 @@ export function QuestionnaireList({ patientId }: { patientId: number }) {
             <Button
               onClick={() =>
                 router.push(
-                  `/pasientDashboard/pasientHjertefrisk?open=${form.id}`,
+                  `/pasientDashboard/pasientTidligereBevarelser?open=${form.id}`,
                 )
               }
             >

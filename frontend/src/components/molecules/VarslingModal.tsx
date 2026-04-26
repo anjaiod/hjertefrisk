@@ -1,8 +1,13 @@
 "use client";
 
 import { Modal } from "../atoms/Modal";
+import { Button } from "../atoms/Button";
 import { useEffect, useState } from "react";
-import { fetchNotifications, NotificationDto } from "@/lib/notifications";
+import {
+  fetchNotifications,
+  markAllNotificationsAsRead,
+  NotificationDto,
+} from "@/lib/notifications";
 import { apiClient } from "@/lib/apiClient";
 import { useRouter } from "next/navigation";
 
@@ -10,15 +15,18 @@ interface VarslingModalProps {
   patientId?: number;
   patientName?: string;
   onClose: () => void;
+  onAllRead?: () => void;
 }
 
 export function VarslingModal({
   patientId,
   patientName,
   onClose,
+  onAllRead,
 }: VarslingModalProps) {
   const title = patientName ? `Varslinger – ${patientName}` : "Varslinger";
   const [loading, setLoading] = useState(true);
+  const [markingAll, setMarkingAll] = useState(false);
   const [items, setItems] = useState<NotificationDto[]>([]);
   const router = useRouter();
 
@@ -53,17 +61,47 @@ export function VarslingModal({
     return true;
   });
 
-  // When clicking a notification: mark as read for current personnel and navigate to the answered query
-  const handleOpenNotification = async (n: NotificationDto) => {
-    setItems((prev) =>
-      prev.map((it) => (it.id === n.id ? { ...it, read: true } : it)),
+  const hasUnread = visible.some((n) => !n.read);
+
+  const handleMarkAllRead = async () => {
+    setMarkingAll(true);
+    try {
+      await markAllNotificationsAsRead(patientId);
+      const now = new Date().toISOString();
+      setItems((prev) =>
+        prev.map((it) =>
+          patientId === undefined || it.patientId === patientId
+            ? { ...it, read: true, readAt: now }
+            : it,
+        ),
+      );
+      onAllRead?.();
+    } catch (err) {
+      console.error("Failed to mark all notifications as read", err);
+    } finally {
+      setMarkingAll(false);
+    }
+  };
+
+  const markOneRead = (id: number) => {
+    const updated = items.map((it) =>
+      it.id === id ? { ...it, read: true, readAt: new Date().toISOString() } : it,
     );
+    setItems(updated);
+
+    const stillUnread = (
+      patientId ? updated.filter((it) => it.patientId === patientId) : updated
+    ).some((it) => !it.read);
+    if (!stillUnread) onAllRead?.();
 
     apiClient
-      .post<void>(`/api/notifications/${n.id}/mark-read`)
-      .catch((err) =>
-        console.error("Failed to mark notification as read", err),
-      );
+      .post<void>(`/api/notifications/${id}/mark-read`)
+      .catch((err) => console.error("Failed to mark notification as read", err));
+  };
+
+  // When clicking a notification: mark as read for current personnel and navigate to the answered query
+  const handleOpenNotification = async (n: NotificationDto) => {
+    markOneRead(n.id);
 
     // navigate to the answered query if available and we have a selected patient
     if (n.answeredQueryId && patientId) {
@@ -85,32 +123,68 @@ export function VarslingModal({
           Ingen nye varslinger for denne pasienten.
         </p>
       ) : (
-        <ul className="space-y-3">
-          {visible.map((n) => (
-            <li
-              key={n.id}
-              className={`flex justify-between items-start p-3 rounded border hover:bg-slate-50 transition cursor-pointer`}
-              onClick={() => handleOpenNotification(n)}
-            >
-              <div>
-                <p
-                  className={`${!n.read ? "font-semibold text-slate-900" : "text-slate-400 line-through"}`}
-                >
-                  {n.message}
-                </p>
-                <p className="text-sm text-slate-500">
-                  {new Date(n.createdAt).toLocaleString()}
-                </p>
-              </div>
+        <>
+          {hasUnread && (
+            <div className="flex justify-end mb-3">
+              <Button
+                variant="confirm"
+                onClick={handleMarkAllRead}
+                disabled={markingAll}
+                className="text-sm px-4! py-1.5!"
+              >
+                {markingAll ? "Markerer..." : "Les alle"}
+              </Button>
+            </div>
+          )}
+          <ul className="space-y-3">
+            {visible.map((n) => (
+              <li
+                key={n.id}
+                className="flex justify-between items-center p-3 rounded border hover:bg-slate-50 transition cursor-pointer"
+                onClick={() => handleOpenNotification(n)}
+              >
+                <div className="flex-1 min-w-0 pr-3">
+                  <p
+                    className={`${!n.read ? "font-semibold text-slate-900" : "text-slate-400 line-through"}`}
+                  >
+                    {n.message}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    {new Date(n.createdAt).toLocaleString()}
+                  </p>
+                </div>
 
-              <div className="flex flex-col items-end gap-2">
-                {n.read ? (
-                  <span className="text-xs text-slate-400">Lest</span>
-                ) : null}
-              </div>
-            </li>
-          ))}
-        </ul>
+                <div className="flex items-center shrink-0 ml-3">
+                  {n.read ? (
+                    <span className="text-xs text-slate-400">Lest</span>
+                  ) : (
+                    <button
+                      type="button"
+                      title="Merk som lest"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markOneRead(n.id);
+                      }}
+                      className="flex items-center justify-center w-7 h-7 rounded border border-slate-300 text-slate-400 hover:border-green-500 hover:text-green-600 hover:bg-green-50 transition cursor-pointer"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="w-4 h-4"
+                      >
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </Modal>
   );

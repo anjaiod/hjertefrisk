@@ -134,17 +134,6 @@ export default function HealthQuestionnaire({
 
   const visibleQuestions = questions.filter(shouldShowQuestion);
 
-  const getPlaceholder = (
-    question: QueryQuestionWithDetailsDto,
-  ): string | undefined => {
-    const text = question.fallbackText.toLowerCase();
-    if (text.includes("hvor høy")) return "170";
-    if (text.includes("hvor mye veier")) return "70";
-    if (text.includes("livvidde")) return "80";
-    if (text.includes("fyll inn")) return "Skriv tall";
-    return undefined;
-  };
-
   const renderQuestion = (
     question: QueryQuestionWithDetailsDto,
   ): ReactElement => {
@@ -201,7 +190,6 @@ export default function HealthQuestionnaire({
           name={name}
           value={value}
           onChange={(val) => updateAnswer(question.questionId, val)}
-          placeholder={getPlaceholder(question)}
           unit={getQuestionUnit(question)}
           required={question.isRequired}
           compact={compact}
@@ -218,7 +206,6 @@ export default function HealthQuestionnaire({
         name={name}
         value={value}
         onChange={(val) => updateAnswer(question.questionId, val)}
-        placeholder={getPlaceholder(question)}
         rows={getQuestionRows(question)}
         required={question.isRequired}
         compact={compact}
@@ -386,7 +373,7 @@ export default function HealthQuestionnaire({
             <button
               type="button"
               onClick={() => setShowAll((prev) => !prev)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-colors cursor-pointer ${
                 showAll
                   ? "bg-brand-navy text-white border-brand-navy hover:opacity-90"
                   : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
@@ -440,7 +427,7 @@ export default function HealthQuestionnaire({
                 key={`${formKey}-${group.categoryKey}`}
                 title={group.categoryName}
                 defaultOpen={index === 0}
-                forceOpen={showAll ? true : undefined}
+                forceOpen={showAll}
               >
                 <div className="px-6 py-4">
                   {group.questions.map(renderQuestion)}
@@ -452,14 +439,14 @@ export default function HealthQuestionnaire({
             <button
               type="button"
               onClick={() => router.back()}
-              className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 cursor-pointer"
             >
               Avbryt
             </button>
             <button
               type="submit"
               disabled={isSubmitting || patientId == null}
-              className="px-6 py-2 bg-brand-navy text-white rounded-md hover:opacity-90 disabled:opacity-50"
+              className="px-6 py-2 bg-brand-navy text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {isSubmitting ? "Sender inn..." : "Send inn"}
             </button>

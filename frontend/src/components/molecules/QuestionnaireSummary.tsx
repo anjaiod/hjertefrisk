@@ -177,20 +177,30 @@ export default function QuestionnaireSummary({
   submitError,
   onGoToQuestion,
 }: QuestionnaireSummaryProps) {
-  const answeredQuestions = questions.filter((q) => {
-    const val = (answers[q.questionId] ?? "").trim();
-    return val !== "";
-  });
+  const answeredQuestions = questions.filter(
+    (q) => (answers[q.questionId] ?? "").trim() !== "",
+  );
+  const unansweredQuestions = questions.filter(
+    (q) => (answers[q.questionId] ?? "").trim() === "",
+  );
 
-  // Group by category
+  // Group answered by category
   const categoryMap = new Map<string, QueryQuestionWithDetailsDto[]>();
   for (const q of answeredQuestions) {
     const key = q.categoryName?.trim() ?? "Annet";
     if (!categoryMap.has(key)) categoryMap.set(key, []);
     categoryMap.get(key)!.push(q);
   }
-
   const groups = Array.from(categoryMap.entries());
+
+  // Group unanswered by category
+  const unansweredCategoryMap = new Map<string, QueryQuestionWithDetailsDto[]>();
+  for (const q of unansweredQuestions) {
+    const key = q.categoryName?.trim() ?? "Annet";
+    if (!unansweredCategoryMap.has(key)) unansweredCategoryMap.set(key, []);
+    unansweredCategoryMap.get(key)!.push(q);
+  }
+  const unansweredGroups = Array.from(unansweredCategoryMap.entries());
 
   return (
     <div className="w-full">
@@ -198,54 +208,100 @@ export default function QuestionnaireSummary({
         <h2 className="text-[clamp(1.25rem,3vw,1.75rem)] font-semibold text-gray-900 mb-1">
           Oppsummering
         </h2>
-        <p className="text-gray-500 text-sm md:text-base mb-6">
+        <p className="text-gray-500 text-base md:text-lg mb-6">
           Se over svarene dine før du sender inn.
         </p>
 
-        {groups.length === 0 && (
-          <p className="text-gray-400 italic">Ingen svar registrert.</p>
-        )}
-
-        <div className="space-y-6">
-          {groups.map(([categoryName, qs]) => (
-            <div key={categoryName}>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-brand-navy mb-3">
-                {categoryName}
-              </h3>
-              <ul className="space-y-1">
-                {qs.map((q) => {
-                  const rawValue = (answers[q.questionId] ?? "").trim();
-                  const sentence = buildSentence(q, rawValue);
-                  return (
-                    <li
-                      key={q.questionId}
-                      className="border-b border-gray-100 last:border-0"
-                    >
-                      {onGoToQuestion ? (
-                        <div className="py-3 flex items-center justify-between gap-3">
-                          <span className="text-gray-800 text-sm md:text-base">
+        {/* Answered questions */}
+        {groups.length === 0 ? (
+          <p className="text-gray-400 italic mb-6">Ingen svar registrert.</p>
+        ) : (
+          <div className="space-y-6">
+            {groups.map(([categoryName, qs]) => (
+              <div key={categoryName}>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-brand-navy mb-3">
+                  {categoryName}
+                </h3>
+                <ul className="space-y-1">
+                  {qs.map((q) => {
+                    const rawValue = (answers[q.questionId] ?? "").trim();
+                    const sentence = buildSentence(q, rawValue);
+                    return (
+                      <li
+                        key={q.questionId}
+                        className="border-b border-gray-100 last:border-0"
+                      >
+                        {onGoToQuestion ? (
+                          <div className="py-3 flex items-center justify-between gap-3">
+                            <span className="text-gray-800 text-base md:text-lg">
+                              {sentence}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => onGoToQuestion(q.questionId)}
+                              className="shrink-0 px-3 py-1.5 text-sm font-medium rounded-md border border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400 hover:text-slate-800 transition-colors cursor-pointer"
+                            >
+                              Endre
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="block py-3 text-gray-800 text-base md:text-lg">
                             {sentence}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => onGoToQuestion(q.questionId)}
-                            className="shrink-0 px-3 py-1.5 text-sm font-medium rounded-md border border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400 hover:text-slate-800 transition-colors"
-                          >
-                            Endre
-                          </button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Unanswered questions */}
+        {unansweredGroups.length > 0 && (
+          <div className="mt-8 pt-6 border-t-2 border-dashed border-slate-200">
+            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-1">
+              Ikke besvart ({unansweredQuestions.length})
+            </h3>
+            <p className="text-sm text-slate-500 mb-4">
+              Disse spørsmålene er valgfrie — du kan sende inn uten å fylle dem
+              ut, eller gå tilbake og svare.
+            </p>
+            <div className="space-y-6">
+              {unansweredGroups.map(([categoryName, qs]) => (
+                <div key={categoryName}>
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-3">
+                    {categoryName}
+                  </h3>
+                  <ul className="space-y-1">
+                    {qs.map((q) => (
+                      <li
+                        key={q.questionId}
+                        className="border-b border-slate-100 last:border-0"
+                      >
+                        <div className="py-3 flex items-center justify-between gap-3">
+                          <span className="text-slate-600 text-base md:text-lg">
+                            {q.fallbackText}
+                          </span>
+                          {onGoToQuestion && (
+                            <button
+                              type="button"
+                              onClick={() => onGoToQuestion(q.questionId)}
+                              className="shrink-0 px-3 py-1.5 text-sm font-medium rounded-md border border-brand-navy/40 text-brand-navy hover:bg-brand-navy/5 hover:border-brand-navy transition-colors cursor-pointer"
+                            >
+                              Svar
+                            </button>
+                          )}
                         </div>
-                      ) : (
-                        <span className="block py-3 text-gray-800 text-sm md:text-base">
-                          {sentence}
-                        </span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
 
         {submitError && (
           <p className="text-red-500 text-sm mt-4">{submitError}</p>
@@ -255,7 +311,7 @@ export default function QuestionnaireSummary({
           <button
             type="button"
             onClick={onBack}
-            className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 min-w-28 touch-manipulation"
+            className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 min-w-28 touch-manipulation cursor-pointer"
           >
             Tilbake
           </button>
@@ -263,7 +319,7 @@ export default function QuestionnaireSummary({
             type="button"
             onClick={onSubmit}
             disabled={isSubmitting}
-            className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed min-w-28 touch-manipulation"
+            className="px-6 py-3 md:px-8 md:py-4 text-base md:text-lg bg-brand-navy text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed min-w-28 touch-manipulation cursor-pointer"
           >
             {isSubmitting ? "Sender..." : "Send inn"}
           </button>
