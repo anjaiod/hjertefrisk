@@ -15,7 +15,7 @@ export function DashboardCard({
     <Button
       onClick={onClick}
       variant="confirm"
-      className={`w-full h-full rounded-2xl text-lg ${className ?? ""}`}
+      className={`w-full h-full rounded-2xl text-lg border-2 border-brand-teal-dark shadow-md hover:shadow-lg transition-shadow ${className ?? ""}`}
     >
       {text}
     </Button>

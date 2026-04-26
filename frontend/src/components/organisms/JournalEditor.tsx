@@ -409,7 +409,7 @@ export function JournalEditor({
         <button
           type="button"
           onClick={() => setTemplateDropdownOpen((o) => !o)}
-          className="px-2.5 py-1 text-sm text-gray-500 border border-gray-200 rounded hover:bg-gray-50 transition-colors whitespace-nowrap"
+          className="px-2.5 py-1 text-sm text-gray-500 border border-gray-200 rounded hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer"
         >
           Mal
         </button>
@@ -425,7 +425,7 @@ export function JournalEditor({
                   setAutoSaveStatus("unsaved");
                   setTemplateDropdownOpen(false);
                 }}
-                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 cursor-pointer"
               >
                 {tpl.label}
               </button>
@@ -442,7 +442,7 @@ export function JournalEditor({
       disabled={filling || !isHjertefriskTemplate}
       className={`px-2.5 py-1 text-sm border rounded transition-colors whitespace-nowrap ${
         isHjertefriskTemplate
-          ? "text-brand-navy border-brand-navy hover:bg-brand-sky-button disabled:opacity-50"
+          ? "text-brand-navy border-brand-navy hover:bg-brand-sky-button disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           : "invisible"
       }`}
     >
@@ -456,8 +456,8 @@ export function JournalEditor({
       onClick={onToggleHjertefrisk}
       className={`px-2.5 py-1 text-sm rounded border transition-colors whitespace-nowrap ${
         hjertefriskOpen
-          ? "bg-brand-teal text-white border-brand-teal"
-          : "text-gray-500 border-gray-200 hover:bg-gray-50"
+          ? "bg-brand-teal text-white border-brand-teal cursor-pointer"
+          : "text-gray-500 border-gray-200 hover:bg-gray-50 cursor-pointer"
       }`}
     >
       Siste besvarelse
@@ -476,7 +476,7 @@ export function JournalEditor({
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="px-2.5 py-1 text-sm text-gray-600 hover:text-gray-900 rounded border border-gray-200 hover:bg-gray-50 transition-colors"
+                  className="px-2.5 py-1 text-sm text-gray-600 hover:text-gray-900 rounded border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   Avbryt
                 </button>
@@ -487,7 +487,7 @@ export function JournalEditor({
                     onCancel();
                   }}
                   disabled={saving || approving}
-                  className="px-2.5 py-1 text-sm text-brand-navy rounded border border-brand-navy hover:bg-brand-sky-button disabled:opacity-50 transition-colors font-medium"
+                  className="px-2.5 py-1 text-sm text-brand-navy rounded border border-brand-navy hover:bg-brand-sky-button disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer"
                 >
                   Lagre
                 </button>
@@ -495,7 +495,7 @@ export function JournalEditor({
                   type="button"
                   onClick={handleApprove}
                   disabled={saving || approving}
-                  className="px-2.5 py-1 text-sm bg-brand-navy text-white rounded hover:bg-brand-navy-light disabled:opacity-50 transition-colors font-medium"
+                  className="px-2.5 py-1 text-sm bg-brand-navy text-white rounded hover:bg-brand-navy-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer"
                 >
                   Godkjenn
                 </button>
