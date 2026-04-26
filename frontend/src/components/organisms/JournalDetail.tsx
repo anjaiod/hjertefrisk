@@ -1,5 +1,8 @@
 import type { JournalNoteDto } from "@/types";
 import { useUser } from "@/context/UserContext";
+import { useState } from "react";
+import { apiClient } from "@/lib/apiClient";
+import { Signature } from "lucide-react";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("nb-NO", {
@@ -24,6 +27,7 @@ type JournalDetailProps = {
   onEdit: () => void;
   onDelete: () => void;
   onClose: () => void;
+  onSign?: (note: JournalNoteDto) => void;
 };
 
 export function JournalDetail({
@@ -31,10 +35,12 @@ export function JournalDetail({
   onEdit,
   onDelete,
   onClose,
+  onSign,
 }: JournalDetailProps) {
   const { user } = useUser();
   const isSigned = !!note.signedAt;
   const isOwner = user?.id === String(note.personnelId);
+  const [signing, setSigning] = useState(false);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -46,7 +52,7 @@ export function JournalDetail({
             </h2>
             {isSigned && (
               <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-mint-background text-brand-mint-text">
-                Signert
+                Godkjent
               </span>
             )}
           </div>
@@ -106,6 +112,29 @@ export function JournalDetail({
               {!isSigned && (
                 <button
                   type="button"
+                  title="Godkjenn"
+                  onClick={async () => {
+                    if (signing) return;
+                    setSigning(true);
+                    try {
+                      const approved = await apiClient.post<JournalNoteDto>(
+                        `/api/Journalnsoats/${note.journalnotatId}/sign`,
+                      );
+                      onSign?.(approved);
+                    } catch {
+                      alert("Kunne ikke Godkjenne notatet.");
+                    } finally {
+                      setSigning(false);
+                    }
+                  }}
+                  className="p-1.5 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  <Signature className="w-5 h-5" />
+                </button>
+              )}
+              {!isSigned && (
+                <button
+                  type="button"
                   title="Slett"
                   onClick={onDelete}
                   className="p-1.5 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors cursor-pointer"
@@ -153,7 +182,7 @@ export function JournalDetail({
   <h1>${note.title}</h1>
   <div class="meta">${note.personnelName} · ${formatDate(note.createdAt)}</div>
   ${note.content}
-  ${note.signedAt ? `<div class="signed">Signert av ${note.personnelName} · ${formatDateTime(note.signedAt)}</div>` : ""}
+  ${note.signedAt ? `<div class="signed">Godkjent av ${note.personnelName} · ${formatDateTime(note.signedAt)}</div>` : ""}
 </body>
 </html>`;
               const win = window.open("", "_blank");
@@ -191,7 +220,7 @@ export function JournalDetail({
 
       {isSigned && (
         <div className="px-6 py-3 border-t border-gray-100 text-xs text-brand-mint-text">
-          Signert av {note.personnelName} · {formatDateTime(note.signedAt!)}
+          Godkjent av {note.personnelName} · {formatDateTime(note.signedAt!)}
         </div>
       )}
     </div>

@@ -9,7 +9,7 @@ const variantClasses: Record<JournalNoteType, string> = {
 
 const labels: Record<JournalNoteType, string> = {
   Konsultasjon: "Konsultasjon",
-  JournalNotat: "Journal notat",
+  JournalNotat: "Journalnotat",
   Henvisning: "Henvisning",
   Epikrise: "Epikrise",
 };

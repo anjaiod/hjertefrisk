@@ -251,7 +251,7 @@ export default function JournalnotatPage() {
                   {[
                     {
                       type: "JournalNotat" as JournalNoteType,
-                      label: "Journal notat",
+                      label: "Journalnotat",
                       desc: "Generell journalføring",
                       dot: "bg-brand-navy-light",
                     },
@@ -359,7 +359,7 @@ export default function JournalnotatPage() {
                 type="button"
                 onClick={() => setPage((p) => p - 1)}
                 disabled={page === 0}
-                className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors cursor-pointer"
               >
                 ← Forrige
               </button>
@@ -370,7 +370,7 @@ export default function JournalnotatPage() {
                 type="button"
                 onClick={() => setPage((p) => p + 1)}
                 disabled={page >= totalPages - 1}
-                className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors cursor-pointer"
               >
                 Neste →
               </button>
@@ -392,6 +392,10 @@ export default function JournalnotatPage() {
                 }}
                 onDelete={() => setNoteToDelete(selectedNote)}
                 onClose={() => setSelectedNote(null)}
+                onSign={(approved) => {
+                  handleSaved(approved);
+                  setSelectedNote(approved);
+                }}
               />
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3">
@@ -431,7 +435,6 @@ export default function JournalnotatPage() {
               note={editingNote}
               patientId={patientId}
               initialType={editingNote === null ? newNoteType : undefined}
-              compact={!!selectedNote || hjertefriskOpen}
               hjertefriskOpen={hjertefriskOpen}
               onToggleHjertefrisk={() => setHjertefriskOpen((o) => !o)}
               onSaved={handleSaved}

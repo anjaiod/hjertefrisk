@@ -85,7 +85,7 @@ public class JournalnotatService : IJournalnotatService
             .FirstOrDefaultAsync(j => j.JournalnotatId == id);
 
         if (entity == null) return null;
-        if (entity.SignedAt != null) return null; // Allerede signert
+        if (entity.SignedAt != null) return null; // Allerede Godkjent
 
         entity.SignedAt = DateTime.UtcNow;
         entity.SignedByPersonnelId = personnelId;
